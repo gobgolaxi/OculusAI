@@ -1,0 +1,22 @@
+build/
+.gradle/
+run/
+*.log
+bin/
+libs/
+
+# The API service is a separate, private repository. Nothing under yaiapi/
+# belongs in the public plugin repo: it holds the model, the key store and
+# the admin credentials.
+yaiapi/
+yaiapi_backup/
+
+# Collected data and fitted models are per-server, never shared.
+**/data/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+.idea/
+*.iml

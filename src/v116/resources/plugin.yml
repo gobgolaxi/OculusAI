@@ -1,0 +1,48 @@
+name: YuppyAI
+version: '${version}'
+
+main: me.everyone.yuppyai.YuppyAI
+api-version: '1.16'
+load: POSTWORLD
+author: everyone
+description: Aim analysis for Paper, backed by a neural network served over HTTP.
+
+depend: [ProtocolLib]
+
+commands:
+  yuppyai:
+    description: Main YuppyAI command.
+    usage: /yai help
+    aliases: [yai, ai]
+  spawn:
+    description: Teleport back to the test arena spawn.
+    usage: /spawn
+
+permissions:
+  yuppyai.command:
+    description: Access to /yai.
+    default: false
+  yuppyai.alerts:
+    description: Receive detection alerts.
+    default: false
+  yuppyai.journal:
+    description: Open the live suspicion journal.
+    default: false
+  yuppyai.vanish:
+    description: Enter and leave hidden spectator observation.
+    default: false
+  yuppyai.data:
+    description: Record and label training data.
+    default: false
+  yuppyai.bypass:
+    description: Never analysed.
+    default: false
+  yuppyai.automod.alerts:
+    description: Receive AutoMod block notices.
+    default: op
+  yuppyai.automod.bypass:
+    description: Bypass chat AutoMod.
+    default: false
+  yuppyai.npc:
+    description: Spawn a sparring dummy that attacks you.
+    default: false

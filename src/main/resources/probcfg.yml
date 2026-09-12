@@ -1,0 +1,13 @@
+actionbar: "<%accent%>⚠ <white>%bar% <dark_gray>| <white>%player% <dark_gray>| <gray>%probability%"
+
+hologram:
+  format:
+    - "<dark_gray>◆◆◆ <gradient:%primary%:%secondary%><bold>%player%</bold></gradient> <dark_gray>◆◆◆"
+    - "<gray>⚡ <white>%probability% <dark_gray>| <gray>❤ buffer <white>%buffer%<dark_gray>/<white>%max_buffer%"
+    - "<gray>♫ %bar%"
+    - "<dark_gray>♬ trend <gray>%trend%"
+    - "<dark_gray>☹ %state%"
+    - "<dark_gray>♠ windows <white>%windows%"
+  lines: 6
+  seconds: 300
+  offset: 1.1

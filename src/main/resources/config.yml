@@ -1,0 +1,58 @@
+prefix: "<gradient:%primary%:%secondary%><bold>ʏᴜᴘᴘʏᴀɪ</bold></gradient> <dark_gray>» <gray>"
+language: "ru"
+
+theme:
+  name: "aurora"
+
+api:
+  url: ""
+  timeout-ms: 1500
+  key: ""
+  dataset-key: ""
+
+analysis:
+  window-ticks: 20
+  min-attacks: 1
+  combat-ticks: 40
+  min-rotation: 5.0
+  min-attack-rotation: 2.5
+
+buffer:
+  suspicion: 0.5
+  gain: 1.5
+  decay: 1.4
+  max: 10.0
+  alert-at: 1.7
+  punish-at: 5.0
+  alert-cooldown-ms: 10000
+
+display:
+  alert-symbol: "⚠"
+  alert-format: "<%primary%>%player%</%primary%> <gray>aim <white>%probability% <dark_gray>| <gray>buffer <white>%buffer%<dark_gray>/<white>%max%"
+  alert-click: "<yellow>[Следить]"
+  alert-click-command: "prob"
+
+punishment:
+  enabled: true
+  command: "kick %player% &cUnfair aim"
+  broadcast: "<red>%player% <gray>removed after <white>%buffer%<gray> buffer"
+  kick-animation: "EXPLODE"
+  evidence:
+    enabled: false
+    seconds: 180
+    label: "cheater"
+    min-probability: 0.7
+    min-buffer: 3.0
+    cancel-below: 4.0
+
+recording:
+  progress-seconds: 15
+
+automod:
+  enabled: true
+
+test-server:
+  enabled: false
+  world: "yuppyai_test"
+  scoreboard-refresh-ticks: 100
+  model-refresh-seconds: 30

@@ -189,13 +189,14 @@ public final class AnalysisManager implements Manager {
                 ? ""
                 : Msg.parse("<" + theme.accent() + ">" + symbol + " <reset>");
 
-        TextComponent main = new TextComponent(prefix + symbolText + line);
+        TextComponent main = new TextComponent(
+                TextComponent.fromLegacyText(prefix + symbolText + line));
         if (!clickLine.isEmpty()) {
-            TextComponent click = new TextComponent(clickLine);
+            TextComponent click = new TextComponent(TextComponent.fromLegacyText(clickLine));
             click.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                     "/yai " + plugin.config().alertClickCommand() + " " + data.name()));
             click.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    new Text(hoverText)));
+                    new Text(TextComponent.fromLegacyText(hoverText))));
             main.addExtra(click);
         }
 

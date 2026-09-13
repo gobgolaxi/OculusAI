@@ -30,7 +30,7 @@ public final class DataCommand extends SubCommand {
         switch (args[0].toLowerCase(Locale.ROOT)) {
             case "add" -> add(sender, args);
             case "rem", "remove" -> remove(sender, args);
-            case "train", "start" -> start(sender);
+            case "train", "start" -> start(sender, args);
             case "stop" -> stop(sender);
             case "list" -> list(sender);
             case "delete" -> delete(sender, args);
@@ -78,15 +78,35 @@ public final class DataCommand extends SubCommand {
                 : "<red>They were not on it.");
     }
 
-    private void start(CommandSender sender) {
+    private void start(CommandSender sender, String[] args) {
+        int schema = DatasetManager.SCHEMA_V3;
+        if (args.length > 1) {
+            String version = args[1].toLowerCase(Locale.ROOT);
+            if ("v2".equals(version)) {
+                schema = DatasetManager.SCHEMA_V2;
+            } else if ("v3".equals(version)) {
+                schema = DatasetManager.SCHEMA_V3;
+            } else if ("both".equals(version)) {
+                schema = DatasetManager.SCHEMA_BOTH;
+            } else {
+                usage(sender);
+                return;
+            }
+        }
+        plugin.datasets().setSchema(schema);
         if (plugin.datasets().roster().isEmpty()) {
             reply(sender, "<red>Nobody is signed up. <white>/yai data add cheater|legit <player>");
             return;
         }
         int started = plugin.datasets().start(sender);
-        reply(sender, "<green>Recording <white>" + started + "<green> player(s)<gray>. "
-                + "Windows are only taken while they fight - "
-                + "<white>/yai data stop<gray> saves everything.");
+        String schemaName = switch (schema) {
+            case DatasetManager.SCHEMA_V2 -> "v2";
+            case DatasetManager.SCHEMA_BOTH -> "v2 + v3";
+            default -> "v3";
+        };
+        reply(sender, "<green>Recording <white>" + started + "<green> player(s) as <white>" + schemaName
+                + "<green>. Windows are only taken while they fight - "
+                + "<white>/yai data stop<green> saves everything.");
     }
 
     private void stop(CommandSender sender) {
@@ -150,8 +170,9 @@ public final class DataCommand extends SubCommand {
         reply(sender, "<white>1. <gray>Sign the cast up:");
         reply(sender, "   <white>/yai data add cheater <player>");
         reply(sender, "   <white>/yai data add legit <player>");
-        reply(sender, "<white>2. <gray>Run it: <white>/yai data train <gray>... they fight ... <white>/yai data stop");
+        reply(sender, "<white>2. <gray>Run it: <white>/yai data train [v2|v3|both] <gray>... they fight ... <white>/yai data stop");
         reply(sender, "   <gray>Stopping sends every capture to the service straight away.");
+        reply(sender, "   <gray>v3 adds crit timing; both saves the capture twice (v2 + v3).");
         reply(sender, "<gray>Also: <white>list<gray>, <white>rem <player><gray> (off the roster),");
         reply(sender, "<gray><white>delete cheater|legit <player><gray> (drop stored data).");
         reply(sender, "<gray>Train the model in <white>/yai dashboard<gray>.");
@@ -163,6 +184,12 @@ public final class DataCommand extends SubCommand {
             List<String> options = new ArrayList<>(List.of("add", "rem", "train", "stop", "list", "delete"));
             options.removeIf(option -> !option.startsWith(args[0].toLowerCase(Locale.ROOT)));
             return options;
+        }
+
+        if (args.length == 2 && (args[0].equalsIgnoreCase("train") || args[0].equalsIgnoreCase("start"))) {
+            List<String> versions = new ArrayList<>(List.of("v2", "v3", "both"));
+            versions.removeIf(version -> !version.startsWith(args[1].toLowerCase(Locale.ROOT)));
+            return versions;
         }
 
         boolean needsLabel = args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("delete");

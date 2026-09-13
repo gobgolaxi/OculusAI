@@ -44,8 +44,14 @@ public final class FeatureExtractor {
         double minPitch = Double.MAX_VALUE;
         double maxPitch = -Double.MAX_VALUE;
         int attacks = 0;
+        int crits = 0;
+        double critPosSum = 0.0D;
         List<Double> aimErrors = new ArrayList<>();
-        for (RotationSample sample : window) {
+        List<Double> critHeights = new ArrayList<>();
+        List<Double> critAimErrors = new ArrayList<>();
+        int lastIndex = window.size() - 1;
+        for (int i = 0; i < window.size(); i++) {
+            RotationSample sample = window.get(i);
             minPitch = Math.min(minPitch, sample.pitch());
             maxPitch = Math.max(maxPitch, sample.pitch());
             if (sample.attacked()) {
@@ -53,11 +59,26 @@ public final class FeatureExtractor {
                 if (!Double.isNaN(sample.aimError())) {
                     aimErrors.add(sample.aimError());
                 }
+                float fall = sample.fallDistance();
+                if (!Float.isNaN(fall) && fall > 0.0F) {
+                    crits++;
+                    critPosSum += (double) i / (double) lastIndex;
+                    critHeights.add((double) fall);
+                    if (!Double.isNaN(sample.aimError())) {
+                        critAimErrors.add(sample.aimError());
+                    }
+                }
             }
         }
 
         double quantum = quantum(yawDeltas);
         double aimErrorMean = mean(aimErrors);
+        double critRatio = attacks > 0 ? (double) crits / (double) attacks : 0.0D;
+        double critPosition = crits > 0 ? critPosSum / (double) crits : 0.0D;
+        double critHeightMean = mean(critHeights);
+        double critHeightStd = standardDeviation(critHeights, critHeightMean);
+        double critHeightMax = critHeights.isEmpty() ? 0.0D : Collections.max(critHeights);
+        double critAimError = mean(critAimErrors);
 
         return new FeatureVector(
                 baselineScale > EPSILON ? scale / baselineScale : 1.0D,
@@ -76,7 +97,13 @@ public final class FeatureExtractor {
                 attacks * 20.0D / window.size(),
                 aimErrorMean,
                 standardDeviation(aimErrors, aimErrorMean),
-                aimErrors.isEmpty() ? 0.0D : Collections.min(aimErrors));
+                aimErrors.isEmpty() ? 0.0D : Collections.min(aimErrors),
+                critRatio,
+                critPosition,
+                critHeightMean,
+                critHeightStd,
+                critHeightMax,
+                critAimError);
     }
 
     public static double scaleOf(List<RotationSample> window) {

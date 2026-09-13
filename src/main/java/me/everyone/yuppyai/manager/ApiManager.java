@@ -75,7 +75,7 @@ public final class ApiManager implements Manager {
     public CompletableFuture<JsonObject> addSamples(String label, String player, String uuid,
                                                     List<String> featureNames, List<double[]> rows,
                                                     boolean enabled, String source, String person,
-                                                    List<double[]> context) {
+                                                    List<double[]> context, int featureVersion) {
         JsonObject body = new JsonObject();
         body.addProperty("label", label);
         body.addProperty("player", player);
@@ -83,6 +83,7 @@ public final class ApiManager implements Manager {
         body.addProperty("enabled", enabled);
         body.addProperty("source", source);
         body.addProperty("person", person == null ? "" : person);
+        body.addProperty("feature_version", featureVersion);
 
         if (context != null && context.size() == rows.size() && anyScored(context)) {
             body.add("scores", column(context, 0));

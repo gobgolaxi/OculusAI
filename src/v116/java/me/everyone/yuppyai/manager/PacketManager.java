@@ -64,7 +64,7 @@ public final class PacketManager implements Manager {
             EnumWrappers.EntityUseAction action = event.getPacket().getEntityUseActions().readSafely(0);
             if (action == EnumWrappers.EntityUseAction.ATTACK) {
                 int targetEntityId = event.getPacket().getIntegers().read(0);
-                data.markAttack(aimError(data, targetEntityId));
+                data.markAttack(aimError(data, targetEntityId), player.getFallDistance());
             }
             return;
         }

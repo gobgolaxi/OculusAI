@@ -7,6 +7,7 @@ import me.everyone.yuppyai.util.Msg;
 import org.bukkit.command.CommandSender;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -20,6 +21,15 @@ public final class DatasetManager implements Manager {
     public static final String CHEATER = "cheater";
     public static final String LEGIT = "legit";
 
+    public static final int SCHEMA_V2 = 2;
+    public static final int SCHEMA_V3 = 3;
+    public static final int SCHEMA_BOTH = 0;
+
+    // The v2 schema is the first V2_WIDTH columns of the v3 vector; the crit
+    // features (crit_ratio, crit_position, crit_height_*, crit_aim_error) are
+    // appended after them, so slicing to this width drops exactly the v3 bits.
+    private static final int V2_WIDTH = 17;
+
     public record RosterEntry(UUID uuid, String name, String label, String person) {
     }
 
@@ -28,6 +38,7 @@ public final class DatasetManager implements Manager {
     private volatile boolean collecting;
     private volatile long collectingSinceMs;
     private volatile CommandSender starter;
+    private volatile int schema = SCHEMA_V3;
     private BukkitTask progressTask;
 
     public DatasetManager(YuppyAI plugin) {
@@ -109,6 +120,20 @@ public final class DatasetManager implements Manager {
         return started;
     }
 
+    public void setSchema(int schema) {
+        this.schema = schema;
+    }
+
+    public int schema() {
+        return schema;
+    }
+
+    public static boolean isSchema(String value) {
+        return "v2".equalsIgnoreCase(value)
+                || "v3".equalsIgnoreCase(value)
+                || "both".equalsIgnoreCase(value);
+    }
+
     private void startProgress() {
         stopProgress();
         int seconds = plugin.config().progressSeconds();
@@ -161,8 +186,11 @@ public final class DatasetManager implements Manager {
             if (data.recordedCount() == 0) {
                 continue;
             }
+            int[] versions = schema == SCHEMA_BOTH
+                    ? new int[]{SCHEMA_V2, SCHEMA_V3}
+                    : new int[]{schema};
             try {
-                results.put(entry.name(), commit(data, entry.label(), true, "manual", entry.person()));
+                results.put(entry.name(), commitVersions(data, entry.label(), entry.person(), versions));
             } catch (RuntimeException failure) {
                 plugin.getLogger().log(java.util.logging.Level.SEVERE,
                         "Could not send the capture for " + entry.name()
@@ -189,21 +217,77 @@ public final class DatasetManager implements Manager {
 
     public CompletableFuture<Integer> commit(PlayerData data, String label,
                                              boolean enabled, String source, String person) {
+        int version = schema == SCHEMA_BOTH ? SCHEMA_V3 : schema;
+        return commit(data, label, enabled, source, person, version);
+    }
+
+    public CompletableFuture<Integer> commit(PlayerData data, String label,
+                                             boolean enabled, String source, String person,
+                                             int featureVersion) {
         List<double[]> rows = data.recordedSamples();
         List<String> names = data.recordedFeatureNames();
         if (rows.isEmpty() || names.isEmpty()) {
             return CompletableFuture.completedFuture(0);
         }
 
+        int width = featureVersion == SCHEMA_V2 ? V2_WIDTH : names.size();
+        List<String> slicedNames = names.subList(0, Math.min(width, names.size()));
+        List<double[]> slicedRows = new ArrayList<>(rows.size());
+        for (double[] row : rows) {
+            slicedRows.add(java.util.Arrays.copyOf(row, Math.min(width, row.length)));
+        }
+
         return plugin.api()
-                .addSamples(label, data.name(), data.uuid().toString(), names, rows,
-                        enabled, source, person, data.recordedContext())
+                .addSamples(label, data.name(), data.uuid().toString(), slicedNames, slicedRows,
+                        enabled, source, person, data.recordedContext(), featureVersion)
                 .thenApply(response -> {
                     if (response == null) {
                         return null;
                     }
                     data.clearRecorded();
-                    return response.has("stored") ? response.get("stored").getAsInt() : rows.size();
+                    return response.has("stored") ? response.get("stored").getAsInt() : slicedRows.size();
+                });
+    }
+
+    private CompletableFuture<Integer> commitVersions(PlayerData data, String label,
+                                                      String person, int[] versions) {
+        // Snapshot once and clear now, so "both" can send two requests off the
+        // same rows without the second request seeing an empty buffer.
+        List<double[]> rows = data.recordedSamples();
+        List<String> names = data.recordedFeatureNames();
+        List<double[]> context = data.recordedContext();
+        data.clearRecorded();
+
+        if (rows.isEmpty() || names.isEmpty()) {
+            return CompletableFuture.completedFuture(0);
+        }
+
+        List<CompletableFuture<Integer>> futures = new ArrayList<>(versions.length);
+        for (int version : versions) {
+            int width = version == SCHEMA_V2 ? V2_WIDTH : names.size();
+            List<String> slicedNames = names.subList(0, Math.min(width, names.size()));
+            List<double[]> slicedRows = new ArrayList<>(rows.size());
+            for (double[] row : rows) {
+                slicedRows.add(java.util.Arrays.copyOf(row, Math.min(width, row.length)));
+            }
+            futures.add(plugin.api()
+                    .addSamples(label, data.name(), data.uuid().toString(), slicedNames, slicedRows,
+                            true, "manual", person, context, version)
+                    .thenApply(response -> response == null
+                            ? null
+                            : (response.has("stored") ? response.get("stored").getAsInt() : slicedRows.size())));
+        }
+
+        return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                .thenApply(ignored -> {
+                    int total = 0;
+                    for (CompletableFuture<Integer> future : futures) {
+                        Integer stored = future.join();
+                        if (stored != null) {
+                            total += stored;
+                        }
+                    }
+                    return total;
                 });
     }
 

@@ -20,7 +20,13 @@ public record FeatureVector(
         double attacksPerSecond,
         double aimErrorMean,
         double aimErrorStd,
-        double aimErrorMin) {
+        double aimErrorMin,
+        double critRatio,
+        double critPosition,
+        double critHeightMean,
+        double critHeightStd,
+        double critHeightMax,
+        double critAimError) {
 
     public Map<String, Double> toMap() {
         Map<String, Double> map = new LinkedHashMap<>();
@@ -41,6 +47,12 @@ public record FeatureVector(
         map.put("aim_error_mean", aimErrorMean);
         map.put("aim_error_std", aimErrorStd);
         map.put("aim_error_min", aimErrorMin);
+        map.put("crit_ratio", critRatio);
+        map.put("crit_position", critPosition);
+        map.put("crit_height_mean", critHeightMean);
+        map.put("crit_height_std", critHeightStd);
+        map.put("crit_height_max", critHeightMax);
+        map.put("crit_aim_error", critAimError);
         return map;
     }
 }

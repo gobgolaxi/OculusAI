@@ -58,6 +58,9 @@ public final class AnalysisManager implements Manager {
             if (!player.isOnline() || player.hasPermission("yuppyai.bypass")) {
                 continue;
             }
+            if (plugin.api().excluded(player)) {
+                continue;
+            }
             analyse(data);
         }
     }
@@ -79,15 +82,27 @@ public final class AnalysisManager implements Manager {
                         window.get(i).yaw() - window.get(i - 1).yaw()));
             }
         }
-        if (attacks < plugin.config().minAttacks() || rotation < plugin.config().minRotation()) {
+        if (attacks < plugin.config().minAttacks()) {
             return;
         }
-        if (attackLinkedRotation(window) < plugin.config().minAttackRotation()) {
+        // Dataset collection must represent ordinary combat too. Applying the
+        // live suspicion filters while recording would train on preselected,
+        // already suspicious windows and inflate false positives.
+        if (!data.recording() && rotation < plugin.config().minRotation()) {
+            return;
+        }
+        if (!data.recording() && attackLinkedRotation(window) < plugin.config().minAttackRotation()) {
             return;
         }
 
         double scale = FeatureExtractor.scaleOf(window);
         FeatureVector vector = FeatureExtractor.extract(window, data.baselineScale());
+        if (vector == null) {
+            // The window never moved. It carries no aim to judge, and letting
+            // it through while recording is how a divided-by-nothing artefact
+            // ends up in the dataset as a training example.
+            return;
+        }
         Map<String, Double> features = vector.toMap();
 
         if (data.recording() && !data.filtering()) {

@@ -60,9 +60,6 @@ public final class PunishmentManager implements Manager {
         if (!plugin.config().punishmentEnabled() || open.containsKey(data.uuid())) {
             return;
         }
-        if (animating.contains(data.uuid())) {
-            return;
-        }
         if (!plugin.config().evidenceEnabled()) {
             punish(data);
             return;
@@ -119,26 +116,7 @@ public final class PunishmentManager implements Manager {
             return;
         }
 
-        KickAnimation animation = plugin.config().kickAnimation();
-        if (animation == KickAnimation.NONE) {
-            executeKick(data);
-            return;
-        }
-
-        if (!animating.add(data.uuid())) {
-            return;
-        }
-
-        switch (animation) {
-            case EXPLODE -> playExplode(data);
-            case LIGHTNING -> playLightning(data);
-            case FIREWORK -> playFirework(data);
-            case WITHER -> playWither(data);
-            default -> {
-                animating.remove(data.uuid());
-                executeKick(data);
-            }
-        }
+        executeKick(data);
     }
 
     private void executeKick(PlayerData data) {
@@ -152,14 +130,12 @@ public final class PunishmentManager implements Manager {
                 "probability", Msg.percent(data.probability()),
                 "buffer", Msg.round(data.buffer(), 1));
 
-        String command = Msg.fill(plugin.config().punishmentCommand(), placeholders);
-        if (command.isBlank()) {
-            plugin.getLogger().warning("Punishment is on but no command is set");
-            return;
+        String reason = Msg.fill(plugin.config().punishmentCommand(), placeholders);
+        if (reason.isBlank()) {
+            reason = "Cheat detected";
         }
-
-        plugin.getServer().dispatchCommand(plugin.getServer().getConsoleSender(), command);
-        plugin.getLogger().info("Acted on " + data.name() + " -> " + command);
+        player.kickPlayer(Msg.parse(reason));
+        plugin.getLogger().info("Kicked " + data.name());
 
         String broadcast = plugin.config().punishmentBroadcast();
         if (!broadcast.isBlank()) {

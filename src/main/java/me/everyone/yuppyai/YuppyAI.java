@@ -12,6 +12,7 @@ import me.everyone.yuppyai.manager.JournalManager;
 import me.everyone.yuppyai.manager.LangManager;
 import me.everyone.yuppyai.manager.Manager;
 import me.everyone.yuppyai.manager.MenuManager;
+import me.everyone.yuppyai.manager.MonitorManager;
 import me.everyone.yuppyai.manager.PacketManager;
 import me.everyone.yuppyai.manager.ProbConfigManager;
 import me.everyone.yuppyai.manager.PunishmentManager;
@@ -41,6 +42,7 @@ public final class YuppyAI extends JavaPlugin {
     private PunishmentManager punishmentManager;
     private AnalysisManager analysisManager;
     private DisplayManager displayManager;
+    private MonitorManager monitorManager;
     private ProbConfigManager probConfigManager;
     private JournalManager journalManager;
     private PacketManager packetManager;
@@ -64,6 +66,7 @@ public final class YuppyAI extends JavaPlugin {
         analysisManager = register(new AnalysisManager(this));
         probConfigManager = register(new ProbConfigManager(this));
         displayManager = register(new DisplayManager(this));
+        monitorManager = register(new MonitorManager(this));
         journalManager = register(new JournalManager(this));
         packetManager = register(new PacketManager(this));
         menuManager = register(new MenuManager(this));
@@ -151,6 +154,10 @@ public final class YuppyAI extends JavaPlugin {
 
     public DisplayManager displays() {
         return displayManager;
+    }
+
+    public MonitorManager monitors() {
+        return monitorManager;
     }
 
     public ProbConfigManager probConfig() {

@@ -34,9 +34,8 @@ display:
 
 punishment:
   enabled: true
-  command: "kick %player% &cUnfair aim"
+  command: "&cCheat detected"
   broadcast: "<red>%player% <gray>removed after <white>%buffer%<gray> buffer"
-  kick-animation: "EXPLODE"
   evidence:
     enabled: false
     seconds: 180

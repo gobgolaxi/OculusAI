@@ -79,32 +79,12 @@ public final class DataCommand extends SubCommand {
     }
 
     private void start(CommandSender sender, String[] args) {
-        int schema = DatasetManager.SCHEMA_V3;
-        if (args.length > 1) {
-            String version = args[1].toLowerCase(Locale.ROOT);
-            if ("v2".equals(version)) {
-                schema = DatasetManager.SCHEMA_V2;
-            } else if ("v3".equals(version)) {
-                schema = DatasetManager.SCHEMA_V3;
-            } else if ("both".equals(version)) {
-                schema = DatasetManager.SCHEMA_BOTH;
-            } else {
-                usage(sender);
-                return;
-            }
-        }
-        plugin.datasets().setSchema(schema);
         if (plugin.datasets().roster().isEmpty()) {
             reply(sender, "<red>Nobody is signed up. <white>/yai data add cheater|legit <player>");
             return;
         }
         int started = plugin.datasets().start(sender);
-        String schemaName = switch (schema) {
-            case DatasetManager.SCHEMA_V2 -> "v2";
-            case DatasetManager.SCHEMA_BOTH -> "v2 + v3";
-            default -> "v3";
-        };
-        reply(sender, "<green>Recording <white>" + started + "<green> player(s) as <white>" + schemaName
+        reply(sender, "<green>Recording <white>" + started + "<green> player(s)"
                 + "<green>. Windows are only taken while they fight - "
                 + "<white>/yai data stop<green> saves everything.");
     }
@@ -170,9 +150,9 @@ public final class DataCommand extends SubCommand {
         reply(sender, "<white>1. <gray>Sign the cast up:");
         reply(sender, "   <white>/yai data add cheater <player>");
         reply(sender, "   <white>/yai data add legit <player>");
-        reply(sender, "<white>2. <gray>Run it: <white>/yai data train [v2|v3|both] <gray>... they fight ... <white>/yai data stop");
+        reply(sender, "<white>2. <gray>Run it: <white>/yai data train <gray>... they fight ... <white>/yai data stop");
         reply(sender, "   <gray>Stopping sends every capture to the service straight away.");
-        reply(sender, "   <gray>v3 adds crit timing; both saves the capture twice (v2 + v3).");
+        reply(sender, "   <gray>Two or three short sessions per player beats one long one.");
         reply(sender, "<gray>Also: <white>list<gray>, <white>rem <player><gray> (off the roster),");
         reply(sender, "<gray><white>delete cheater|legit <player><gray> (drop stored data).");
         reply(sender, "<gray>Train the model in <white>/yai dashboard<gray>.");

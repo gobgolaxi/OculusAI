@@ -39,7 +39,6 @@ public final class ConfigManager implements Manager {
     private boolean punishmentEnabled = false;
     private String punishmentCommand = "";
     private String punishmentBroadcast = "";
-    private KickAnimation kickAnimation = KickAnimation.EXPLODE;
     private boolean evidenceEnabled = true;
     private int evidenceSeconds = 180;
     private String evidenceLabel = "cheater";
@@ -109,7 +108,6 @@ public final class ConfigManager implements Manager {
         punishmentEnabled = config.getBoolean("punishment.enabled", false);
         punishmentCommand = config.getString("punishment.command", "");
         punishmentBroadcast = config.getString("punishment.broadcast", "");
-        kickAnimation = KickAnimation.parse(config.getString("punishment.kick-animation", "EXPLODE"));
         evidenceEnabled = config.getBoolean("punishment.evidence.enabled", true);
         evidenceSeconds = Math.max(1, config.getInt("punishment.evidence.seconds", 180));
         evidenceLabel = config.getString("punishment.evidence.label", "cheater");
@@ -248,10 +246,6 @@ public final class ConfigManager implements Manager {
 
     public String punishmentBroadcast() {
         return punishmentBroadcast;
-    }
-
-    public KickAnimation kickAnimation() {
-        return kickAnimation;
     }
 
     public boolean evidenceEnabled() {

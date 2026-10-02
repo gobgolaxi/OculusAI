@@ -14,9 +14,6 @@ import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
 import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.PluginCommand;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
@@ -47,7 +44,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public final class TestServerManager implements Manager, Listener, CommandExecutor {
+public final class TestServerManager implements Manager, Listener {
 
     private static final int MAX_DUMMIES = 5;
 
@@ -75,11 +72,6 @@ public final class TestServerManager implements Manager, Listener, CommandExecut
         purgeMobs();
         refreshModelLine();
 
-        PluginCommand spawnCommand = plugin.getCommand("spawn");
-        if (spawnCommand != null) {
-            spawnCommand.setExecutor(this);
-        }
-
         int ticks = plugin.config().testServerScoreboardTicks();
         scoreboardTask = plugin.getServer().getScheduler()
                 .runTaskTimer(plugin, this::refreshAll, ticks, ticks);
@@ -93,21 +85,6 @@ public final class TestServerManager implements Manager, Listener, CommandExecut
                     purgeMobs();
                     retargetDummies();
                 }, 20L, 20L);
-    }
-
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("Players only.");
-            return true;
-        }
-        if (world == null) {
-            player.sendMessage(plugin.config().prefix() + plugin.lang().text("spawn.disabled"));
-            return true;
-        }
-        player.teleport(spawnLocation());
-        player.sendMessage(plugin.config().prefix() + plugin.lang().text("spawn.teleported"));
-        return true;
     }
 
     @Override

@@ -18,6 +18,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.entity.Player;
+
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Locale;
 
 public final class ApiManager implements Manager {
 
@@ -34,6 +39,9 @@ public final class ApiManager implements Manager {
     });
     private HttpClient client;
     private BukkitTask probeTask;
+    private volatile List<Exclusion> exclusions = List.of();
+
+    private record Exclusion(String world, String region) {}
 
     public ApiManager(YuppyAI plugin) {
         this.plugin = plugin;
@@ -48,6 +56,7 @@ public final class ApiManager implements Manager {
                 .build();
         probeTask = plugin.getServer().getScheduler().runTaskTimerAsynchronously(
                 plugin, this::probe, PROBE_PERIOD_TICKS, PROBE_PERIOD_TICKS);
+        refreshSettings();
     }
 
     @Override
@@ -69,6 +78,61 @@ public final class ApiManager implements Manager {
                 return Double.NaN;
             }
             return response.get("probability").getAsDouble();
+        });
+    }
+
+    public boolean excluded(Player player) {
+        String world = player.getWorld().getName();
+        for (Exclusion exclusion : exclusions) {
+            if (!exclusion.world().equalsIgnoreCase(world)) {
+                continue;
+            }
+            if (exclusion.region().isBlank() || inWorldGuardRegion(player, exclusion.region())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean inWorldGuardRegion(Player player, String wanted) {
+        try {
+            Object worldGuard = Class.forName("com.sk89q.worldguard.WorldGuard")
+                    .getMethod("getInstance").invoke(null);
+            Object platform = worldGuard.getClass().getMethod("getPlatform").invoke(worldGuard);
+            Object container = platform.getClass().getMethod("getRegionContainer").invoke(platform);
+            Object manager = container.getClass().getMethod("get", org.bukkit.World.class)
+                    .invoke(container, player.getWorld());
+            if (manager == null) return false;
+            Object vector = Class.forName("com.sk89q.worldedit.bukkit.BukkitAdapter")
+                    .getMethod("asBlockVector", org.bukkit.Location.class)
+                    .invoke(null, player.getLocation());
+            Object set = manager.getClass().getMethod("getApplicableRegions", vector.getClass())
+                    .invoke(manager, vector);
+            Method iterator = set.getClass().getMethod("iterator");
+            Object it = iterator.invoke(set);
+            while ((Boolean) it.getClass().getMethod("hasNext").invoke(it)) {
+                Object region = it.getClass().getMethod("next").invoke(it);
+                String id = (String) region.getClass().getMethod("getId").invoke(region);
+                if (id.equalsIgnoreCase(wanted)) return true;
+            }
+        } catch (ReflectiveOperationException | LinkageError ignored) {
+            // WorldGuard is optional. A region exclusion cannot match without it.
+        }
+        return false;
+    }
+
+    private void refreshSettings() {
+        get("/plugin/settings").thenAccept(response -> {
+            if (response == null || !response.has("analysis_exclusions")) return;
+            List<Exclusion> loaded = new ArrayList<>();
+            response.getAsJsonArray("analysis_exclusions").forEach(element -> {
+                if (!element.isJsonObject()) return;
+                JsonObject item = element.getAsJsonObject();
+                String world = item.has("world") ? item.get("world").getAsString().trim() : "";
+                String region = item.has("region") ? item.get("region").getAsString().trim() : "";
+                if (!world.isBlank()) loaded.add(new Exclusion(world, region));
+            });
+            exclusions = List.copyOf(loaded);
         });
     }
 
@@ -186,6 +250,7 @@ public final class ApiManager implements Manager {
     }
 
     private void probe() {
+        refreshSettings();
         if (reachable.get()) {
             return;
         }

@@ -1,7 +1,6 @@
 package me.everyone.yuppyai.gui;
 
 import me.everyone.yuppyai.YuppyAI;
-import me.everyone.yuppyai.manager.KickAnimation;
 import me.everyone.yuppyai.util.Msg;
 import org.bukkit.Material;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -143,25 +142,6 @@ public final class DashboardMenu extends Menu {
                         "",
                         allowed ? plugin.lang().text("shared.click-toggle") : "")));
 
-        KickAnimation anim = plugin.config().kickAnimation();
-        Material animMat = switch (anim) {
-            case EXPLODE -> Material.TNT;
-            case LIGHTNING -> safeMaterial("LIGHTNING_ROD", "GOLD_INGOT");
-            case FIREWORK -> Material.FIREWORK_ROCKET;
-            case WITHER -> Material.WITHER_SKELETON_SKULL;
-            default -> Material.BARRIER;
-        };
-        set(SLOT_KICK_ANIM, item(animMat,
-                plugin.lang().text("dashboard.kickanim.name"),
-                List.of(
-                        plugin.lang().text("dashboard.kickanim.current",
-                                Map.of("value", plugin.lang().text("kickanim." + anim.name().toLowerCase()))),
-                        "",
-                        plugin.lang().text("dashboard.kickanim.line1"),
-                        plugin.lang().text("dashboard.kickanim.line2"),
-                        "",
-                        plugin.lang().text("shared.click-toggle"))));
-
         set(SLOT_REFRESH, item(Material.CLOCK, plugin.lang().text("shared.refresh"),
                 List.of(plugin.lang().text("dashboard.refresh.lore"))));
     }
@@ -190,14 +170,6 @@ public final class DashboardMenu extends Menu {
                 plugin.config().alertSoundVolume(), plugin.config().alertSoundPitch());
     }
 
-    private void cycleKickAnimation() {
-        KickAnimation next = plugin.config().kickAnimation().next();
-        plugin.getConfig().set("punishment.kick-animation", next.name());
-        plugin.saveConfig();
-        plugin.reloadEverything();
-        refresh();
-    }
-
     private static Material safeMaterial(String... names) {
         for (String name : names) {
             try { return Material.valueOf(name); } catch (Exception ignored) {}
@@ -219,7 +191,6 @@ public final class DashboardMenu extends Menu {
             case SLOT_PUNISH -> toggle("punishment.enabled", false);
             case SLOT_EVIDENCE -> toggle("punishment.evidence.enabled", true);
             case SLOT_ALERT_SOUND -> cycleAlertSound();
-            case SLOT_KICK_ANIM -> cycleKickAnimation();
             case SLOT_THEME -> {
                 var next = plugin.theme().cycle();
                 viewer.sendMessage(plugin.config().prefix()

@@ -31,16 +31,22 @@ dependencies {
         "1.21.4" -> {
             compileOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
             compileOnly("net.dmulloy2:ProtocolLib:5.3.0")
+            testRuntimeOnly("io.papermc.paper:paper-api:1.21.4-R0.1-SNAPSHOT")
         }
         else -> {
             compileOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
             compileOnly("net.dmulloy2:ProtocolLib:5.4.0")
+            testRuntimeOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
         }
     }
 
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    // ApiManagerTest reads the plugin's own JSON, and gson reaches the main
+    // source set only through paper-api, which is compileOnly. Without this the
+    // whole test compilation fails, so no test in the project can run.
+    testImplementation("com.google.code.gson:gson:2.10.1")
 }
 
 java {

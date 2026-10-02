@@ -64,7 +64,7 @@ public final class PacketManager implements Manager {
             EnumWrappers.EntityUseAction action = event.getPacket().getEntityUseActions().readSafely(0);
             if (action == EnumWrappers.EntityUseAction.ATTACK) {
                 int targetEntityId = event.getPacket().getIntegers().read(0);
-                data.markAttack(aimError(data, targetEntityId), player.getFallDistance());
+                data.markAttack(aimError(data, targetEntityId));
             }
             return;
         }
@@ -106,6 +106,7 @@ public final class PacketManager implements Manager {
         double dot = (toX * lookX + toY * lookY + toZ * lookZ) / length;
         return Math.toDegrees(Math.acos(Math.max(-1.0D, Math.min(1.0D, dot))));
     }
+
 
     private boolean isFlying(PacketType type) {
         return type == PacketType.Play.Client.POSITION

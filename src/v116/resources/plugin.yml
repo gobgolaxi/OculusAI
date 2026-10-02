@@ -8,15 +8,13 @@ author: everyone
 description: Aim analysis for Paper, backed by a neural network served over HTTP.
 
 depend: [ProtocolLib]
+softdepend: [WorldGuard, WorldEdit]
 
 commands:
   yuppyai:
     description: Main YuppyAI command.
     usage: /yai help
     aliases: [yai, ai]
-  spawn:
-    description: Teleport back to the test arena spawn.
-    usage: /spawn
 
 permissions:
   yuppyai.command:

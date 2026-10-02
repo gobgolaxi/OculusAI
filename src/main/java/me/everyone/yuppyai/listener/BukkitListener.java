@@ -44,6 +44,7 @@ public final class BukkitListener implements Listener {
 
         plugin.tracker().forget(player);
         plugin.displays().forget(player.getUniqueId());
+        plugin.monitors().forget(player.getUniqueId());
         plugin.punishments().forget(player.getUniqueId());
         plugin.journal().forgetWatcher(player.getUniqueId());
         if (dropState) {

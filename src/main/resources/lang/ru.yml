@@ -221,6 +221,13 @@ prob:
   not-watching: "<gray>Ты ни за кем не наблюдал."
   watching: "<gray>Смотришь за <white>%player%<gray>. Буфер <white>%buffer%<gray>, последний reading <white>%probability%<gray>, окон проанализировано <white>%windows%"
   no-data: "<dark_gray>Пока ничего не проанализировано - readings появляются только во время боя."
+monitor-cmd:
+  started: "<gray>Слежу за <white>%players%<gray>. Обновление каждые <white>%seconds%s<gray> — остановить: <white>/yai monitor stop"
+  started-all: "<gray>Слежу за всеми. Обновление каждые <white>%seconds%s<gray> — остановить: <white>/yai monitor stop"
+  stopped: "<gray>Остановлено."
+  not-watching: "<gray>Ты ни за чем не следил."
+  empty: "<dark_gray>Пока ни у кого нет данных. Они появляются только во время боя."
+  more: "<dark_gray>... и ещё %value%."
 forget:
   usage: "<red>Использование: <white>%value%"
   done: "<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> <white>0%case%%dropped%<gray>. Подозрение начинается заново."

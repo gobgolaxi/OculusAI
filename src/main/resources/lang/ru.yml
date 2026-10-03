@@ -18,6 +18,7 @@ help:
   command:
     help: "Показать этот список."
     journal: "Открыть журнал подозрений."
+    history: "Листать историю детектов игрока."
     prob: "Следить за Prob игрока в реальном времени."
     player: "Показать данные подозрений игрока."
     vanish: "Войти или выйти из скрытого наблюдения."
@@ -169,6 +170,53 @@ sessions:
   failed: "<red>Сервис не ответил или отклонил изменение."
   deleted: "<gray>Удалено <white>%value%"
   updated: "<gray>Обновлено <white>%value%"
+history:
+  title: "История <dark_gray>%player%"
+  no-data: "<dark_gray>У тебя пока нет данных — readings появляются только во время боя."
+  gone: "<dark_gray>Этот игрок уже не отслеживается."
+  status:
+    online: "<gray>Статус: <green>онлайн"
+    offline: "<gray>Статус: <dark_gray>оффлайн"
+  empty:
+    name: "<red>Пока ничего нет"
+    line1: "<gray>Readings появляются только во время боя."
+    line2: "<gray>Поиграй с манекеном: <white>/yai npc"
+  time:
+    seconds: "%value%с назад"
+    minutes: "%value%м назад"
+    hours: "%value%ч назад"
+    days: "%value%д назад"
+  sort:
+    name: "<aqua>Сортировка"
+    freshness: "<white>по свежести"
+    suspicion: "<white>по подозрительности"
+    current: "<gray>Сейчас: <white>%value%"
+    freshness-hint: "<dark_gray>Новые снятия слева."
+    suspicion-hint: "<dark_gray>Самые подозрительные сверху."
+    click: "<yellow>Нажми, чтобы поменять"
+  page:
+    name: "<white>Страница <gray>%page%<white>/<gray>%pages%"
+    range: "<gray>Показано <white>%from%<gray>-<white>%to%<gray> из <white>%total%"
+  legend:
+    clean:
+      name: "<green>Чисто"
+      lore: "<gray>Модель не детектит и буфер не растёт."
+    hot:
+      name: "<red>Детект"
+      lore: "<gray>Модель сработала или буфер поднимается."
+  target:
+    peak: "<gray>Пик буфера в истории: <white>%value%"
+    windows: "<gray>Окон проанализировано: <white>%value%"
+    readings: "<gray>Снятий в истории: <white>%value%"
+  reading:
+    time: "<gray>Когда: <white>%value%"
+    probability: "<gray>Prob: <white>%value%"
+    buffer: "<gray>Буфер: <white>%value%<dark_gray>/%max%"
+    rising: "<gray>Буфер растёт: <red>+%value%"
+    falling: "<gray>Буфер падает: <green>-%value%"
+    steady: "<dark_gray>Буфер не меняется"
+    hot: "<red>Детект: модель подметила или буфер растёт"
+    clean: "<green>Модель не детектит"
 journal:
   title: "Журнал"
   refresh:

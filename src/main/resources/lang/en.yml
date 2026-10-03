@@ -18,6 +18,7 @@ help:
   command:
     help: "Show this list."
     journal: "Open the live suspicion journal."
+    history: "Browse a player's detection history."
     prob: "Watch a player's live aim reading."
     player: "View a player's suspicion data."
     vanish: "Enter or leave hidden spectator observation."
@@ -169,6 +170,53 @@ sessions:
   failed: "<red>The service did not answer or refused the change."
   deleted: "<gray>Deleted <white>%value%"
   updated: "<gray>Updated <white>%value%"
+history:
+  title: "History <dark_gray>%player%"
+  no-data: "<dark_gray>No data for you yet - readings only appear while fighting."
+  gone: "<dark_gray>This player is no longer tracked."
+  status:
+    online: "<gray>Status: <green>online"
+    offline: "<gray>Status: <dark_gray>offline"
+  empty:
+    name: "<red>Nothing yet"
+    line1: "<gray>Readings only appear while fighting."
+    line2: "<gray>Try a sparring dummy: <white>/yai npc"
+  time:
+    seconds: "%value%s ago"
+    minutes: "%value%m ago"
+    hours: "%value%h ago"
+    days: "%value%d ago"
+  sort:
+    name: "<aqua>Sort"
+    freshness: "<white>by freshness"
+    suspicion: "<white>by suspicion"
+    current: "<gray>Now: <white>%value%"
+    freshness-hint: "<dark_gray>Newest readings first."
+    suspicion-hint: "<dark_gray>Worst readings on top."
+    click: "<yellow>Click to switch"
+  page:
+    name: "<white>Page <gray>%page%<white>/<gray>%pages%"
+    range: "<gray>Showing <white>%from%<gray>-<white>%to%<gray> of <white>%total%"
+  legend:
+    clean:
+      name: "<green>Clean"
+      lore: "<gray>The model is not calling it and the buffer is flat."
+    hot:
+      name: "<red>Detection"
+      lore: "<gray>The model flagged it or the buffer is climbing."
+  target:
+    peak: "<gray>Peak buffer in history: <white>%value%"
+    windows: "<gray>Windows analysed: <white>%value%"
+    readings: "<gray>Readings in history: <white>%value%"
+  reading:
+    time: "<gray>When: <white>%value%"
+    probability: "<gray>Prob: <white>%value%"
+    buffer: "<gray>Buffer: <white>%value%<dark_gray>/%max%"
+    rising: "<gray>Buffer rising: <red>+%value%"
+    falling: "<gray>Buffer falling: <green>-%value%"
+    steady: "<dark_gray>Buffer unchanged"
+    hot: "<red>Detection: model called it or the buffer is rising"
+    clean: "<green>The model is not calling it"
 journal:
   title: "Journal"
   refresh:

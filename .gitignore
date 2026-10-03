@@ -13,6 +13,8 @@ yaiapi_backup/
 
 # Collected data and fitted models are per-server, never shared.
 **/data/
+# ...except the plugin's own data package, which is source code, not output.
+!src/main/java/me/everyone/yuppyai/data/
 __pycache__/
 *.pyc
 .venv/

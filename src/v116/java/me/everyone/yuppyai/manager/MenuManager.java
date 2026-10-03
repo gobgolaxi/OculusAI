@@ -2,7 +2,9 @@ package me.everyone.yuppyai.manager;
 
 import com.google.gson.JsonObject;
 import me.everyone.yuppyai.YuppyAI;
+import me.everyone.yuppyai.data.PlayerData;
 import me.everyone.yuppyai.gui.DashboardMenu;
+import me.everyone.yuppyai.gui.HistoryMenu;
 import me.everyone.yuppyai.gui.JournalMenu;
 import me.everyone.yuppyai.gui.Menu;
 import me.everyone.yuppyai.gui.SessionsMenu;
@@ -13,14 +15,24 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.InventoryHolder;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
 public final class MenuManager implements Manager, Listener {
 
     private final YuppyAI plugin;
     private volatile JsonObject lastStatus;
     private volatile JsonObject lastSessions;
+    private final Map<UUID, HistorySort> historySorts = new ConcurrentHashMap<>();
 
     public MenuManager(YuppyAI plugin) {
         this.plugin = plugin;
+    }
+
+    @Override
+    public void disable() {
+        historySorts.clear();
     }
 
     @Override
@@ -58,6 +70,24 @@ public final class MenuManager implements Manager, Listener {
     public void openJournal(Player player) {
         plugin.getServer().getScheduler().runTask(plugin,
                 () -> new JournalMenu(plugin, player).open());
+    }
+
+    public void openHistory(Player viewer, PlayerData target) {
+        plugin.getServer().getScheduler().runTask(plugin,
+                () -> new HistoryMenu(plugin, viewer, target.uuid(), target.name(), 0).open());
+    }
+
+    /**
+     * Which way this viewer wants their readings laid out. Kept per viewer so a
+     * moderator who cares about "worst first" does not have to flip the button
+     * again on every player they look at.
+     */
+    public HistorySort historySort(UUID viewer) {
+        return historySorts.getOrDefault(viewer, HistorySort.FRESHNESS);
+    }
+
+    public void setHistorySort(UUID viewer, HistorySort sort) {
+        historySorts.put(viewer, sort);
     }
 
     public JsonObject lastStatus() {

@@ -18,6 +18,7 @@ public final class LangManager implements Manager {
 
     private final YuppyAI plugin;
     private YamlConfiguration lang;
+    private YamlConfiguration defaults;
 
     public LangManager(YuppyAI plugin) {
         this.plugin = plugin;
@@ -48,6 +49,8 @@ public final class LangManager implements Manager {
             file = new File(folder, "en.yml");
         }
         lang = loadConfiguration(file, "lang/" + file.getName());
+        defaults = loadBundled("lang/" + file.getName());
+        adoptNewKeys(file);
     }
 
     private void ensureBundledFile(String path) {
@@ -116,24 +119,85 @@ public final class LangManager implements Manager {
         }
     }
 
-    public String text(String key) {
-        if (lang == null) {
-            return key;
+    /**
+     * Reads the bundled defaults that ship inside the jar, used both as a
+     * fallback for keys the operator's file is missing and as the source of keys
+     * to write into that file on load.
+     */
+    private YamlConfiguration loadBundled(String bundledPath) {
+        try (InputStream input = plugin.getResource(bundledPath)) {
+            if (input == null) {
+                plugin.getLogger().warning("Bundled language " + bundledPath + " is missing; using empty defaults");
+                return new YamlConfiguration();
+            }
+            return YamlConfiguration.loadConfiguration(new InputStreamReader(input, StandardCharsets.UTF_8));
+        } catch (IOException exception) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING,
+                    "Could not read bundled language " + bundledPath + "; using empty defaults", exception);
+            return new YamlConfiguration();
         }
-        return Msg.parse(lang.getString(key, key));
+    }
+
+    /**
+     * Copies keys the bundled language has and the operator's file does not into
+     * that file.
+     *
+     * <p>Without this a lang file written by an older version keeps exactly the
+     * keys it was created with, so every string added later shows up in game as
+     * its raw key. Existing values are never touched, so anything the operator
+     * translated or reworded stays theirs.
+     */
+    private void adoptNewKeys(File file) {
+        if (defaults == null || lang == null || !file.isFile()) {
+            return;
+        }
+
+        boolean changed = false;
+        for (String key : defaults.getKeys(true)) {
+            if (defaults.isConfigurationSection(key) || lang.contains(key)) {
+                continue;
+            }
+            String parent = key.contains(".") ? key.substring(0, key.lastIndexOf('.')) : "";
+            if (!parent.isEmpty() && lang.contains(parent) && !lang.isConfigurationSection(parent)) {
+                // The operator turned that section into a plain value on purpose.
+                continue;
+            }
+            lang.set(key, defaults.get(key));
+            changed = true;
+        }
+
+        if (!changed) {
+            return;
+        }
+        try {
+            lang.save(file);
+        } catch (IOException exception) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING,
+                    "Could not save new language keys into " + file.getAbsolutePath()
+                            + "; they still resolve from the bundled defaults", exception);
+        }
+    }
+
+    public String text(String key) {
+        return Msg.parse(raw(key, key));
     }
 
     public String text(String key, Map<String, String> placeholders) {
-        if (lang == null) {
-            return key;
-        }
-        return Msg.parse(lang.getString(key, key), placeholders);
+        return Msg.parse(raw(key, key), placeholders);
     }
 
     public String textOr(String key, String fallback) {
-        if (lang == null) {
-            return Msg.parse(fallback);
+        return Msg.parse(raw(key, fallback));
+    }
+
+    /** The operator's value, the bundled one when they have none, else the given fallback. */
+    private String raw(String key, String fallback) {
+        if (lang != null && lang.contains(key)) {
+            return lang.getString(key, fallback);
         }
-        return Msg.parse(lang.getString(key, fallback));
+        if (defaults != null && defaults.contains(key)) {
+            return defaults.getString(key, fallback);
+        }
+        return fallback;
     }
 }

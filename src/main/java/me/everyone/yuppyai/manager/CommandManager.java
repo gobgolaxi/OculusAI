@@ -6,6 +6,7 @@ import me.everyone.yuppyai.command.impl.DashboardCommand;
 import me.everyone.yuppyai.command.impl.DataCommand;
 import me.everyone.yuppyai.command.impl.ForgetCommand;
 import me.everyone.yuppyai.command.impl.HelpCommand;
+import me.everyone.yuppyai.command.impl.HistoryCommand;
 import me.everyone.yuppyai.command.impl.JournalCommand;
 import me.everyone.yuppyai.command.impl.MonitorCommand;
 import me.everyone.yuppyai.command.impl.NpcCommand;
@@ -39,6 +40,7 @@ public final class CommandManager implements Manager, CommandExecutor, TabComple
         subCommands.clear();
         subCommands.add(new HelpCommand(plugin, this));
         subCommands.add(new JournalCommand(plugin));
+        subCommands.add(new HistoryCommand(plugin));
         subCommands.add(new ProbCommand(plugin));
         subCommands.add(new MonitorCommand(plugin));
         subCommands.add(new PlayerCommand(plugin));

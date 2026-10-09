@@ -21,6 +21,7 @@ import me.everyone.yuppyai.command.impl.NpcCommand;
 import me.everyone.yuppyai.command.impl.PlayerCommand;
 import me.everyone.yuppyai.command.impl.ProbCommand;
 import me.everyone.yuppyai.command.impl.ReloadCommand;
+import me.everyone.yuppyai.command.impl.ReportCommand;
 import me.everyone.yuppyai.command.impl.VanishCommand;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -51,6 +52,7 @@ public final class CommandManager implements Manager, CommandExecutor, TabComple
         subCommands.add(new VanishCommand(plugin));
         subCommands.add(new ForgetCommand(plugin));
         subCommands.add(new DataCommand(plugin));
+        subCommands.add(new ReportCommand(plugin));
         subCommands.add(new NpcCommand(plugin));
         subCommands.add(new ConnectCommand(plugin));
         subCommands.add(new DashboardCommand(plugin));

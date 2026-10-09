@@ -122,6 +122,10 @@ public final class PunishmentManager implements Manager {
         if (!broadcast.isBlank()) {
             announce(Msg.parse(plugin.config().prefix() + broadcast, placeholders));
         }
+
+        plugin.api().reportKick(data.name(), data.uuid().toString(),
+                data.probability(), data.buffer(),
+                command.isBlank() ? "kick" : "command");
     }
 
     private void announce(String message) {

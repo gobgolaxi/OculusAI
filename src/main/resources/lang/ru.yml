@@ -277,6 +277,10 @@ prob:
   not-watching: "<gray>Ты ни за кем не наблюдал."
   watching: "<gray>Смотришь за <white>%player%<gray>. Буфер <white>%buffer%<gray>, последний reading <white>%probability%<gray>, окон проанализировано <white>%windows%"
   no-data: "<dark_gray>Пока ничего не проанализировано - readings появляются только во время боя."
+report:
+  usage: "<red>Использование: <white>%value%"
+  sent: "<gray>Жалоба на <white>%player%<gray> отправлена в панель."
+  no-reason: "без причины"
 connect:
   asking: "<gray>Запрашиваю ссылку у сервиса..."
   open: "<gray>Открой ссылку под своим аккаунтом, чтобы привязать сервер:"

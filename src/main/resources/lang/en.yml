@@ -272,6 +272,10 @@ player-cmd:
   peak-buffer: "<gray>Peak buffer: <white>%value%"
   prob-history: "<gray>Probability history:"
   no-data: "<dark_gray>No data yet — readings only appear while fighting."
+report:
+  usage: "<red>Usage: <white>%value%"
+  sent: "<gray>Report on <white>%player%<gray> sent to the panel."
+  no-reason: "no reason given"
 connect:
   asking: "<gray>Asking the service for a link..."
   open: "<gray>Open this link while signed in to bind the server:"

@@ -277,6 +277,11 @@ prob:
   not-watching: "<gray>Ты ни за кем не наблюдал."
   watching: "<gray>Смотришь за <white>%player%<gray>. Буфер <white>%buffer%<gray>, последний reading <white>%probability%<gray>, окон проанализировано <white>%windows%"
   no-data: "<dark_gray>Пока ничего не проанализировано - readings появляются только во время боя."
+setup:
+  not-connected: "<red>Античит не подключён к API — анализ не работает."
+  how: "<gray>Получи ключ и привяжи сервер:"
+  hover: "<gray>Нажми, чтобы открыть"
+  command: "<gray>Или прямо здесь: <white>%value%"
 report:
   usage: "<red>Использование: <white>%value%"
   sent: "<gray>Жалоба на <white>%player%<gray> отправлена в панель."

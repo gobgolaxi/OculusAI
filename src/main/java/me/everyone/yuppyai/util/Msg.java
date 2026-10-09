@@ -34,6 +34,10 @@ public final class Msg {
         return result;
     }
 
+    public static String strip(String input) {
+        return parse(input == null ? "" : input).replaceAll("\u00a7[0-9a-fk-orx]", "");
+    }
+
     private static String colourize(String input) {
         String gradiented = applyGradients(input);
         StringBuilder out = new StringBuilder();

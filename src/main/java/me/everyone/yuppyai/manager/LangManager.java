@@ -171,6 +171,10 @@ public final class LangManager implements Manager {
         return Msg.parse(raw(key, key), placeholders);
     }
 
+    public String plain(String key) {
+        return Msg.strip(raw(key, key));
+    }
+
     public String textOr(String key, String fallback) {
         return Msg.parse(raw(key, fallback));
     }

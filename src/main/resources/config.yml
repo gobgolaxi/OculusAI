@@ -9,6 +9,8 @@ api:
   timeout-ms: 1500
   key: ""
   dataset-key: ""
+  # Куда отправлять за ключом, если он не указан.
+  site: "https://silentiumdlc.space"
 
 analysis:
   window-ticks: 20

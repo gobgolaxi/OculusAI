@@ -14,6 +14,7 @@ public final class ConfigManager implements Manager {
     private String apiUrl = "http://127.0.0.1:8000";
     private int apiTimeoutMs = 1500;
     private String apiKey = "";
+    private String site = "https://silentiumdlc.space";
     private String datasetKey = "";
 
     private int windowTicks = 20;
@@ -85,6 +86,7 @@ public final class ConfigManager implements Manager {
         apiUrl = stripTrailingSlash(url == null || url.isBlank() ? "http://127.0.0.1:8000" : url);
         apiTimeoutMs = config.getInt("api.timeout-ms", 1500);
         apiKey = config.getString("api.key", "");
+        site = stripTrailingSlash(config.getString("api.site", "https://silentiumdlc.space"));
         datasetKey = config.getString("api.dataset-key", "");
 
         windowTicks = Math.max(3, config.getInt("analysis.window-ticks", 20));
@@ -153,6 +155,14 @@ public final class ConfigManager implements Manager {
 
     public int apiTimeoutMs() {
         return apiTimeoutMs;
+    }
+
+    public String site() {
+        return site;
+    }
+
+    public boolean connected() {
+        return !apiKey.isBlank();
     }
 
     public String apiKey() {

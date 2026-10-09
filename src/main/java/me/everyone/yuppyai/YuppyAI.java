@@ -23,6 +23,7 @@ import me.everyone.yuppyai.manager.NpcManager;
 import me.everyone.yuppyai.manager.PacketManager;
 import me.everyone.yuppyai.manager.ProbConfigManager;
 import me.everyone.yuppyai.manager.PunishmentManager;
+import me.everyone.yuppyai.manager.SetupManager;
 import me.everyone.yuppyai.manager.TestServerManager;
 import me.everyone.yuppyai.manager.ThemeManager;
 import me.everyone.yuppyai.manager.TrackerManager;
@@ -50,6 +51,7 @@ public final class YuppyAI extends JavaPlugin {
     private MenuManager menuManager;
     private CommandManager commandManager;
     private NpcManager npcManager;
+    private SetupManager setupManager;
     private TestServerManager testServerManager;
 
     @Override
@@ -74,6 +76,7 @@ public final class YuppyAI extends JavaPlugin {
         menuManager = register(new MenuManager(this));
         commandManager = register(new CommandManager(this));
         npcManager = register(new NpcManager(this));
+        setupManager = register(new SetupManager(this));
         testServerManager = register(new TestServerManager(this));
 
         for (Manager manager : managers.values()) {
@@ -185,6 +188,10 @@ public final class YuppyAI extends JavaPlugin {
 
     public NpcManager npcs() {
         return npcManager;
+    }
+
+    public SetupManager setup() {
+        return setupManager;
     }
 
     public TestServerManager testServer() {

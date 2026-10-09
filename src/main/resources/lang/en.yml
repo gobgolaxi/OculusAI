@@ -272,6 +272,11 @@ player-cmd:
   peak-buffer: "<gray>Peak buffer: <white>%value%"
   prob-history: "<gray>Probability history:"
   no-data: "<dark_gray>No data yet — readings only appear while fighting."
+setup:
+  not-connected: "<red>Anticheat is not connected to the API - nothing is being analysed."
+  how: "<gray>Get a key and bind this server:"
+  hover: "<gray>Click to open"
+  command: "<gray>Or right here: <white>%value%"
 report:
   usage: "<red>Usage: <white>%value%"
   sent: "<gray>Report on <white>%player%<gray> sent to the panel."

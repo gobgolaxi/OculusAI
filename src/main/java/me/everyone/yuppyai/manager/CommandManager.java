@@ -1,10 +1,17 @@
 package me.everyone.yuppyai.manager;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.command.SubCommand;
 import me.everyone.yuppyai.command.impl.DashboardCommand;
 import me.everyone.yuppyai.command.impl.DataCommand;
+import me.everyone.yuppyai.command.impl.DiagCommand;
 import me.everyone.yuppyai.command.impl.ForgetCommand;
+import me.everyone.yuppyai.command.impl.GuideCommand;
 import me.everyone.yuppyai.command.impl.HelpCommand;
 import me.everyone.yuppyai.command.impl.HistoryCommand;
 import me.everyone.yuppyai.command.impl.JournalCommand;
@@ -21,11 +28,6 @@ import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
-
 public final class CommandManager implements Manager, CommandExecutor, TabCompleter {
 
     private final YuppyAI plugin;
@@ -39,6 +41,7 @@ public final class CommandManager implements Manager, CommandExecutor, TabComple
     public void enable() {
         subCommands.clear();
         subCommands.add(new HelpCommand(plugin, this));
+        subCommands.add(new GuideCommand(plugin));
         subCommands.add(new JournalCommand(plugin));
         subCommands.add(new HistoryCommand(plugin));
         subCommands.add(new ProbCommand(plugin));
@@ -49,6 +52,7 @@ public final class CommandManager implements Manager, CommandExecutor, TabComple
         subCommands.add(new DataCommand(plugin));
         subCommands.add(new NpcCommand(plugin));
         subCommands.add(new DashboardCommand(plugin));
+        subCommands.add(new DiagCommand(plugin));
         subCommands.add(new ReloadCommand(plugin));
 
         PluginCommand command = plugin.getCommand("yuppyai");
@@ -78,7 +82,7 @@ public final class CommandManager implements Manager, CommandExecutor, TabComple
         SubCommand subCommand = find(args[0]);
         if (subCommand == null) {
             sender.sendMessage(plugin.config().prefix() + plugin.lang().text("command.unknown",
-                    java.util.Map.of("label", label)));
+                    Map.of("label", label)));
             return true;
         }
         if (subCommand.permission() != null && !sender.hasPermission(subCommand.permission())) {

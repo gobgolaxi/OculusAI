@@ -9,27 +9,11 @@ public final class FeatureExtractor {
     private static final double EPSILON = 1.0E-6D;
     private static final double QUANTUM_RESOLUTION = 1.0E-4D;
 
-    // Every _rel feature divides by the median yaw delta, so a window whose
-    // median delta collapses - the player held the mouse still, or the server
-    // replayed the same rotation for half the window - turns all six of them
-    // into noise. With the old EPSILON floor that noise reached 1e7, a value
-    // three million times a single mouse pixel, and it reached the dataset:
-    // 2% of stored v3 windows were such artefacts. Clamping the divisor would
-    // have invented a number that means nothing. The window is not weak aim,
-    // it is no aim at all, so it is refused instead. This floor is a superset
-    // of the collapsed case, so every window that carries a real median is
-    // scored exactly as before and the recorded datasets stay valid.
     private static final double MIN_MEANINGFUL_DELTA = 1.0E-4D;
 
     private FeatureExtractor() {
     }
 
-    /**
-     * Extracts the feature vector for one window, or returns null when the
-     * window never moved and therefore describes nobody's aim. Callers must
-     * skip a null: a skipped window is neither scored, nor recorded, nor
-     * allowed to touch the player's baseline.
-     */
     public static FeatureVector extract(List<RotationSample> window, double baselineScale) {
         if (window.size() < 3) {
             throw new IllegalArgumentException("a window needs at least three samples");
@@ -98,6 +82,20 @@ public final class FeatureExtractor {
                 aimErrorMean,
                 standardDeviation(aimErrors, aimErrorMean),
                 aimErrors.isEmpty() ? 0.0D : Collections.min(aimErrors));
+    }
+
+    public static double critRate(List<RotationSample> window) {
+        int attacks = 0;
+        int crits = 0;
+        for (RotationSample sample : window) {
+            if (sample.attacked()) {
+                attacks++;
+                if (sample.crit()) {
+                    crits++;
+                }
+            }
+        }
+        return attacks > 0 ? crits / (double) attacks : 0.0D;
     }
 
     public static double scaleOf(List<RotationSample> window) {

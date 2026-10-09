@@ -1,12 +1,10 @@
 package me.everyone.yuppyai.analysis;
 
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -22,7 +20,6 @@ class FeatureExtractorTest {
         return new RotationSample((float) yaw, (float) pitch, false, Double.NaN);
     }
 
-    /** A window that only turns: real, human-scale movement every tick. */
     private static List<RotationSample> movingWindow(int ticks) {
         List<RotationSample> window = new ArrayList<>(ticks);
         double yaw = 0.0D;
@@ -35,7 +32,6 @@ class FeatureExtractorTest {
         return window;
     }
 
-    /** The shape that used to be recorded: still, then one flick. */
     private static List<RotationSample> stillThenFlickWindow(int ticks, int stillTicks) {
         List<RotationSample> window = new ArrayList<>(ticks);
         for (int i = 0; i < ticks; i++) {
@@ -61,9 +57,6 @@ class FeatureExtractorTest {
     @Test
     @DisplayName("a refused window is exactly the one whose median delta collapsed")
     void refusalMatchesZeroRatio() {
-        // A window where the majority of ticks are identical is the only way
-        // the median delta can be zero, and zero_ratio is what the dataset
-        // stores - so the dataset's own rows can be checked against this rule.
         for (int stillTicks = 10; stillTicks <= 19; stillTicks++) {
             List<RotationSample> window = stillThenFlickWindow(20, stillTicks);
             boolean medianIsZero = (20 - 1 - stillTicks) < 10;

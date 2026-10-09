@@ -3,13 +3,13 @@ package me.everyone.yuppyai.manager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import me.everyone.yuppyai.YuppyAI;
-
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -17,12 +17,11 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
-import org.bukkit.scheduler.BukkitTask;
+import me.everyone.yuppyai.YuppyAI;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
-
-import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Locale;
+import org.bukkit.scheduler.BukkitTask;
 
 public final class ApiManager implements Manager {
 
@@ -100,11 +99,11 @@ public final class ApiManager implements Manager {
                     .getMethod("getInstance").invoke(null);
             Object platform = worldGuard.getClass().getMethod("getPlatform").invoke(worldGuard);
             Object container = platform.getClass().getMethod("getRegionContainer").invoke(platform);
-            Object manager = container.getClass().getMethod("get", org.bukkit.World.class)
+            Object manager = container.getClass().getMethod("get", World.class)
                     .invoke(container, player.getWorld());
             if (manager == null) return false;
             Object vector = Class.forName("com.sk89q.worldedit.bukkit.BukkitAdapter")
-                    .getMethod("asBlockVector", org.bukkit.Location.class)
+                    .getMethod("asBlockVector", Location.class)
                     .invoke(null, player.getLocation());
             Object set = manager.getClass().getMethod("getApplicableRegions", vector.getClass())
                     .invoke(manager, vector);
@@ -116,7 +115,6 @@ public final class ApiManager implements Manager {
                 if (id.equalsIgnoreCase(wanted)) return true;
             }
         } catch (ReflectiveOperationException | LinkageError ignored) {
-            // WorldGuard is optional. A region exclusion cannot match without it.
         }
         return false;
     }
@@ -221,14 +219,6 @@ public final class ApiManager implements Manager {
 
     public CompletableFuture<JsonObject> status() {
         return get("/status");
-    }
-
-    public CompletableFuture<JsonObject> moderateChat(String player, String uuid, String message) {
-        JsonObject body = new JsonObject();
-        body.addProperty("player", player);
-        body.addProperty("uuid", uuid);
-        body.addProperty("message", message);
-        return post("/moderate/chat", body);
     }
 
     private CompletableFuture<JsonObject> post(String path, JsonObject body) {

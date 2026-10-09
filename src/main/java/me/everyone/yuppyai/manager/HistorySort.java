@@ -2,13 +2,6 @@ package me.everyone.yuppyai.manager;
 
 import java.util.Locale;
 
-/**
- * Orderings the history menu can lay a player's readings out in.
- *
- * <p>{@link #FRESHNESS} answers "what happened lately", {@link #SUSPICION}
- * answers "what looks worst". The viewer picks between them by clicking a
- * button, and the choice sticks per viewer.
- */
 public enum HistorySort {
 
     FRESHNESS,

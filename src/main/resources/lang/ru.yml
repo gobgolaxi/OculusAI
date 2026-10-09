@@ -88,12 +88,6 @@ dashboard:
     name: "<aqua>Игроки"
     online: "<gray>Онлайн: <white>%value%"
     click: "<yellow>Нажми, чтобы посмотреть live readings"
-  automod:
-    name: "<gold>Чат-автомод"
-    state-on: "<gray>Состояние: <green>вкл"
-    state-off: "<gray>Состояние: <red>выкл"
-    line1: "<gray>Проверяет сообщения перед тем,"
-    line2: "<gray>как они попадут в общий чат."
   punish:
     name: "<red>Действовать по детектам"
     state-on: "<gray>Состояние: <red>включено"
@@ -173,7 +167,7 @@ sessions:
 history:
   title: "История <dark_gray>%player%"
   no-data: "<dark_gray>У тебя пока нет данных — readings появляются только во время боя."
-  gone: "<dark_gray>Этот игрок уже не отслеживается."
+  gone: "<dark_gray>Для этого игрока снятий не сохранено."
   status:
     online: "<gray>Статус: <green>онлайн"
     offline: "<gray>Статус: <dark_gray>оффлайн"
@@ -197,17 +191,23 @@ history:
   page:
     name: "<white>Страница <gray>%page%<white>/<gray>%pages%"
     range: "<gray>Показано <white>%from%<gray>-<white>%to%<gray> из <white>%total%"
-  legend:
-    clean:
-      name: "<green>Чисто"
-      lore: "<gray>Модель не детектит и буфер не растёт."
-    hot:
-      name: "<red>Детект"
-      lore: "<gray>Модель сработала или буфер поднимается."
+  level:
+    zero: "<green>Чисто: буфер 0"
+    low: "<yellow>Копится: буфер до <white>%value%"
+    mid: "<gold>Высокий: <white>%value%<gold> - <white>%next%"
+    high: "<red>Критично: от <white>%value%<red> до <white>%max%"
   target:
     peak: "<gray>Пик буфера в истории: <white>%value%"
     windows: "<gray>Окон проанализировано: <white>%value%"
     readings: "<gray>Снятий в истории: <white>%value%"
+    last-seen: "<gray>Последний раз: <white>%value%"
+  events: "<gold>Что произошло:"
+  event-line: "<dark_gray>- <gray>%age% <dark_gray>| <white>%type% <dark_gray>%detail%"
+  event:
+    kick: "кикнут"
+    quit: "вышел"
+    punish: "наказан"
+  unknown-player: "<red>Истории для <white>%player%<red> не сохранено."
   reading:
     time: "<gray>Когда: <white>%value%"
     probability: "<gray>Prob: <white>%value%"
@@ -215,8 +215,7 @@ history:
     rising: "<gray>Буфер растёт: <red>+%value%"
     falling: "<gray>Буфер падает: <green>-%value%"
     steady: "<dark_gray>Буфер не меняется"
-    hot: "<red>Детект: модель подметила или буфер растёт"
-    clean: "<green>Модель не детектит"
+    flagged: "<red>Prob выше порога сомнения <white>%value%"
 journal:
   title: "Журнал"
   refresh:
@@ -269,13 +268,21 @@ prob:
   not-watching: "<gray>Ты ни за кем не наблюдал."
   watching: "<gray>Смотришь за <white>%player%<gray>. Буфер <white>%buffer%<gray>, последний reading <white>%probability%<gray>, окон проанализировано <white>%windows%"
   no-data: "<dark_gray>Пока ничего не проанализировано - readings появляются только во время боя."
+guide:
+  title: "<white>Как пользоваться"
+  what: "ИИ-античит по аиму. Смотрит бои и оценивает их."
+  watch: "<white>/yai monitor<gray> - живой список, красная точка = подозрительно."
+  check: "<white>/yai prob ник<gray> - следить за одним игроком."
+  act: "<white>/yai journal<gray> - что уже сработало. <white>/yai history ник<gray> - прошлые показания."
+  numbers: "Проценты - это сейчас, полоска - буфер. Алерт на <white>%alert%<gray>, наказание на <white>%punish%<gray>."
+  test: "<white>/yai npc<gray> - заспавнить манекен и проверить самому."
 monitor-cmd:
-  started: "<gray>Слежу за <white>%players%<gray>. Обновление каждые <white>%seconds%s<gray> — остановить: <white>/yai monitor stop"
-  started-all: "<gray>Слежу за всеми. Обновление каждые <white>%seconds%s<gray> — остановить: <white>/yai monitor stop"
-  stopped: "<gray>Остановлено."
-  not-watching: "<gray>Ты ни за чем не следил."
-  empty: "<dark_gray>Пока ни у кого нет данных. Они появляются только во время боя."
-  more: "<dark_gray>... и ещё %value%."
+  started: "<gray>Слежу за <white>%players%<gray>."
+  started-all: "<gray>Слежу за всеми."
+  stopped: "<gray>Монитор выключен."
+  not-watching: "<gray>Монитор выключен."
+  empty: "<dark_gray>Пока пусто."
+  more: "<dark_gray>+%value% ещё"
 forget:
   usage: "<red>Использование: <white>%value%"
   done: "<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> <white>0%case%%dropped%<gray>. Подозрение начинается заново."
@@ -297,6 +304,7 @@ npc:
   spawned: "<gray>Заспавнено манекенов: <white>%value%<gray>."
   cleared: "<gray>Манекены убраны."
   full: "<red>Уже достигнут лимит манекенов."
+  killed: "<gray>Манекен <white>%value%<gray> повержен."
 dummy:
   title: "Настройки манекена"
   hp:

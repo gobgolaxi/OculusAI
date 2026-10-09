@@ -1,9 +1,5 @@
 package me.everyone.yuppyai.manager;
 
-import me.everyone.yuppyai.YuppyAI;
-import me.everyone.yuppyai.util.Msg;
-import org.bukkit.configuration.file.YamlConfiguration;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +9,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Map;
+import java.util.logging.Level;
+import me.everyone.yuppyai.YuppyAI;
+import me.everyone.yuppyai.util.Msg;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 public final class LangManager implements Manager {
 
@@ -72,7 +72,7 @@ public final class LangManager implements Manager {
             }
             Files.copy(input, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException exception) {
-            plugin.getLogger().log(java.util.logging.Level.WARNING,
+            plugin.getLogger().log(Level.WARNING,
                     "Could not write bundled resource " + path + " to " + file.getAbsolutePath(), exception);
         }
     }
@@ -119,11 +119,6 @@ public final class LangManager implements Manager {
         }
     }
 
-    /**
-     * Reads the bundled defaults that ship inside the jar, used both as a
-     * fallback for keys the operator's file is missing and as the source of keys
-     * to write into that file on load.
-     */
     private YamlConfiguration loadBundled(String bundledPath) {
         try (InputStream input = plugin.getResource(bundledPath)) {
             if (input == null) {
@@ -138,15 +133,6 @@ public final class LangManager implements Manager {
         }
     }
 
-    /**
-     * Copies keys the bundled language has and the operator's file does not into
-     * that file.
-     *
-     * <p>Without this a lang file written by an older version keeps exactly the
-     * keys it was created with, so every string added later shows up in game as
-     * its raw key. Existing values are never touched, so anything the operator
-     * translated or reworded stays theirs.
-     */
     private void adoptNewKeys(File file) {
         if (defaults == null || lang == null || !file.isFile()) {
             return;
@@ -159,7 +145,6 @@ public final class LangManager implements Manager {
             }
             String parent = key.contains(".") ? key.substring(0, key.lastIndexOf('.')) : "";
             if (!parent.isEmpty() && lang.contains(parent) && !lang.isConfigurationSection(parent)) {
-                // The operator turned that section into a plain value on purpose.
                 continue;
             }
             lang.set(key, defaults.get(key));
@@ -190,7 +175,6 @@ public final class LangManager implements Manager {
         return Msg.parse(raw(key, fallback));
     }
 
-    /** The operator's value, the bundled one when they have none, else the given fallback. */
     private String raw(String key, String fallback) {
         if (lang != null && lang.contains(key)) {
             return lang.getString(key, fallback);

@@ -35,12 +35,9 @@ permissions:
   yuppyai.bypass:
     description: Never analysed.
     default: false
-  yuppyai.automod.alerts:
-    description: Receive AutoMod block notices.
-    default: op
-  yuppyai.automod.bypass:
-    description: Bypass chat AutoMod.
-    default: false
   yuppyai.npc:
     description: Spawn a sparring dummy that attacks you.
     default: false
+  yuppyai.diag:
+    description: Inspect why a player's windows are or are not analysed.
+    default: op

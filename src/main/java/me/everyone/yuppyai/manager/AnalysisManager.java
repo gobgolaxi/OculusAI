@@ -1,24 +1,25 @@
 package me.everyone.yuppyai.manager;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.yuppyai.YuppyAI;
+import me.everyone.yuppyai.analysis.CritTiming;
 import me.everyone.yuppyai.analysis.FeatureExtractor;
+import me.everyone.yuppyai.analysis.FeatureSchemas;
 import me.everyone.yuppyai.analysis.FeatureVector;
 import me.everyone.yuppyai.analysis.RotationSample;
 import me.everyone.yuppyai.data.PlayerData;
 import me.everyone.yuppyai.util.Msg;
 import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class AnalysisManager implements Manager {
 
@@ -85,25 +86,24 @@ public final class AnalysisManager implements Manager {
         if (attacks < plugin.config().minAttacks()) {
             return;
         }
-        // Dataset collection must represent ordinary combat too. Applying the
-        // live suspicion filters while recording would train on preselected,
-        // already suspicious windows and inflate false positives.
+        double scale = FeatureExtractor.scaleOf(window);
+        FeatureVector vector = FeatureExtractor.extract(window, data.baselineScale());
+        if (vector == null) {
+            return;
+        }
+
+        Map<String, Double> features = new LinkedHashMap<>(vector.toMap());
+        features.putAll(CritTiming.of(data.attackHistory())
+                .toMap(FeatureExtractor.critRate(window)));
+        data.running().add(aimValues(vector));
+        features.putAll(data.running().toMap());
+
         if (!data.recording() && rotation < plugin.config().minRotation()) {
             return;
         }
         if (!data.recording() && attackLinkedRotation(window) < plugin.config().minAttackRotation()) {
             return;
         }
-
-        double scale = FeatureExtractor.scaleOf(window);
-        FeatureVector vector = FeatureExtractor.extract(window, data.baselineScale());
-        if (vector == null) {
-            // The window never moved. It carries no aim to judge, and letting
-            // it through while recording is how a divided-by-nothing artefact
-            // ends up in the dataset as a training example.
-            return;
-        }
-        Map<String, Double> features = vector.toMap();
 
         if (data.recording() && !data.filtering()) {
             data.record(new ArrayList<>(features.keySet()), toArray(features));
@@ -163,6 +163,7 @@ public final class AnalysisManager implements Manager {
                 plugin.config().gain(),
                 plugin.config().decay(),
                 plugin.config().bufferMax());
+        plugin.history().record(data);
         plugin.journal().record(data);
 
         if (data.buffer() < plugin.config().alertAt()) {
@@ -224,6 +225,16 @@ public final class AnalysisManager implements Manager {
         }
         plugin.getLogger().info(data.name() + " aim buffer "
                 + Msg.round(data.buffer(), 2) + " (p=" + Msg.round(data.probability(), 3) + ")");
+    }
+
+    private double[] aimValues(FeatureVector vector) {
+        Map<String, Double> map = vector.toMap();
+        double[] values = new double[FeatureSchemas.AIM.length];
+        for (int i = 0; i < values.length; i++) {
+            Double value = map.get(FeatureSchemas.AIM[i]);
+            values[i] = value == null ? 0.0D : value;
+        }
+        return values;
     }
 
     private double[] toArray(Map<String, Double> features) {

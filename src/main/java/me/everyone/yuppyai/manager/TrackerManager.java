@@ -1,12 +1,15 @@
 package me.everyone.yuppyai.manager;
 
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.yuppyai.YuppyAI;
 import org.bukkit.Location;
+import org.bukkit.World;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class TrackerManager implements Manager {
 
@@ -40,11 +43,39 @@ public final class TrackerManager implements Manager {
     }
 
     private void sample() {
+        Set<World> inhabited = new HashSet<>();
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             Location location = player.getLocation();
             tracked.put(player.getEntityId(), new Tracked(
                     location.getX(), location.getY(), location.getZ(), player.getHeight()));
+            inhabited.add(player.getWorld());
         }
+
+        int budget = plugin.config().trackEntities();
+        if (budget <= 0) {
+            return;
+        }
+        for (World world : inhabited) {
+            for (LivingEntity entity : world.getLivingEntities()) {
+                if (entity instanceof Player) {
+                    continue;
+                }
+                if (budget-- <= 0) {
+                    return;
+                }
+                Location location = entity.getLocation();
+                tracked.put(entity.getEntityId(), new Tracked(
+                        location.getX(), location.getY(), location.getZ(), entity.getHeight()));
+            }
+        }
+    }
+
+    public void track(int entityId, double x, double y, double z, double height) {
+        tracked.put(entityId, new Tracked(x, y, z, height));
+    }
+
+    public void forget(int entityId) {
+        tracked.remove(entityId);
     }
 
     public Tracked get(int entityId) {

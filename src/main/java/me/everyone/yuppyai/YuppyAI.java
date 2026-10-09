@@ -1,31 +1,32 @@
 package me.everyone.yuppyai;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
 import me.everyone.yuppyai.manager.AnalysisManager;
-import me.everyone.yuppyai.manager.AutoModManager;
 import me.everyone.yuppyai.manager.ApiManager;
 import me.everyone.yuppyai.manager.CommandManager;
 import me.everyone.yuppyai.manager.ConfigManager;
 import me.everyone.yuppyai.manager.DataManager;
 import me.everyone.yuppyai.manager.DatasetManager;
 import me.everyone.yuppyai.manager.DisplayManager;
+import me.everyone.yuppyai.manager.HistoryManager;
 import me.everyone.yuppyai.manager.JournalManager;
 import me.everyone.yuppyai.manager.LangManager;
 import me.everyone.yuppyai.manager.Manager;
 import me.everyone.yuppyai.manager.MenuManager;
 import me.everyone.yuppyai.manager.MonitorManager;
+import me.everyone.yuppyai.manager.NpcManager;
 import me.everyone.yuppyai.manager.PacketManager;
 import me.everyone.yuppyai.manager.ProbConfigManager;
 import me.everyone.yuppyai.manager.PunishmentManager;
 import me.everyone.yuppyai.manager.TestServerManager;
-import me.everyone.yuppyai.manager.TrackerManager;
 import me.everyone.yuppyai.manager.ThemeManager;
+import me.everyone.yuppyai.manager.TrackerManager;
 import org.bukkit.plugin.java.JavaPlugin;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 
 public final class YuppyAI extends JavaPlugin {
 
@@ -33,7 +34,6 @@ public final class YuppyAI extends JavaPlugin {
 
     private ConfigManager configManager;
     private ApiManager apiManager;
-    private AutoModManager autoModManager;
     private DataManager dataManager;
     private TrackerManager trackerManager;
     private DatasetManager datasetManager;
@@ -44,10 +44,12 @@ public final class YuppyAI extends JavaPlugin {
     private DisplayManager displayManager;
     private MonitorManager monitorManager;
     private ProbConfigManager probConfigManager;
+    private HistoryManager historyManager;
     private JournalManager journalManager;
     private PacketManager packetManager;
     private MenuManager menuManager;
     private CommandManager commandManager;
+    private NpcManager npcManager;
     private TestServerManager testServerManager;
 
     @Override
@@ -58,7 +60,6 @@ public final class YuppyAI extends JavaPlugin {
         themeManager = register(new ThemeManager(this));
         langManager = register(new LangManager(this));
         apiManager = register(new ApiManager(this));
-        autoModManager = register(new AutoModManager(this));
         dataManager = register(new DataManager(this));
         trackerManager = register(new TrackerManager(this));
         datasetManager = register(new DatasetManager(this));
@@ -67,17 +68,19 @@ public final class YuppyAI extends JavaPlugin {
         probConfigManager = register(new ProbConfigManager(this));
         displayManager = register(new DisplayManager(this));
         monitorManager = register(new MonitorManager(this));
+        historyManager = register(new HistoryManager(this));
         journalManager = register(new JournalManager(this));
         packetManager = register(new PacketManager(this));
         menuManager = register(new MenuManager(this));
         commandManager = register(new CommandManager(this));
+        npcManager = register(new NpcManager(this));
         testServerManager = register(new TestServerManager(this));
 
         for (Manager manager : managers.values()) {
             try {
                 manager.enable();
             } catch (Throwable throwable) {
-                getLogger().log(java.util.logging.Level.SEVERE, "Failed to enable " + manager.name(), throwable);
+                getLogger().log(Level.SEVERE, "Failed to enable " + manager.name(), throwable);
                 getServer().getPluginManager().disablePlugin(this);
                 return;
             }
@@ -120,10 +123,6 @@ public final class YuppyAI extends JavaPlugin {
         return apiManager;
     }
 
-    public AutoModManager autoMod() {
-        return autoModManager;
-    }
-
     public DataManager data() {
         return dataManager;
     }
@@ -164,6 +163,10 @@ public final class YuppyAI extends JavaPlugin {
         return probConfigManager;
     }
 
+    public HistoryManager history() {
+        return historyManager;
+    }
+
     public JournalManager journal() {
         return journalManager;
     }
@@ -178,6 +181,10 @@ public final class YuppyAI extends JavaPlugin {
 
     public CommandManager commands() {
         return commandManager;
+    }
+
+    public NpcManager npcs() {
+        return npcManager;
     }
 
     public TestServerManager testServer() {

@@ -7,6 +7,19 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.comphenix.protocol.wrappers.WrappedDataValue;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.data.PlayerData;
 import me.everyone.yuppyai.util.Msg;
@@ -14,18 +27,6 @@ import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
-import java.lang.reflect.Field;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.Set;
-import java.util.logging.Level;
 
 public final class DisplayManager implements Manager {
     private static final int DISPLAY_UPDATE_TICKS = 2;
@@ -59,7 +60,7 @@ public final class DisplayManager implements Manager {
             displayClass = Class.forName("net.minecraft.world.entity.Display");
             textDisplayClass = Class.forName("net.minecraft.world.entity.Display$TextDisplay");
         } catch (ReflectiveOperationException | LinkageError e) {
-            java.util.logging.Logger.getLogger("YuppyAI").log(Level.SEVERE,
+            Logger.getLogger("YuppyAI").log(Level.SEVERE,
                     "Could not load the server's Display/TextDisplay NMS classes; holograms are disabled on this server build.", e);
         }
         dumpAccessors("Display", displayClass);
@@ -134,14 +135,14 @@ public final class DisplayManager implements Manager {
         if (owner == null) {
             return UNRESOLVED;
         }
-        String needle = nameFragment.toUpperCase(java.util.Locale.ROOT);
+        String needle = nameFragment.toUpperCase(Locale.ROOT);
         Field match = null;
         List<String> candidates = new ArrayList<>();
         for (Field field : owner.getDeclaredFields()) {
             if (!ACCESSOR_CLASS_NAME.equals(field.getType().getName())) {
                 continue;
             }
-            if (field.getName().toUpperCase(java.util.Locale.ROOT).contains(needle)) {
+            if (field.getName().toUpperCase(Locale.ROOT).contains(needle)) {
                 candidates.add(field.getName());
                 match = field;
             }
@@ -426,7 +427,7 @@ public final class DisplayManager implements Manager {
         return packet;
     }
 
-    private PacketContainer spawnPacket(int entityId, UUID uuid, org.bukkit.Location location) {
+    private PacketContainer spawnPacket(int entityId, UUID uuid, Location location) {
         PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.SPAWN_ENTITY, true);
         packet.getIntegers().write(0, entityId);
         packet.getUUIDs().write(0, uuid);
@@ -619,7 +620,7 @@ public final class DisplayManager implements Manager {
     private Map<String, String> placeholders(PlayerData target, double fraction, int barWidth,
                                              Map<String, String> extra) {
         var theme = plugin.theme().current();
-        Map<String, String> placeholders = new java.util.HashMap<>();
+        Map<String, String> placeholders = new HashMap<>();
         placeholders.put("bar", Msg.bar(fraction, barWidth));
         placeholders.put("probability", Msg.percent(target.probability()));
         placeholders.put("buffer", Msg.round(target.buffer(), 1));

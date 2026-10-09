@@ -12,6 +12,9 @@ api:
 
 analysis:
   window-ticks: 20
+  # Сколько мобов отслеживать на тик, чтобы считать ошибку прицела по ним.
+  # 0 — только игроки, и тогда бой по манекену даёт aim_error == 0.
+  track-entities: 600
   min-attacks: 1
   combat-ticks: 40
   min-rotation: 5.0
@@ -34,7 +37,8 @@ display:
 
 punishment:
   enabled: true
-  command: "&cCheat detected"
+  # Выполняется от имени консоли. Пусто — обычный kick с причиной ниже.
+  command: ""
   broadcast: "<red>%player% <gray>removed after <white>%buffer%<gray> buffer"
   evidence:
     enabled: false
@@ -47,8 +51,12 @@ punishment:
 recording:
   progress-seconds: 15
 
-automod:
-  enabled: true
+# История показаний хранится на диске, поэтому её видно и после кика игрока.
+# keep - сколько последних показаний держать на игрока (одно примерно раз в
+# полсекунды боя), flush-seconds - как часто сбрасывать на диск.
+history:
+  keep: 2000
+  flush-seconds: 30
 
 test-server:
   enabled: false

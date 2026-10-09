@@ -1,17 +1,16 @@
 package me.everyone.yuppyai.command.impl;
 
-import me.everyone.yuppyai.YuppyAI;
-import me.everyone.yuppyai.command.SubCommand;
-import me.everyone.yuppyai.data.PlayerData;
-import me.everyone.yuppyai.manager.DatasetManager;
-import org.bukkit.command.CommandSender;
-import org.bukkit.entity.Player;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import me.everyone.yuppyai.YuppyAI;
+import me.everyone.yuppyai.command.SubCommand;
+import me.everyone.yuppyai.data.PlayerData;
+import me.everyone.yuppyai.manager.DatasetManager;
+import me.everyone.yuppyai.util.Msg;
+import org.bukkit.command.CommandSender;
 
 public final class DataCommand extends SubCommand {
 
@@ -40,7 +39,7 @@ public final class DataCommand extends SubCommand {
 
     private void add(CommandSender sender, String[] args) {
         if (args.length < 3 || !DatasetManager.isLabel(args[1])) {
-            reply(sender, "<red>Usage: <white>/yai data add cheater|legit <player> [person]");
+            reply(sender, "<red>Usage: <white>/yai data add cheater|legit <player>");
             return;
         }
         PlayerData data = plugin.data().byName(args[2]);
@@ -50,17 +49,11 @@ public final class DataCommand extends SubCommand {
         }
 
         String label = args[1].toLowerCase(Locale.ROOT);
-        String person = args.length > 3 ? args[3] : null;
-        plugin.datasets().enrol(data, label, person);
+        plugin.datasets().enrol(data, label);
         reply(sender, "<gray>Signed up <white>" + data.name() + "<gray> as <white>" + label
-                + (person == null ? "" : "<gray>, played by <white>" + person)
                 + "<gray>." + (plugin.datasets().collecting()
                 ? " <green>Recording already running, they joined it."
                 : " <gray>Start with <white>/yai data train<gray>."));
-        if (person == null) {
-            reply(sender, "<dark_gray>Using several accounts yourself? Add a person tag so they"
-                    + " count as one: <white>/yai data add " + label + " " + data.name() + " me");
-        }
     }
 
     private void remove(CommandSender sender, String[] args) {
@@ -79,12 +72,22 @@ public final class DataCommand extends SubCommand {
     }
 
     private void start(CommandSender sender, String[] args) {
+        int schema = DatasetManager.FEATURE_VERSION;
+        if (args.length > 1) {
+            schema = DatasetManager.parseSchema(args[1]);
+            if (schema < 0) {
+                reply(sender, "<red>Usage: <white>/yai data train [v2|v3|v4|v5|both]");
+                return;
+            }
+        }
         if (plugin.datasets().roster().isEmpty()) {
             reply(sender, "<red>Nobody is signed up. <white>/yai data add cheater|legit <player>");
             return;
         }
+        plugin.datasets().setSchema(schema);
         int started = plugin.datasets().start(sender);
-        reply(sender, "<green>Recording <white>" + started + "<green> player(s)"
+        reply(sender, "<green>Recording <white>" + started + "<green> player(s) as <white>"
+                + DatasetManager.schemaName(schema)
                 + "<green>. Windows are only taken while they fight - "
                 + "<white>/yai data stop<green> saves everything.");
     }
@@ -114,12 +117,10 @@ public final class DataCommand extends SubCommand {
         for (DatasetManager.RosterEntry entry : roster) {
             PlayerData data = plugin.data().get(entry.uuid());
             String captured = data == null ? "offline" : data.recordedCount() + " windows";
-            boolean tagged = !entry.person().equals(entry.uuid().toString());
-            sender.sendMessage(me.everyone.yuppyai.util.Msg.parse(
+            sender.sendMessage(Msg.parse(
                     "<dark_gray> - " + (DatasetManager.CHEATER.equals(entry.label())
                             ? "<red>" : "<green>") + entry.name()
                             + " <dark_gray>- <gray>" + entry.label()
-                            + (tagged ? " <dark_gray>- <aqua>" + entry.person() : "")
                             + " <dark_gray>- <gray>" + captured));
         }
     }
@@ -150,8 +151,10 @@ public final class DataCommand extends SubCommand {
         reply(sender, "<white>1. <gray>Sign the cast up:");
         reply(sender, "   <white>/yai data add cheater <player>");
         reply(sender, "   <white>/yai data add legit <player>");
-        reply(sender, "<white>2. <gray>Run it: <white>/yai data train <gray>... they fight ... <white>/yai data stop");
+        reply(sender, "<white>2. <gray>Run it: <white>/yai data train [v2|v3|v4|v5|both] <gray>... they fight ... <white>/yai data stop");
         reply(sender, "   <gray>Stopping sends every capture to the service straight away.");
+        reply(sender, "   <gray>v5 (default) adds the hit itself - crits, their timing, the rhythm;");
+        reply(sender, "   <gray>v4 is aim plus the session average; <white>both<gray> saves v4 and v5 at once.");
         reply(sender, "   <gray>Two or three short sessions per player beats one long one.");
         reply(sender, "<gray>Also: <white>list<gray>, <white>rem <player><gray> (off the roster),");
         reply(sender, "<gray><white>delete cheater|legit <player><gray> (drop stored data).");
@@ -167,7 +170,7 @@ public final class DataCommand extends SubCommand {
         }
 
         if (args.length == 2 && (args[0].equalsIgnoreCase("train") || args[0].equalsIgnoreCase("start"))) {
-            List<String> versions = new ArrayList<>(List.of("v2", "v3", "both"));
+            List<String> versions = new ArrayList<>(List.of("v2", "v3", "v4", "v5", "both"));
             versions.removeIf(version -> !version.startsWith(args[1].toLowerCase(Locale.ROOT)));
             return versions;
         }

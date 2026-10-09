@@ -1,12 +1,13 @@
 package me.everyone.yuppyai.command.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.command.SubCommand;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
-import java.util.List;
-import java.util.Map;
 
 public final class VanishCommand extends SubCommand {
 
@@ -50,8 +51,8 @@ public final class VanishCommand extends SubCommand {
         if (args.length != 1) {
             return List.of();
         }
-        List<String> options = new java.util.ArrayList<>(onlineNames(args[0]));
-        if ("off".startsWith(args[0].toLowerCase(java.util.Locale.ROOT))) {
+        List<String> options = new ArrayList<>(onlineNames(args[0]));
+        if ("off".startsWith(args[0].toLowerCase(Locale.ROOT))) {
             options.add("off");
         }
         return options;

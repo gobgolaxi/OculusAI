@@ -1,14 +1,14 @@
 package me.everyone.yuppyai.command.impl;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.command.SubCommand;
 import me.everyone.yuppyai.data.PlayerData;
 import me.everyone.yuppyai.manager.JournalManager;
 import me.everyone.yuppyai.util.Msg;
 import org.bukkit.command.CommandSender;
-
-import java.util.List;
-import java.util.Map;
 
 public final class PlayerCommand extends SubCommand {
 
@@ -90,7 +90,7 @@ public final class PlayerCommand extends SubCommand {
         }
     }
 
-    private JournalManager.Entry findJournalEntry(java.util.UUID uuid) {
+    private JournalManager.Entry findJournalEntry(UUID uuid) {
         for (JournalManager.Entry e : plugin.journal().entries()) {
             if (e.uuid().equals(uuid)) return e;
         }

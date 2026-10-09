@@ -1,13 +1,12 @@
 package me.everyone.yuppyai.command.impl;
 
+import java.util.List;
+import java.util.Map;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.command.SubCommand;
 import me.everyone.yuppyai.manager.CommandManager;
 import me.everyone.yuppyai.util.Msg;
 import org.bukkit.command.CommandSender;
-
-import java.util.List;
-import java.util.Map;
 
 public final class HelpCommand extends SubCommand {
 
@@ -28,10 +27,14 @@ public final class HelpCommand extends SubCommand {
             if (command.permission() != null && !sender.hasPermission(command.permission())) {
                 continue;
             }
-            sender.sendMessage(Msg.parse("<aqua>" + command.usage()
+            sender.sendMessage(Msg.parse("<aqua>" + escapeTags(command.usage())
                     + " <dark_gray>- <gray>"
                     + plugin.lang().textOr("help.command." + command.name(), command.description())));
         }
         sender.sendMessage(plugin.lang().text("help.divider"));
+    }
+
+    private static String escapeTags(String usage) {
+        return usage.replace("<", "&lt;").replace(">", "&gt;");
     }
 }

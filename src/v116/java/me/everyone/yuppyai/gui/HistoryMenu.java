@@ -1,7 +1,15 @@
 package me.everyone.yuppyai.gui;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.data.PlayerData;
+import me.everyone.yuppyai.manager.HistoryManager;
 import me.everyone.yuppyai.manager.HistorySort;
 import me.everyone.yuppyai.util.Msg;
 import org.bukkit.Bukkit;
@@ -9,35 +17,26 @@ import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-
-/**
- * One player's readings as a strip of panes, oldest on the left.
- *
- * <p>A pane is green while the model is not calling that window and the buffer
- * is not climbing, and red as soon as either of those is true, so the shape of
- * the strip reads as "clean, clean, spike, cooling" without hovering anything.
- * The bottom row pages through the strip, toggles the ordering and explains the
- * colours; the viewer keeps whichever ordering they picked last time.
- */
 public final class HistoryMenu extends Menu {
 
     private static final int SLOT_TARGET = 4;
+    private static final int SLOT_BACK = 0;
     private static final int FIRST_READING = 9;
     private static final int PER_PAGE = 36;
 
     private static final int SLOT_PREVIOUS = 45;
-    private static final int SLOT_LEGEND_CLEAN = 46;
     private static final int SLOT_SORT = 48;
     private static final int SLOT_PAGES = 49;
-    private static final int SLOT_LEGEND_HOT = 50;
-    private static final int SLOT_BACK = 52;
     private static final int SLOT_NEXT = 53;
+
+    private static final double MIN_STEP = 0.1D;
+
+    private enum Level {
+        ZERO,
+        LOW,
+        MID,
+        HIGH
+    }
 
     private final UUID targetId;
     private final String targetName;
@@ -81,14 +80,13 @@ public final class HistoryMenu extends Menu {
         layout();
 
         if (data == null) {
-            // The target was kicked while the menu sat open, so their readings
-            // went with them. Keep the frame, say so, and leave the arrows out
-            // rather than paginating an empty list.
-            set(SLOT_TARGET, head(Bukkit.getOfflinePlayer(targetId), targetName, List.of(
-                    plugin.lang().text("history.status.offline"),
-                    plugin.lang().text("history.gone"))));
-            empty();
-            controls(false);
+            set(SLOT_TARGET, head(Bukkit.getOfflinePlayer(targetId), targetName, storedLore()));
+            if (ordered.isEmpty()) {
+                empty();
+                controls(false);
+                return;
+            }
+            page(true);
             return;
         }
 
@@ -100,13 +98,53 @@ public final class HistoryMenu extends Menu {
             return;
         }
 
+        page(true);
+    }
+
+    private void page(boolean paginated) {
         int from = from();
         for (int i = from; i < Math.min(ordered.size(), from + PER_PAGE); i++) {
             PlayerData.Reading reading = ordered.get(i);
-            set(FIRST_READING + i - from, item(pane(reading), name(reading), lore(reading)));
+            set(FIRST_READING + i - from, item(paneOf(level(reading.buffer())), name(reading), lore(reading)));
         }
 
-        controls(true);
+        controls(paginated);
+    }
+
+    private List<String> storedLore() {
+        List<String> lore = new ArrayList<>();
+        lore.add(plugin.lang().text("history.status.offline"));
+        lore.add(plugin.lang().text("history.target.peak",
+                Map.of("value", Msg.round(plugin.history().peakBuffer(targetId), 1))));
+        lore.add(plugin.lang().text("history.target.windows",
+                Map.of("value", Integer.toString(plugin.history().windowsAnalysed(targetId)))));
+        lore.add(plugin.lang().text("history.target.readings",
+                Map.of("value", Integer.toString(ordered.size()))));
+        long seen = plugin.history().lastSeenAt(targetId);
+        if (seen > 0L) {
+            lore.add(plugin.lang().text("history.target.last-seen", Map.of("value", ago(seen))));
+        }
+        List<HistoryManager.Event> events =
+                plugin.history().events(targetId);
+        if (!events.isEmpty()) {
+            lore.add("");
+            lore.add(plugin.lang().text("history.events"));
+            int shown = 0;
+            for (int i = events.size() - 1; i >= 0 && shown < 4; i--, shown++) {
+                var event = events.get(i);
+                lore.add(plugin.lang().text("history.event-line", Map.of(
+                        "age", ago(event.at()),
+                        "type", plugin.lang().text("history.event." + event.type()),
+                        "detail", event.detail())));
+            }
+        }
+        if (ordered.isEmpty()) {
+            lore.add("");
+            lore.add(plugin.lang().text("history.gone"));
+        }
+        lore.add("");
+        lore.add(plugin.lang().text("shared.refresh"));
+        return lore;
     }
 
     private void empty() {
@@ -124,13 +162,6 @@ public final class HistoryMenu extends Menu {
             set(SLOT_NEXT, item(Material.ARROW, plugin.lang().text("sessions.next"), null));
         }
 
-        set(SLOT_LEGEND_CLEAN, item(Material.LIME_STAINED_GLASS_PANE,
-                plugin.lang().text("history.legend.clean.name"),
-                List.of(plugin.lang().text("history.legend.clean.lore"))));
-        set(SLOT_LEGEND_HOT, item(Material.RED_STAINED_GLASS_PANE,
-                plugin.lang().text("history.legend.hot.name"),
-                List.of(plugin.lang().text("history.legend.hot.lore"))));
-
         set(SLOT_SORT, item(Material.COMPARATOR, plugin.lang().text("history.sort.name"), List.of(
                 plugin.lang().text("history.sort.current", Map.of("value", plugin.lang().text(sort.langKey()))),
                 "",
@@ -139,10 +170,11 @@ public final class HistoryMenu extends Menu {
                 "",
                 plugin.lang().text("history.sort.click"))));
 
-        set(SLOT_PAGES, item(Material.PAPER, plugin.lang().text("history.page.name"), List.of(
-                plugin.lang().text("history.page.of", Map.of(
-                        "page", Integer.toString(Math.min(page, Math.max(0, pages - 1)) + 1),
-                        "pages", Integer.toString(Math.max(1, pages)))),
+        int shown = Math.min(page, Math.max(0, pages - 1)) + 1;
+        int total = Math.max(1, pages);
+        set(SLOT_PAGES, item(Material.PAPER, plugin.lang().text("history.page.name", Map.of(
+                "page", Integer.toString(shown),
+                "pages", Integer.toString(total))), List.of(
                 plugin.lang().text("history.page.range", Map.of(
                         "from", Integer.toString(range()[0]),
                         "to", Integer.toString(range()[1]),
@@ -153,20 +185,15 @@ public final class HistoryMenu extends Menu {
         set(SLOT_BACK, item(Material.ARROW, plugin.lang().text("shared.back"), null));
     }
 
-    /**
-     * Sorts the readings and links each one to the reading before it in time.
-     * The previous link is what decides "buffer rising", so it has to follow
-     * real chronology and never the order being displayed.
-     */
     private void layout() {
-        if (data == null) {
+        List<PlayerData.Reading> readings = plugin.history().readings(targetId);
+        if (readings.isEmpty()) {
             ordered = List.of();
             previous = Map.of();
             pages = 0;
             return;
         }
 
-        List<PlayerData.Reading> readings = data.readings();
         Map<Long, PlayerData.Reading> before = new HashMap<>();
         for (int i = 1; i < readings.size(); i++) {
             before.put(readings.get(i).capturedAt(), readings.get(i - 1));
@@ -189,7 +216,6 @@ public final class HistoryMenu extends Menu {
         return Math.min(page, Math.max(0, pages - 1)) * PER_PAGE;
     }
 
-    /** First and last reading index shown right now, empty list included. */
     private int[] range() {
         if (ordered.isEmpty()) {
             return new int[]{0, 0};
@@ -201,15 +227,45 @@ public final class HistoryMenu extends Menu {
         return reading.probability() >= plugin.config().suspicion();
     }
 
-    private boolean rising(PlayerData.Reading reading) {
-        PlayerData.Reading before = previous.get(reading.capturedAt());
-        return before != null && reading.buffer() > before.buffer() + 0.0001D;
+    private Level level(double buffer) {
+        if (buffer <= 0.0D) {
+            return Level.ZERO;
+        }
+        if (buffer < alertStep()) {
+            return Level.LOW;
+        }
+        if (buffer < punishStep()) {
+            return Level.MID;
+        }
+        return Level.HIGH;
     }
 
-    private Material pane(PlayerData.Reading reading) {
-        return flagged(reading) || rising(reading)
-                ? Material.RED_STAINED_GLASS_PANE
-                : Material.LIME_STAINED_GLASS_PANE;
+    private double alertStep() {
+        return Math.max(MIN_STEP, plugin.config().alertAt());
+    }
+
+    private double punishStep() {
+        return Math.max(alertStep() + MIN_STEP, plugin.config().punishAt());
+    }
+
+    private Material paneOf(Level level) {
+        return switch (level) {
+            case ZERO -> Material.LIME_STAINED_GLASS_PANE;
+            case LOW -> Material.YELLOW_STAINED_GLASS_PANE;
+            case MID -> Material.ORANGE_STAINED_GLASS_PANE;
+            case HIGH -> Material.RED_STAINED_GLASS_PANE;
+        };
+    }
+
+    private Map<String, String> levelPlaceholders(Level level) {
+        return switch (level) {
+            case ZERO -> Map.of();
+            case LOW -> Map.of("value", Msg.round(alertStep(), 1));
+            case MID -> Map.of("value", Msg.round(alertStep(), 1),
+                    "next", Msg.round(punishStep(), 1));
+            case HIGH -> Map.of("value", Msg.round(punishStep(), 1),
+                    "max", Msg.round(plugin.config().bufferMax(), 0));
+        };
     }
 
     private String name(PlayerData.Reading reading) {
@@ -218,6 +274,7 @@ public final class HistoryMenu extends Menu {
 
     private List<String> lore(PlayerData.Reading reading) {
         double max = plugin.config().bufferMax();
+        Level level = level(reading.buffer());
         PlayerData.Reading before = previous.get(reading.capturedAt());
         List<String> lore = new ArrayList<>();
         lore.add(plugin.lang().text("history.reading.time", Map.of("value", ago(reading.capturedAt()))));
@@ -234,15 +291,19 @@ public final class HistoryMenu extends Menu {
             lore.add(plugin.lang().text(key, Map.of("value", Msg.round(Math.abs(delta), 1))));
         }
         lore.add("");
-        lore.add(plugin.lang().text(flagged(reading) || rising(reading)
-                ? "history.reading.hot" : "history.reading.clean"));
+        lore.add(plugin.lang().text("history.level." + level.name().toLowerCase(Locale.ROOT),
+                levelPlaceholders(level)));
+        if (flagged(reading)) {
+            lore.add(plugin.lang().text("history.reading.flagged",
+                    Map.of("value", Msg.percent(plugin.config().suspicion()))));
+        }
         return lore;
     }
 
     private List<String> targetLore() {
         double max = plugin.config().bufferMax();
-        List<PlayerData.Reading> readings = data.readings();
-        double peak = 0.0D;
+        List<PlayerData.Reading> readings = ordered;
+        double peak = plugin.history().peakBuffer(data.uuid());
         for (PlayerData.Reading reading : readings) {
             if (reading.buffer() > peak) {
                 peak = reading.buffer();

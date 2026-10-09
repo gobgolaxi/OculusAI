@@ -1,14 +1,17 @@
 package me.everyone.yuppyai.listener;
 
+import java.util.Locale;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.data.PlayerData;
+import org.bukkit.GameMode;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 public final class BukkitListener implements Listener {
@@ -35,11 +38,18 @@ public final class BukkitListener implements Listener {
         cleanup(event.getPlayer(), true);
     }
 
-    private void cleanup(org.bukkit.entity.Player player, boolean dropState) {
+    private void cleanup(Player player, boolean dropState) {
         PlayerData leaving = plugin.data().get(player);
         if (leaving != null && leaving.recording() && leaving.recordedCount() > 0
                 && leaving.recordingLabel() != null) {
             plugin.datasets().commit(leaving, leaving.recordingLabel());
+        }
+
+        PlayerData present = plugin.data().get(player);
+        if (present != null && present.windowsAnalysed() > 0) {
+            plugin.history().note(player.getUniqueId(), player.getName(),
+                    dropState ? "kick" : "quit",
+                    "buffer " + String.format(Locale.ROOT, "%.1f", present.buffer()));
         }
 
         plugin.tracker().forget(player);
@@ -60,7 +70,7 @@ public final class BukkitListener implements Listener {
         if (!plugin.journal().isVanished(event.getPlayer().getUniqueId())) {
             return;
         }
-        if (event.getNewGameMode() == org.bukkit.GameMode.SPECTATOR) {
+        if (event.getNewGameMode() == GameMode.SPECTATOR) {
             return;
         }
         event.setCancelled(true);

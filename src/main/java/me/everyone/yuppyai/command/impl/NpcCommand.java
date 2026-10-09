@@ -1,13 +1,13 @@
 package me.everyone.yuppyai.command.impl;
 
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.command.SubCommand;
 import me.everyone.yuppyai.manager.TestServerManager.DummyOptions;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-
-import java.util.List;
-import java.util.Map;
 
 public final class NpcCommand extends SubCommand {
 
@@ -33,7 +33,7 @@ public final class NpcCommand extends SubCommand {
         boolean invulnerable = true;
 
         for (String arg : args) {
-            if (arg.toLowerCase(java.util.Locale.ROOT).startsWith("hp:")) {
+            if (arg.toLowerCase(Locale.ROOT).startsWith("hp:")) {
                 try {
                     health = Double.parseDouble(arg.substring(3));
                 } catch (NumberFormatException ignored) {

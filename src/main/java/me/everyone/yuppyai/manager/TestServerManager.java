@@ -1,9 +1,10 @@
 package me.everyone.yuppyai.manager;
 
 import com.google.gson.JsonObject;
+import java.util.Locale;
+import java.util.UUID;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.data.PlayerData;
-import me.everyone.yuppyai.gui.DummyMenu;
 import me.everyone.yuppyai.util.Msg;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
@@ -13,18 +14,14 @@ import org.bukkit.NamespacedKey;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.WorldType;
-import org.bukkit.command.Command;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Zombie;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
@@ -38,18 +35,9 @@ import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
 import org.bukkit.scoreboard.Scoreboard;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-
 public final class TestServerManager implements Manager, Listener {
 
-    private static final int MAX_DUMMIES = 5;
-
     private final YuppyAI plugin;
-    private final Map<UUID, DummyOptions> dummies = new ConcurrentHashMap<>();
 
     private World world;
     private BukkitTask scoreboardTask;
@@ -81,10 +69,7 @@ public final class TestServerManager implements Manager, Listener {
                 .runTaskTimer(plugin, this::refreshModelLine, modelTicks, modelTicks);
 
         dummyTask = plugin.getServer().getScheduler()
-                .runTaskTimer(plugin, () -> {
-                    purgeMobs();
-                    retargetDummies();
-                }, 20L, 20L);
+                .runTaskTimer(plugin, this::purgeMobs, 20L, 20L);
     }
 
     @Override
@@ -133,21 +118,6 @@ public final class TestServerManager implements Manager, Listener {
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
-    public void onDummyInteract(PlayerInteractEntityEvent event) {
-        Player player = event.getPlayer();
-        if (!player.isSneaking() || !dummies.containsKey(event.getRightClicked().getUniqueId())) {
-            return;
-        }
-        if (!player.hasPermission("yuppyai.npc")) {
-            return;
-        }
-        event.setCancelled(true);
-        UUID target = event.getRightClicked().getUniqueId();
-        plugin.getServer().getScheduler().runTask(plugin,
-                () -> new DummyMenu(plugin, player, target).open());
-    }
-
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onCreatureSpawn(CreatureSpawnEvent event) {
         if (!plugin.config().testServerEnabled() || world == null
                 || !event.getEntity().getWorld().equals(world)) {
@@ -175,7 +145,7 @@ public final class TestServerManager implements Manager, Listener {
 
     private void applyEternalRegen(Player player) {
         player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION,
-                PotionEffect.INFINITE_DURATION, REGEN_AMPLIFIER, true, false, false));
+                Integer.MAX_VALUE, REGEN_AMPLIFIER, true, false, false));
     }
 
     private Location spawnLocation() {
@@ -209,7 +179,7 @@ public final class TestServerManager implements Manager, Listener {
             return;
         }
         for (LivingEntity entity : world.getLivingEntities()) {
-            if (!(entity instanceof Player) && !dummies.containsKey(entity.getUniqueId())) {
+            if (!(entity instanceof Player)) {
                 entity.remove();
             }
         }
@@ -257,7 +227,6 @@ public final class TestServerManager implements Manager, Listener {
         return Enchantment.getByKey(NamespacedKey.minecraft(key));
     }
 
-
     public record DummyOptions(double health, boolean stationary, boolean invulnerable) {
         public static final DummyOptions DEFAULT = new DummyOptions(-1.0D, false, true);
     }
@@ -267,120 +236,32 @@ public final class TestServerManager implements Manager, Listener {
     }
 
     public int spawnDummies(Player player, int count, DummyOptions options) {
-        if (world == null) {
-            return 0;
-        }
-        int allowed = Math.min(Math.max(1, count), MAX_DUMMIES - dummies.size());
-        for (int i = 0; i < allowed; i++) {
-            Location spot = player.getLocation().clone()
-                    .add(player.getLocation().getDirection().normalize().multiply(2.0D));
-            spot.setWorld(world);
-            Zombie zombie = world.spawn(spot, Zombie.class, dummy -> {
-                dummy.setBaby(false);
-                dummy.setRemoveWhenFarAway(false);
-                dummy.setCanPickupItems(false);
-                dummy.setInvulnerable(options.invulnerable());
-                dummy.setAI(!options.stationary());
-                if (options.health() > 0) {
-                    dummy.setMaxHealth(options.health());
-                    dummy.setHealth(options.health());
-                }
-                dummy.getEquipment().setHelmet(new ItemStack(Material.LEATHER_HELMET));
-                dummy.getEquipment().setHelmetDropChance(0.0F);
-                if (!options.stationary()) {
-                    dummy.setTarget(player);
-                }
-                dummy.setCustomName(Msg.parse("<red>Sparring Dummy"));
-                dummy.setCustomNameVisible(true);
-            });
-            dummies.put(zombie.getUniqueId(), options);
-        }
-        return allowed;
+        return plugin.npcs().spawn(player, count, options);
     }
 
     public void clearDummies() {
-        for (UUID id : dummies.keySet()) {
-            org.bukkit.entity.Entity entity = Bukkit.getEntity(id);
-            if (entity != null) {
-                entity.remove();
-            }
-        }
-        dummies.clear();
+        plugin.npcs().clearAll();
     }
 
     public void removeDummy(UUID id) {
-        org.bukkit.entity.Entity entity = Bukkit.getEntity(id);
-        if (entity != null) {
-            entity.remove();
-        }
-        dummies.remove(id);
+        plugin.npcs().remove(id);
     }
 
     public int dummyCount() {
-        return dummies.size();
+        return plugin.npcs().count();
     }
 
     public boolean isDummy(UUID id) {
-        return dummies.containsKey(id);
+        return plugin.npcs().isNpc(id);
     }
 
     public DummyOptions optionsOf(UUID id) {
-        return dummies.get(id);
+        return plugin.npcs().optionsOf(id);
     }
 
     public void updateOptions(UUID id, DummyOptions options) {
-        if (!dummies.containsKey(id)) {
-            return;
-        }
-        dummies.put(id, options);
-        org.bukkit.entity.Entity entity = Bukkit.getEntity(id);
-        if (!(entity instanceof Zombie dummy)) {
-            return;
-        }
-        dummy.setInvulnerable(options.invulnerable());
-        dummy.setAI(!options.stationary());
-        if (options.health() > 0) {
-            dummy.setMaxHealth(options.health());
-            dummy.setHealth(Math.min(dummy.getHealth(), options.health()));
-        }
-        if (options.stationary()) {
-            dummy.setTarget(null);
-        }
+        plugin.npcs().updateOptions(id, options);
     }
-
-    private void retargetDummies() {
-        if (world == null || dummies.isEmpty()) {
-            return;
-        }
-        List<Player> players = world.getPlayers();
-        dummies.keySet().removeIf(id -> Bukkit.getEntity(id) == null || Bukkit.getEntity(id).isDead());
-        if (players.isEmpty()) {
-            return;
-        }
-        for (Map.Entry<UUID, DummyOptions> entry : dummies.entrySet()) {
-            if (entry.getValue().stationary()) {
-                continue;
-            }
-            org.bukkit.entity.Entity entity = Bukkit.getEntity(entry.getKey());
-            if (entity instanceof Mob mob && mob.getTarget() == null) {
-                mob.setTarget(nearest(mob.getLocation(), players));
-            }
-        }
-    }
-
-    private Player nearest(Location from, List<Player> players) {
-        Player closest = players.get(0);
-        double best = Double.MAX_VALUE;
-        for (Player candidate : players) {
-            double distance = candidate.getLocation().distanceSquared(from);
-            if (distance < best) {
-                best = distance;
-                closest = candidate;
-            }
-        }
-        return closest;
-    }
-
 
     private void refreshAll() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {

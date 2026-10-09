@@ -8,9 +8,11 @@ import com.comphenix.protocol.events.PacketAdapter;
 import com.comphenix.protocol.events.PacketEvent;
 import com.comphenix.protocol.events.PacketListener;
 import com.comphenix.protocol.wrappers.EnumWrappers;
+import java.util.logging.Level;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.data.PlayerData;
 import org.bukkit.entity.Player;
+import org.bukkit.potion.PotionEffectType;
 
 public final class PacketManager implements Manager {
 
@@ -37,7 +39,7 @@ public final class PacketManager implements Manager {
                 try {
                     handle(event);
                 } catch (Throwable throwable) {
-                    plugin.getLogger().log(java.util.logging.Level.SEVERE, "Error reading " + event.getPacket().getType(), throwable);
+                    plugin.getLogger().log(Level.SEVERE, "Error reading " + event.getPacket().getType(), throwable);
                 }
             }
         };
@@ -64,12 +66,15 @@ public final class PacketManager implements Manager {
             EnumWrappers.EntityUseAction action = event.getPacket().getEntityUseActions().readSafely(0);
             if (action == EnumWrappers.EntityUseAction.ATTACK) {
                 int targetEntityId = event.getPacket().getIntegers().read(0);
-                data.markAttack(aimError(data, targetEntityId));
+                data.markAttack(aimError(data, targetEntityId), player.getFallDistance(),
+                        player.isOnGround(), player.isSprinting(), critBlocked(player));
             }
             return;
         }
 
         if (isFlying(type)) {
+            data.noteGround(player.isOnGround());
+            data.noteSprint(player.isSprinting());
             if (type == PacketType.Play.Client.POSITION || type == PacketType.Play.Client.FLYING) {
                 data.addSample(data.lastYaw(), data.lastPitch(), plugin.config().windowTicks());
                 return;
@@ -107,6 +112,11 @@ public final class PacketManager implements Manager {
         return Math.toDegrees(Math.acos(Math.max(-1.0D, Math.min(1.0D, dot))));
     }
 
+    private boolean critBlocked(Player player) {
+        return player.isInsideVehicle()
+                || player.isInWater()
+                || player.hasPotionEffect(PotionEffectType.BLINDNESS);
+    }
 
     private boolean isFlying(PacketType type) {
         return type == PacketType.Play.Client.POSITION

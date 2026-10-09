@@ -88,12 +88,6 @@ dashboard:
     name: "<aqua>Players"
     online: "<gray>Online: <white>%value%"
     click: "<yellow>Click to see live readings"
-  automod:
-    name: "<gold>Chat AutoMod"
-    state-on: "<gray>State: <green>on"
-    state-off: "<gray>State: <red>off"
-    line1: "<gray>Checks chat messages before they reach"
-    line2: "<gray>global chat and blocks risky ones."
   punish:
     name: "<red>Act on detections"
     state-on: "<gray>State: <red>on"
@@ -173,7 +167,7 @@ sessions:
 history:
   title: "History <dark_gray>%player%"
   no-data: "<dark_gray>No data for you yet - readings only appear while fighting."
-  gone: "<dark_gray>This player is no longer tracked."
+  gone: "<dark_gray>No readings were stored for this player."
   status:
     online: "<gray>Status: <green>online"
     offline: "<gray>Status: <dark_gray>offline"
@@ -197,17 +191,23 @@ history:
   page:
     name: "<white>Page <gray>%page%<white>/<gray>%pages%"
     range: "<gray>Showing <white>%from%<gray>-<white>%to%<gray> of <white>%total%"
-  legend:
-    clean:
-      name: "<green>Clean"
-      lore: "<gray>The model is not calling it and the buffer is flat."
-    hot:
-      name: "<red>Detection"
-      lore: "<gray>The model flagged it or the buffer is climbing."
+  level:
+    zero: "<green>Clean: buffer 0"
+    low: "<yellow>Building: buffer up to <white>%value%"
+    mid: "<gold>High: <white>%value%<gold> to <white>%next%"
+    high: "<red>Critical: <white>%value%<red> to <white>%max%"
   target:
     peak: "<gray>Peak buffer in history: <white>%value%"
     windows: "<gray>Windows analysed: <white>%value%"
     readings: "<gray>Readings in history: <white>%value%"
+    last-seen: "<gray>Last seen: <white>%value%"
+  events: "<gold>What happened:"
+  event-line: "<dark_gray>- <gray>%age% <dark_gray>| <white>%type% <dark_gray>%detail%"
+  event:
+    kick: "kicked"
+    quit: "left"
+    punish: "punished"
+  unknown-player: "<red>No stored history for <white>%player%<red>."
   reading:
     time: "<gray>When: <white>%value%"
     probability: "<gray>Prob: <white>%value%"
@@ -215,8 +215,7 @@ history:
     rising: "<gray>Buffer rising: <red>+%value%"
     falling: "<gray>Buffer falling: <green>-%value%"
     steady: "<dark_gray>Buffer unchanged"
-    hot: "<red>Detection: model called it or the buffer is rising"
-    clean: "<green>The model is not calling it"
+    flagged: "<red>Prob above the suspicion threshold <white>%value%"
 journal:
   title: "Journal"
   refresh:
@@ -264,13 +263,21 @@ player-cmd:
   peak-buffer: "<gray>Peak buffer: <white>%value%"
   prob-history: "<gray>Probability history:"
   no-data: "<dark_gray>No data yet — readings only appear while fighting."
+guide:
+  title: "<white>How to use"
+  what: "AI anticheat for aim. It watches fights and scores them."
+  watch: "<white>/yai monitor<gray> - live list, red dot = suspicious."
+  check: "<white>/yai prob player<gray> - follow one player closely."
+  act: "<white>/yai journal<gray> - what already triggered. <white>/yai history player<gray> - past readings."
+  numbers: "Percent is this moment, the bar is the buffer. Alert at <white>%alert%<gray>, punish at <white>%punish%<gray>."
+  test: "<white>/yai npc<gray> - spawn a dummy and try it yourself."
 monitor-cmd:
-  started: "<gray>Following <white>%players%<gray>. Refreshing every <white>%seconds%s<gray> — <white>/yai monitor stop<gray> to stop."
-  started-all: "<gray>Following everyone. Refreshing every <white>%seconds%s<gray> — <white>/yai monitor stop<gray> to stop."
-  stopped: "<gray>Stopped."
-  not-watching: "<gray>You were not watching anything."
-  empty: "<dark_gray>Nobody has readings yet. They appear only while fighting."
-  more: "<dark_gray>... and %value% more."
+  started: "<gray>Watching <white>%players%<gray>."
+  started-all: "<gray>Watching everyone."
+  stopped: "<gray>Monitor off."
+  not-watching: "<gray>Monitor is off."
+  empty: "<dark_gray>Nothing yet."
+  more: "<dark_gray>+%value% more"
 prob:
   stopped: "<gray>Stopped watching."
   not-watching: "<gray>You were not watching anyone."
@@ -297,6 +304,7 @@ npc:
   spawned: "<gray>Spawned <white>%value%<gray> sparring dummy/dummies."
   cleared: "<gray>Sparring dummies removed."
   full: "<red>Already at the sparring dummy limit."
+  killed: "<gray>Dummy <white>%value%<gray> is down."
 dummy:
   title: "Dummy Settings"
   hp:

@@ -1,11 +1,10 @@
 package me.everyone.yuppyai.command.impl;
 
+import java.util.List;
+import java.util.Map;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.command.SubCommand;
 import org.bukkit.command.CommandSender;
-
-import java.util.List;
-import java.util.Map;
 
 public final class ReloadCommand extends SubCommand {
 

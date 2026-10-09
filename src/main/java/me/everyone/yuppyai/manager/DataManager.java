@@ -1,16 +1,14 @@
 package me.everyone.yuppyai.manager;
 
-import me.everyone.yuppyai.YuppyAI;
-import me.everyone.yuppyai.data.PlayerData;
-import me.everyone.yuppyai.listener.BukkitListener;
-import me.everyone.yuppyai.listener.ChatModerationListener;
-import org.bukkit.entity.Player;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import me.everyone.yuppyai.YuppyAI;
+import me.everyone.yuppyai.data.PlayerData;
+import me.everyone.yuppyai.listener.BukkitListener;
+import org.bukkit.entity.Player;
 
 public final class DataManager implements Manager {
 
@@ -24,7 +22,6 @@ public final class DataManager implements Manager {
     @Override
     public void enable() {
         plugin.getServer().getPluginManager().registerEvents(new BukkitListener(plugin), plugin);
-        plugin.getServer().getPluginManager().registerEvents(new ChatModerationListener(plugin), plugin);
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             add(player);
         }

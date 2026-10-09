@@ -1,11 +1,6 @@
 package me.everyone.yuppyai.manager;
 
-import me.everyone.yuppyai.YuppyAI;
-import me.everyone.yuppyai.data.PlayerData;
-import org.bukkit.GameMode;
-import org.bukkit.Location;
-import org.bukkit.entity.Player;
-
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
@@ -13,8 +8,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
-import java.util.ArrayDeque;
 import java.util.concurrent.ConcurrentHashMap;
+import me.everyone.yuppyai.YuppyAI;
+import me.everyone.yuppyai.data.PlayerData;
+import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
 
 public final class JournalManager implements Manager {
 
@@ -142,7 +141,7 @@ public final class JournalManager implements Manager {
         }
         enterVanish(watcher);
         Player target = data.player();
-        watcher.setGameMode(org.bukkit.GameMode.SPECTATOR);
+        watcher.setGameMode(GameMode.SPECTATOR);
         watcher.teleport(target.getLocation());
         watcher.setSpectatorTarget(target);
         plugin.displays().watch(watcher, data);

@@ -1,8 +1,9 @@
 package me.everyone.yuppyai.manager;
 
+import java.util.Locale;
 import me.everyone.yuppyai.YuppyAI;
-import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.Sound;
+import org.bukkit.configuration.file.FileConfiguration;
 
 public final class ConfigManager implements Manager {
 
@@ -51,7 +52,10 @@ public final class ConfigManager implements Manager {
     private int hologramLines = 6;
     private int hologramSeconds = 30;
     private double hologramOffset = 1.1D;
-    private boolean autoModEnabled = true;
+
+    private int trackEntities = 600;
+    private int historyKeep = 2000;
+    private int historyFlushSeconds = 30;
 
     private boolean testServerEnabled = false;
     private String testServerWorld = "yuppyai_test";
@@ -120,7 +124,10 @@ public final class ConfigManager implements Manager {
         hologramLines = config.getInt("display.hologram-lines", 6);
         hologramSeconds = config.getInt("display.hologram-seconds", 30);
         hologramOffset = config.getDouble("display.hologram-offset", 1.1D);
-        autoModEnabled = config.getBoolean("automod.enabled", true);
+
+        trackEntities = Math.max(0, config.getInt("analysis.track-entities", 600));
+        historyKeep = Math.max(1, config.getInt("history.keep", 2000));
+        historyFlushSeconds = Math.max(1, config.getInt("history.flush-seconds", 30));
 
         testServerEnabled = config.getBoolean("test-server.enabled", false);
         testServerWorld = config.getString("test-server.world", "yuppyai_test");
@@ -292,8 +299,16 @@ public final class ConfigManager implements Manager {
         return progressSeconds;
     }
 
-    public boolean autoModEnabled() {
-        return autoModEnabled;
+    public int trackEntities() {
+        return trackEntities;
+    }
+
+    public int historyKeep() {
+        return historyKeep;
+    }
+
+    public int historyFlushSeconds() {
+        return historyFlushSeconds;
     }
 
     public boolean testServerEnabled() {
@@ -317,7 +332,7 @@ public final class ConfigManager implements Manager {
             return fallback;
         }
         try {
-            return Sound.valueOf(value.trim().toUpperCase(java.util.Locale.ROOT));
+            return Sound.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException ignored) {
             return fallback;
         }

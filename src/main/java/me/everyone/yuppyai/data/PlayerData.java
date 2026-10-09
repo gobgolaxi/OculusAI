@@ -1,27 +1,25 @@
 package me.everyone.yuppyai.data;
 
-import me.everyone.yuppyai.analysis.RotationSample;
-import org.bukkit.entity.Player;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.UUID;
+import me.everyone.yuppyai.analysis.AttackMoment;
+import me.everyone.yuppyai.analysis.FeatureSchemas;
+import me.everyone.yuppyai.analysis.RotationSample;
+import me.everyone.yuppyai.analysis.RunningStats;
+import org.bukkit.entity.Player;
 
 public final class PlayerData {
 
     private static final int MAX_HISTORY = 40;
+    private static final int MAX_ATTACK_HISTORY = 40;
     private static final int MAX_READINGS = 240;
     private static final int MAX_SCALE_HISTORY = 300;
     private static final int MIN_SCALE_HISTORY = 20;
 
-    /**
-     * One analysed window: when the model answered, what it said and what the
-     * buffer looked like right after. Unlike {@link #bufferHistory()} this keeps
-     * clean windows too, so a history can show what was <i>not</i> flagged.
-     */
     public record Reading(long capturedAt, double probability, double buffer) {
     }
 
@@ -38,6 +36,8 @@ public final class PlayerData {
     private final Deque<Reading> readings = new ArrayDeque<>();
 
     private final Deque<Double> scaleHistory = new ArrayDeque<>();
+    private final Deque<AttackMoment> attackHistory = new ArrayDeque<>();
+    private final RunningStats running = new RunningStats(FeatureSchemas.AIM);
 
     private volatile double buffer;
     private volatile double probability;
@@ -53,6 +53,10 @@ public final class PlayerData {
 
     private volatile boolean attackedThisTick;
     private volatile double aimErrorThisTick = Double.NaN;
+    private volatile AttackMoment momentThisTick;
+    private volatile long airborneSinceMs;
+    private volatile long sprintDroppedAtMs;
+    private volatile boolean sprinting;
 
     public PlayerData(Player player) {
         this.uuid = player.getUniqueId();
@@ -82,9 +86,11 @@ public final class PlayerData {
     public void addSample(float yaw, float pitch, int windowSize) {
         lastYaw = yaw;
         lastPitch = pitch;
-        RotationSample sample = new RotationSample(yaw, pitch, attackedThisTick, aimErrorThisTick);
+        RotationSample sample = new RotationSample(yaw, pitch, attackedThisTick,
+                aimErrorThisTick, momentThisTick);
         attackedThisTick = false;
         aimErrorThisTick = Double.NaN;
+        momentThisTick = null;
 
         synchronized (window) {
             window.addLast(sample);
@@ -92,6 +98,16 @@ public final class PlayerData {
                 window.pollFirst();
             }
         }
+    }
+
+    public int windowSize() {
+        synchronized (window) {
+            return window.size();
+        }
+    }
+
+    public long msSinceAttack() {
+        return lastAttackMs == 0L ? -1L : System.currentTimeMillis() - lastAttackMs;
     }
 
     public List<RotationSample> snapshotWindow(int windowSize) {
@@ -109,10 +125,67 @@ public final class PlayerData {
         }
     }
 
+    public void noteSprint(boolean nowSprinting) {
+        if (sprinting && !nowSprinting) {
+            sprintDroppedAtMs = System.currentTimeMillis();
+        }
+        sprinting = nowSprinting;
+    }
+
+    public int sprintDroppedTicks() {
+        if (sprintDroppedAtMs == 0L) {
+            return -1;
+        }
+        long elapsed = System.currentTimeMillis() - sprintDroppedAtMs;
+        return elapsed > 1000L ? -1 : (int) (elapsed / 50L);
+    }
+
+    public void noteGround(boolean onGround) {
+        if (onGround) {
+            airborneSinceMs = 0L;
+        } else if (airborneSinceMs == 0L) {
+            airborneSinceMs = System.currentTimeMillis();
+        }
+    }
+
+    public int airTicks() {
+        if (airborneSinceMs == 0L) {
+            return 0;
+        }
+        long elapsed = System.currentTimeMillis() - airborneSinceMs;
+        return (int) Math.min(1200L, Math.max(0L, elapsed / 50L));
+    }
+
     public void markAttack(double aimError) {
+        markAttack(aimError, 0.0F, true, false, false);
+    }
+
+    public void markAttack(double aimError, float fallDistance, boolean onGround,
+                           boolean sprinting, boolean critBlocked) {
         attackedThisTick = true;
         aimErrorThisTick = aimError;
-        lastAttackMs = System.currentTimeMillis();
+        long now = System.currentTimeMillis();
+        long interval = lastAttackMs == 0L ? -1L : Math.max(0L, now - lastAttackMs);
+        AttackMoment moment = new AttackMoment(aimError, fallDistance, airTicks(),
+                onGround, sprinting, critBlocked, interval, sprintDroppedTicks());
+        momentThisTick = moment;
+        lastAttackMs = now;
+        synchronized (attackHistory) {
+            attackHistory.addLast(moment);
+            while (attackHistory.size() > MAX_ATTACK_HISTORY) {
+                attackHistory.pollFirst();
+            }
+        }
+    }
+
+    public RunningStats running() {
+        return running;
+    }
+
+    public List<AttackMoment> attackHistory() {
+        synchronized (attackHistory) {
+            return List.copyOf(attackHistory);
+        }
     }
 
     public boolean inCombat(long combatMs) {
@@ -135,8 +208,6 @@ public final class PlayerData {
                 bufferHistory.pollFirst();
             }
         }
-        // The reading log deliberately survives forget, death and logout: it is
-        // a record of what the model saw, not the live suspicion state.
         synchronized (readings) {
             readings.addLast(new Reading(now, value, buffer));
             while (readings.size() > MAX_READINGS) {
@@ -339,5 +410,12 @@ public final class PlayerData {
         windowsAnalysed = 0;
         attackedThisTick = false;
         aimErrorThisTick = Double.NaN;
+        momentThisTick = null;
+        airborneSinceMs = 0L;
+        sprintDroppedAtMs = 0L;
+        sprinting = false;
+        synchronized (attackHistory) {
+            attackHistory.clear();
+        }
     }
 }

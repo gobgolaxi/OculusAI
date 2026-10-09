@@ -1,6 +1,9 @@
 package me.everyone.yuppyai.manager;
 
 import com.google.gson.JsonObject;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.data.PlayerData;
 import me.everyone.yuppyai.gui.DashboardMenu;
@@ -14,10 +17,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.InventoryHolder;
-
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 public final class MenuManager implements Manager, Listener {
 
@@ -73,15 +72,14 @@ public final class MenuManager implements Manager, Listener {
     }
 
     public void openHistory(Player viewer, PlayerData target) {
-        plugin.getServer().getScheduler().runTask(plugin,
-                () -> new HistoryMenu(plugin, viewer, target.uuid(), target.name(), 0).open());
+        openHistory(viewer, target.uuid(), target.name());
     }
 
-    /**
-     * Which way this viewer wants their readings laid out. Kept per viewer so a
-     * moderator who cares about "worst first" does not have to flip the button
-     * again on every player they look at.
-     */
+    public void openHistory(Player viewer, UUID targetId, String targetName) {
+        plugin.getServer().getScheduler().runTask(plugin,
+                () -> new HistoryMenu(plugin, viewer, targetId, targetName, 0).open());
+    }
+
     public HistorySort historySort(UUID viewer) {
         return historySorts.getOrDefault(viewer, HistorySort.FRESHNESS);
     }

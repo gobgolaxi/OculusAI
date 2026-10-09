@@ -1,10 +1,9 @@
 package me.everyone.yuppyai.manager;
 
-import me.everyone.yuppyai.YuppyAI;
-import org.bukkit.configuration.file.YamlConfiguration;
-
 import java.io.File;
 import java.util.List;
+import me.everyone.yuppyai.YuppyAI;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 public final class ProbConfigManager implements Manager {
 

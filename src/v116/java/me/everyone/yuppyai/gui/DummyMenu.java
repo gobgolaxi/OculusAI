@@ -1,15 +1,14 @@
 package me.everyone.yuppyai.gui;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.manager.TestServerManager.DummyOptions;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
-
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 
 public final class DummyMenu extends Menu {
 

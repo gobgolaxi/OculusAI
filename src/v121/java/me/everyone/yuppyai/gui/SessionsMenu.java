@@ -2,15 +2,15 @@ package me.everyone.yuppyai.gui;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import me.everyone.yuppyai.YuppyAI;
-import me.everyone.yuppyai.util.Msg;
-import org.bukkit.Material;
-import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryClickEvent;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import me.everyone.yuppyai.YuppyAI;
+import me.everyone.yuppyai.util.Msg;
+import org.bukkit.Material;
+import org.bukkit.entity.Player;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryClickEvent;
 
 public final class SessionsMenu extends Menu {
 
@@ -22,11 +22,11 @@ public final class SessionsMenu extends Menu {
     private final int page;
     private final List<JsonObject> shown = new ArrayList<>();
 
-    public SessionsMenu(YuppyAI plugin, org.bukkit.entity.Player viewer) {
+    public SessionsMenu(YuppyAI plugin, Player viewer) {
         this(plugin, viewer, 0);
     }
 
-    public SessionsMenu(YuppyAI plugin, org.bukkit.entity.Player viewer, int page) {
+    public SessionsMenu(YuppyAI plugin, Player viewer, int page) {
         super(plugin, viewer);
         this.page = Math.max(0, page);
     }

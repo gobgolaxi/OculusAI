@@ -1,12 +1,11 @@
 package me.everyone.yuppyai.util;
 
-import net.md_5.bungee.api.ChatColor;
-
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import net.md_5.bungee.api.ChatColor;
 
 public final class Msg {
 
@@ -36,9 +35,6 @@ public final class Msg {
     }
 
     private static String colourize(String input) {
-        // Expand <gradient:from:to>...</gradient> first, so the per-character
-        // colour codes it emits are plain §x sequences the tag pass below will
-        // simply leave alone. Nested tags like <bold> are preserved through it.
         String gradiented = applyGradients(input);
         StringBuilder out = new StringBuilder();
         Matcher matcher = TAG.matcher(gradiented);

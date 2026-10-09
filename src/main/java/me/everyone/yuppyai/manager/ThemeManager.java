@@ -1,11 +1,10 @@
 package me.everyone.yuppyai.manager;
 
-import me.everyone.yuppyai.YuppyAI;
-import me.everyone.yuppyai.util.Msg;
-
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import me.everyone.yuppyai.YuppyAI;
+import me.everyone.yuppyai.util.Msg;
 
 public final class ThemeManager implements Manager {
 

@@ -1,19 +1,18 @@
 package me.everyone.yuppyai.gui;
 
+import java.util.List;
+import java.util.Map;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.util.Msg;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
-
-import java.util.List;
-import java.util.Map;
 
 public final class DashboardMenu extends Menu {
 
     private static final int SLOT_STATUS = 11;
     private static final int SLOT_THEME = 13;
     private static final int SLOT_PLAYERS = 15;
-    private static final int SLOT_AUTOMOD = 29;
     private static final int SLOT_PUNISH = 30;
     private static final int SLOT_REFRESH = 31;
     private static final int SLOT_EVIDENCE = 32;
@@ -28,7 +27,7 @@ public final class DashboardMenu extends Menu {
             "UI_BUTTON_CLICK"
     };
 
-    public DashboardMenu(YuppyAI plugin, org.bukkit.entity.Player viewer) {
+    public DashboardMenu(YuppyAI plugin, Player viewer) {
         super(plugin, viewer);
     }
 
@@ -72,17 +71,6 @@ public final class DashboardMenu extends Menu {
                                 Map.of("value", Integer.toString(plugin.data().size()))),
                         "",
                         plugin.lang().text("dashboard.players.click"))));
-
-        boolean autoMod = plugin.config().autoModEnabled();
-        set(SLOT_AUTOMOD, item(autoMod ? Material.WRITABLE_BOOK : Material.BOOK,
-                plugin.lang().text("dashboard.automod.name"),
-                List.of(
-                        plugin.lang().text(autoMod ? "dashboard.automod.state-on" : "dashboard.automod.state-off"),
-                        "",
-                        plugin.lang().text("dashboard.automod.line1"),
-                        plugin.lang().text("dashboard.automod.line2"),
-                        "",
-                        plugin.lang().text("shared.click-toggle"))));
 
         boolean punishing = plugin.config().punishmentEnabled();
         set(SLOT_PUNISH, item(punishing ? Material.IRON_SWORD : Material.WOODEN_SWORD,
@@ -187,7 +175,6 @@ public final class DashboardMenu extends Menu {
     @Override
     public void onClick(InventoryClickEvent event) {
         switch (event.getSlot()) {
-            case SLOT_AUTOMOD -> toggle("automod.enabled", true);
             case SLOT_PUNISH -> toggle("punishment.enabled", false);
             case SLOT_EVIDENCE -> toggle("punishment.evidence.enabled", true);
             case SLOT_ALERT_SOUND -> cycleAlertSound();

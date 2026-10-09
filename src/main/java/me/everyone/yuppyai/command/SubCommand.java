@@ -1,11 +1,13 @@
 package me.everyone.yuppyai.command;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.util.Msg;
 import org.bukkit.command.CommandSender;
-
-import java.util.List;
-import java.util.Map;
+import org.bukkit.entity.Player;
 
 public abstract class SubCommand {
 
@@ -60,10 +62,10 @@ public abstract class SubCommand {
     }
 
     protected List<String> onlineNames(String partial) {
-        String lower = partial.toLowerCase(java.util.Locale.ROOT);
-        List<String> names = new java.util.ArrayList<>();
-        for (org.bukkit.entity.Player player : plugin.getServer().getOnlinePlayers()) {
-            if (player.getName().toLowerCase(java.util.Locale.ROOT).startsWith(lower)) {
+        String lower = partial.toLowerCase(Locale.ROOT);
+        List<String> names = new ArrayList<>();
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            if (player.getName().toLowerCase(Locale.ROOT).startsWith(lower)) {
                 names.add(player.getName());
             }
         }

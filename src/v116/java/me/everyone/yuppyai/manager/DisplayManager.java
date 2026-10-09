@@ -7,6 +7,15 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 import com.comphenix.protocol.wrappers.WrappedWatchableObject;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.data.PlayerData;
 import me.everyone.yuppyai.util.Msg;
@@ -15,19 +24,8 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitTask;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
-import java.lang.reflect.Type;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.Set;
-
 public final class DisplayManager implements Manager {
     private static final int DISPLAY_UPDATE_TICKS = 2;
-    private static final int ALWAYS_PROB_SYNC_TICKS = 10;
 
     private record Watch(UUID target, long expiresAt, List<Line> holograms, boolean compact, boolean permanent) {
     }
@@ -43,9 +41,7 @@ public final class DisplayManager implements Manager {
     private final YuppyAI plugin;
     private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
     private final Map<UUID, Map<UUID, Watch>> watching = new ConcurrentHashMap<>();
-    private final Set<UUID> alwaysProbViewers = ConcurrentHashMap.newKeySet();
     private BukkitTask task;
-    private int ticks;
 
     public DisplayManager(YuppyAI plugin) {
         this.plugin = plugin;
@@ -53,7 +49,6 @@ public final class DisplayManager implements Manager {
 
     @Override
     public void enable() {
-        ticks = 0;
         task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::tick, 1L, DISPLAY_UPDATE_TICKS);
     }
 
@@ -72,7 +67,6 @@ public final class DisplayManager implements Manager {
             }
         }
         watching.clear();
-        alwaysProbViewers.clear();
     }
 
     public void watch(Player watcher, PlayerData target) {
@@ -80,34 +74,13 @@ public final class DisplayManager implements Manager {
     }
 
     public void enableAlwaysProb(Player viewer) {
-        if (!viewer.hasPermission("yuppyai.alwaysprob")) {
-            return;
-        }
-        alwaysProbViewers.add(viewer.getUniqueId());
-        syncAlwaysProb(viewer);
     }
 
     public void disableAlwaysProb(Player viewer) {
-        alwaysProbViewers.remove(viewer.getUniqueId());
-        Map<UUID, Watch> watches = watching.get(viewer.getUniqueId());
-        if (watches == null) {
-            return;
-        }
-        watches.entrySet().removeIf(entry -> {
-            Watch watch = entry.getValue();
-            if (!watch.permanent()) {
-                return false;
-            }
-            destroyHolograms(viewer, watch);
-            return true;
-        });
-        if (watches.isEmpty()) {
-            watching.remove(viewer.getUniqueId());
-        }
     }
 
     public boolean isAlwaysProb(UUID viewer) {
-        return alwaysProbViewers.contains(viewer);
+        return false;
     }
 
     private void watch(Player watcher, PlayerData target, boolean compact, boolean permanent) {
@@ -120,15 +93,13 @@ public final class DisplayManager implements Manager {
         if (previous != null) {
             destroyHolograms(watcher, previous);
         }
-        List<Line> holograms = createLines(compact ? 1 : Math.max(1, plugin.probConfig().hologramLines()));
         Watch watch = new Watch(
                 target.uuid(),
                 permanent ? Long.MAX_VALUE : System.currentTimeMillis() + plugin.probConfig().hologramSeconds() * 1000L,
-                holograms,
+                List.of(),
                 compact,
                 permanent);
         watches.put(target.uuid(), watch);
-        spawnHolograms(watcher, target, watch);
     }
 
     public void stop(Player watcher) {
@@ -147,11 +118,6 @@ public final class DisplayManager implements Manager {
 
     private void tick() {
         long now = System.currentTimeMillis();
-        ticks += DISPLAY_UPDATE_TICKS;
-        if (ticks >= ALWAYS_PROB_SYNC_TICKS) {
-            ticks = 0;
-            syncAlwaysProb();
-        }
         watching.entrySet().removeIf(entry -> {
             Player watcher = plugin.getServer().getPlayer(entry.getKey());
             Map<UUID, Watch> watches = entry.getValue();
@@ -172,7 +138,6 @@ public final class DisplayManager implements Manager {
                     destroyHolograms(watcher, watch);
                     return true;
                 }
-                updateHolograms(watcher, target, watch);
                 return false;
             });
 
@@ -262,14 +227,14 @@ public final class DisplayManager implements Manager {
     }
 
     private Location packetLocation(PlayerData target, int index, int lineCount) {
-        org.bukkit.Location base = target.player().getLocation();
+        Location base = target.player().getLocation();
         double top = Math.max(2.25D, plugin.probConfig().hologramOffset() + 1.15D);
         double step = 0.28D;
         double y = base.getY() + top + (lineCount - index - 1) * step;
         return new Location(base.getWorld(), base.getX(), y, base.getZ(), 0.0F, 0.0F);
     }
 
-    private PacketContainer spawnPacket(int entityId, UUID uuid, org.bukkit.Location location) {
+    private PacketContainer spawnPacket(int entityId, UUID uuid, Location location) {
         PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.SPAWN_ENTITY, true);
         packet.getIntegers().write(0, entityId);
         packet.getUUIDs().write(0, uuid);
@@ -280,7 +245,7 @@ public final class DisplayManager implements Manager {
         return packet;
     }
 
-    private PacketContainer teleportPacket(int entityId, org.bukkit.Location location) {
+    private PacketContainer teleportPacket(int entityId, Location location) {
         PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.ENTITY_TELEPORT, true);
         packet.getIntegers().write(0, entityId);
         packet.getDoubles().write(0, location.getX());
@@ -398,48 +363,6 @@ public final class DisplayManager implements Manager {
         return builder.toString();
     }
 
-    private void syncAlwaysProb() {
-        for (UUID viewerId : alwaysProbViewers) {
-            Player viewer = plugin.getServer().getPlayer(viewerId);
-            if (viewer == null || !viewer.isOnline() || !viewer.hasPermission("yuppyai.alwaysprob")) {
-                alwaysProbViewers.remove(viewerId);
-                continue;
-            }
-            syncAlwaysProb(viewer);
-        }
-    }
-
-    private void syncAlwaysProb(Player viewer) {
-        if (viewer == null || !viewer.isOnline() || !viewer.hasPermission("yuppyai.alwaysprob")) {
-            return;
-        }
-        Map<UUID, Watch> watches = watching.computeIfAbsent(viewer.getUniqueId(), ignored -> new ConcurrentHashMap<>());
-        for (Player target : plugin.getServer().getOnlinePlayers()) {
-            if (!isVisibleTo(viewer, target)) {
-                continue;
-            }
-            PlayerData data = plugin.data().get(target);
-            if (data != null) {
-                watch(viewer, data, true, true);
-            }
-        }
-        watches.entrySet().removeIf(entry -> {
-            Watch watch = entry.getValue();
-            if (!watch.permanent()) {
-                return false;
-            }
-            Player target = plugin.getServer().getPlayer(entry.getKey());
-            if (target != null && isVisibleTo(viewer, target)) {
-                return false;
-            }
-            destroyHolograms(viewer, watch);
-            return true;
-        });
-        if (watches.isEmpty()) {
-            watching.remove(viewer.getUniqueId());
-        }
-    }
-
     private boolean isVisibleTo(Player viewer, Player target) {
         if (viewer == null || target == null) {
             return false;
@@ -469,7 +392,7 @@ public final class DisplayManager implements Manager {
     private Map<String, String> placeholders(PlayerData target, double fraction, int barWidth,
                                              Map<String, String> extra) {
         var theme = plugin.theme().current();
-        Map<String, String> placeholders = new java.util.HashMap<>();
+        Map<String, String> placeholders = new HashMap<>();
         placeholders.put("bar", Msg.bar(fraction, barWidth));
         placeholders.put("probability", Msg.percent(target.probability()));
         placeholders.put("buffer", Msg.round(target.buffer(), 1));
@@ -496,15 +419,6 @@ public final class DisplayManager implements Manager {
     }
 
     private void destroyHolograms(Player watcher, Watch watch) {
-        if (watcher == null) {
-            return;
-        }
-        int[] ids = watch.holograms().stream().mapToInt(Line::entityId).toArray();
-        if (ids.length > 0) {
-            PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.ENTITY_DESTROY, true);
-            packet.getIntegerArrays().write(0, ids);
-            send(watcher, packet);
-        }
         watcher.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
                 net.md_5.bungee.api.chat.TextComponent.fromLegacyText(""));
     }
@@ -544,4 +458,3 @@ public final class DisplayManager implements Manager {
         }
     }
 }
-

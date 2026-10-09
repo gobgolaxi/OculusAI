@@ -38,6 +38,9 @@ permissions:
   yuppyai.npc:
     description: Spawn a sparring dummy that attacks you.
     default: false
+  yuppyai.connect:
+    description: Bind this server to a YuppyAI account.
+    default: op
   yuppyai.diag:
     description: Inspect why a player's windows are or are not analysed.
     default: op

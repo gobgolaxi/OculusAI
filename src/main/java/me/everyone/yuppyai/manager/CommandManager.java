@@ -8,6 +8,7 @@ import java.util.Map;
 import me.everyone.yuppyai.YuppyAI;
 import me.everyone.yuppyai.command.SubCommand;
 import me.everyone.yuppyai.command.impl.DashboardCommand;
+import me.everyone.yuppyai.command.impl.ConnectCommand;
 import me.everyone.yuppyai.command.impl.DataCommand;
 import me.everyone.yuppyai.command.impl.DiagCommand;
 import me.everyone.yuppyai.command.impl.ForgetCommand;
@@ -51,6 +52,7 @@ public final class CommandManager implements Manager, CommandExecutor, TabComple
         subCommands.add(new ForgetCommand(plugin));
         subCommands.add(new DataCommand(plugin));
         subCommands.add(new NpcCommand(plugin));
+        subCommands.add(new ConnectCommand(plugin));
         subCommands.add(new DashboardCommand(plugin));
         subCommands.add(new DiagCommand(plugin));
         subCommands.add(new ReloadCommand(plugin));

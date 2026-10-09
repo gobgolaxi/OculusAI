@@ -221,6 +221,27 @@ public final class ApiManager implements Manager {
         return get("/status");
     }
 
+    public CompletableFuture<JsonObject> linkStart(String server, String version) {
+        JsonObject body = new JsonObject();
+        body.addProperty("server", server);
+        body.addProperty("version", version);
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .uri(URI.create(plugin.config().apiUrl() + "/link/start"))
+                .timeout(Duration.ofMillis(plugin.config().apiTimeoutMs()))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
+        return send(builder.build());
+    }
+
+    public CompletableFuture<JsonObject> linkStatus(String token) {
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(plugin.config().apiUrl() + "/link/status/" + token))
+                .timeout(Duration.ofMillis(plugin.config().apiTimeoutMs()))
+                .GET()
+                .build();
+        return send(request);
+    }
+
     private CompletableFuture<JsonObject> post(String path, JsonObject body) {
         HttpRequest.Builder builder = builder(path, plugin.config().apiKey())
                 .header("Content-Type", "application/json")

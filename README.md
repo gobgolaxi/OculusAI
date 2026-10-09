@@ -9,14 +9,19 @@
 
 1. Paper (или форк) 1.16.5+ и ProtocolLib.
 2. Положить jar и ProtocolLib в `plugins/`, запустить сервер.
-3. В `plugins/YuppyAI/config.yml` указать `api.url` и `api.key`.
-4. В панели сервиса, во вкладке настроек, вписать IP сервера — без него ключ не работает.
-5. `/yai reload`, затем `/yai guide` в игре.
+3. В `plugins/YuppyAI/config.yml` указать `api.url`.
+4. Написать `/yai connect` на сервере и открыть выданную ссылку под своим аккаунтом —
+   ключ и IP сервера пропишутся сами.
+5. `/yai guide` в игре — короткая инструкция.
+
+Ключ можно вписать и руками в `api.key`, тогда IP сервера нужно указать в панели самому:
+без адреса ключ не работает.
 
 ## Команды
 
 | Команда | Что делает |
 |---|---|
+| `/yai connect` | привязать сервер к аккаунту одной ссылкой |
 | `/yai guide` | как пользоваться античитом, в один экран |
 | `/yai monitor` | живой список подозрительных |
 | `/yai prob <ник>` | следить за одним игроком |
@@ -32,7 +37,7 @@
 | `/yai reload` | перечитать конфиг |
 
 Права: `yuppyai.command`, `yuppyai.alerts`, `yuppyai.journal`, `yuppyai.vanish`,
-`yuppyai.data`, `yuppyai.npc`, `yuppyai.diag`, `yuppyai.bypass`.
+`yuppyai.data`, `yuppyai.npc`, `yuppyai.connect`, `yuppyai.diag`, `yuppyai.bypass`.
 
 ## Сборка
 

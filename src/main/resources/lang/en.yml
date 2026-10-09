@@ -1,4 +1,5 @@
 shared:
+  close: "<red>Close"
   back: "<yellow>Back"
   refresh: "<white>Refresh"
   no-permission: "<red>No permission"
@@ -35,6 +36,13 @@ theme:
   mint: "Mint"
   midnight: "Midnight"
 dashboard:
+  dummy:
+    click: "<yellow>Click to spawn one"
+    count: "<gray>Spawned: <white>%value%"
+    name: "<aqua>Sparring dummy"
+  journal:
+    click: "<yellow>Click to open"
+    name: "<gold>Journal"
   title: "Dashboard"
   service:
     up: "<green>Service up"
@@ -89,6 +97,7 @@ dashboard:
     online: "<gray>Online: <white>%value%"
     click: "<yellow>Click to see live readings"
   punish:
+    no-command: "none set"
     name: "<red>Act on detections"
     state-on: "<gray>State: <red>on"
     state-off: "<gray>State: <green>off - alerts only"

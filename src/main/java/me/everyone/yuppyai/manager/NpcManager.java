@@ -25,6 +25,7 @@ import me.everyone.yuppyai.util.UseActions;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -254,10 +255,17 @@ public final class NpcManager implements Manager, Listener {
     }
 
     private void move(Npc npc, double dx, double dy, double dz) {
-        npc.position(npc.x() + dx, npc.y() + dy, npc.z() + dz);
+        double stepX = quantise(dx);
+        double stepY = quantise(dy);
+        double stepZ = quantise(dz);
+        npc.position(npc.x() + stepX, npc.y() + stepY, npc.z() + stepZ);
         for (Player viewer : viewersOf(npc)) {
-            protocol.move(viewer, npc, dx, dy, dz);
+            protocol.move(viewer, npc, stepX, stepY, stepZ);
         }
+    }
+
+    private static double quantise(double blocks) {
+        return Math.round(blocks * 4096.0D) / 4096.0D;
     }
 
     private void attack(Npc npc, Player target) {
@@ -372,6 +380,16 @@ public final class NpcManager implements Manager, Listener {
         }
     }
 
+    private static Sound hitSound() {
+        for (String name : new String[] {"ENTITY_PLAYER_HURT", "ENTITY_PLAYER_ATTACK_STRONG"}) {
+            try {
+                return Sound.valueOf(name);
+            } catch (IllegalArgumentException ignored) {
+            }
+        }
+        return Sound.values()[0];
+    }
+
     private Npc byEntityId(int entityId) {
         for (Npc npc : npcs.values()) {
             if (npc.entityId() == entityId) {
@@ -388,6 +406,7 @@ public final class NpcManager implements Manager, Listener {
         for (Player viewer : viewersOf(npc)) {
             protocol.hurt(viewer, npc);
         }
+        attacker.playSound(attacker.getLocation(), hitSound(), 1.0F, 1.0F);
 
         double dx = npc.x() - attacker.getLocation().getX();
         double dz = npc.z() - attacker.getLocation().getZ();

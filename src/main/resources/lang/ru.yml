@@ -1,4 +1,5 @@
 shared:
+  close: "<red>Закрыть"
   back: "<yellow>Назад"
   refresh: "<white>Обновить"
   no-permission: "<red>Нет прав."
@@ -35,6 +36,13 @@ theme:
   mint: "Mint"
   midnight: "Midnight"
 dashboard:
+  dummy:
+    click: "<yellow>Нажми, чтобы заспавнить"
+    count: "<gray>Заспавнено: <white>%value%"
+    name: "<aqua>Манекен"
+  journal:
+    click: "<yellow>Нажми, чтобы открыть"
+    name: "<gold>Журнал"
   title: "Dashboard"
   service:
     up: "<green>Сервис работает"
@@ -89,6 +97,7 @@ dashboard:
     online: "<gray>Онлайн: <white>%value%"
     click: "<yellow>Нажми, чтобы посмотреть live readings"
   punish:
+    no-command: "не задана"
     name: "<red>Действовать по детектам"
     state-on: "<gray>Состояние: <red>включено"
     state-off: "<gray>Состояние: <green>выкл - только алерты"

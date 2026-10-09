@@ -229,6 +229,10 @@ public final class TestServerManager implements Manager, Listener {
 
     public record DummyOptions(double health, boolean stationary, boolean invulnerable) {
         public static final DummyOptions DEFAULT = new DummyOptions(-1.0D, false, true);
+
+        public boolean endless() {
+            return invulnerable;
+        }
     }
 
     public int spawnDummies(Player player, int count) {

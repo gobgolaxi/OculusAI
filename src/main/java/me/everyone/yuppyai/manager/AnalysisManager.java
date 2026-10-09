@@ -176,6 +176,8 @@ public final class AnalysisManager implements Manager {
         }
         lastAlert.put(data.uuid(), now);
         alert(data);
+        plugin.api().reportAlert(data.name(), data.uuid().toString(),
+                data.probability(), data.buffer());
         if (data.buffer() >= plugin.config().punishAt()) {
             plugin.punishments().handle(data);
         }

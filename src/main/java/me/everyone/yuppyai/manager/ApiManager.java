@@ -233,6 +233,16 @@ public final class ApiManager implements Manager {
         return post("/events/kick", body);
     }
 
+    public CompletableFuture<JsonObject> reportAlert(String player, String uuid,
+                                                     double probability, double buffer) {
+        JsonObject body = new JsonObject();
+        body.addProperty("player", player);
+        body.addProperty("uuid", uuid);
+        body.addProperty("probability", probability);
+        body.addProperty("buffer", buffer);
+        return post("/events/alert", body);
+    }
+
     public CompletableFuture<JsonObject> reportPlayer(String player, String uuid,
                                                       String detail, String by) {
         JsonObject body = new JsonObject();

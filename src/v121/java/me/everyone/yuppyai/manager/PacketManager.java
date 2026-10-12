@@ -67,6 +67,13 @@ public final class PacketManager implements Manager {
             var wrapped = event.getPacket().getEnumEntityUseActions().readSafely(0);
             if (wrapped != null && wrapped.getAction() == EnumWrappers.EntityUseAction.ATTACK) {
                 int targetEntityId = event.getPacket().getIntegers().read(0);
+                // Only a hit on a player counts as combat. A mob is a
+                // different measurement entirely - it walks a straight line
+                // and never strafes, so honest farming reads like a cheat -
+                // and an entity nobody tracks is not evidence of anything.
+                if (!plugin.tracker().playerLike(targetEntityId)) {
+                    return;
+                }
                 data.markAttack(aimError(data, targetEntityId), player.getFallDistance(),
                         player.isOnGround(), player.isSprinting(), critBlocked(player));
             }

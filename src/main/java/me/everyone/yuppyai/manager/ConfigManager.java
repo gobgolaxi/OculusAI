@@ -55,7 +55,6 @@ public final class ConfigManager implements Manager {
     private int hologramSeconds = 30;
     private double hologramOffset = 1.1D;
 
-    private int trackEntities = 600;
     private int historyKeep = 2000;
     private int historyFlushSeconds = 30;
 
@@ -129,7 +128,6 @@ public final class ConfigManager implements Manager {
         hologramSeconds = config.getInt("display.hologram-seconds", 30);
         hologramOffset = config.getDouble("display.hologram-offset", 1.1D);
 
-        trackEntities = Math.max(0, config.getInt("analysis.track-entities", 600));
         historyKeep = Math.max(1, config.getInt("history.keep", 2000));
         historyFlushSeconds = Math.max(1, config.getInt("history.flush-seconds", 30));
 
@@ -313,10 +311,6 @@ public final class ConfigManager implements Manager {
 
     public int progressSeconds() {
         return progressSeconds;
-    }
-
-    public int trackEntities() {
-        return trackEntities;
     }
 
     public int historyKeep() {

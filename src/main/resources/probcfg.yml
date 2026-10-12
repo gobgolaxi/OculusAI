@@ -1,6 +1,14 @@
 actionbar: "<%accent%>⚠ <white>%bar% <dark_gray>| <white>%player% <dark_gray>| <gray>%probability%"
 
 hologram:
+  # Голограмма над головой в одну строку. Шесть строк в бою закрывают собой
+  # того, за кем следишь, а два числа, которые что-то решают, — показание и
+  # буфер — помещаются в одну строку с запасом.
+  # false вернёт многострочный format ниже.
+  compact: true
+  compact-format: "<white>%player% <dark_gray>| <gray>aim <white>%probability% <dark_gray>| <gray>buf <white>%buffer%<dark_gray>/<white>%max_buffer% <dark_gray>| %bar%"
+
+  # Используется только при compact: false.
   format:
     - "<dark_gray>◆◆◆ <gradient:%primary%:%secondary%><bold>%player%</bold></gradient> <dark_gray>◆◆◆"
     - "<gray>⚡ <white>%probability% <dark_gray>| <gray>❤ buffer <white>%buffer%<dark_gray>/<white>%max_buffer%"

@@ -12,6 +12,8 @@ public final class ProbConfigManager implements Manager {
     private String actionBarFormat = "";
     private List<String> hologramFormat = List.of();
     private int hologramLines = 6;
+    private boolean hologramCompact = true;
+    private String hologramCompactFormat = "";
     private int hologramSeconds = 300;
     private double hologramOffset = 1.1D;
 
@@ -49,6 +51,16 @@ public final class ProbConfigManager implements Manager {
                     "<dark_gray>♠ windows <white>%windows%");
         }
         hologramLines = Math.max(1, config.getInt("hologram.lines", 6));
+        // One line by default. Six lines of hologram over a player's head in a
+        // fight is a wall between the watcher and what they are watching, and
+        // the two numbers that decide anything - the reading and the buffer -
+        // fit on one line with room to spare. The multi-line `format` above is
+        // still there for anyone who sets compact to false.
+        hologramCompact = config.getBoolean("hologram.compact", true);
+        hologramCompactFormat = config.getString("hologram.compact-format",
+                "<white>%player% <dark_gray>| <gray>aim <white>%probability% "
+                + "<dark_gray>| <gray>buf <white>%buffer%<dark_gray>/<white>%max_buffer% "
+                + "<dark_gray>| %bar%");
         hologramSeconds = Math.max(1, config.getInt("hologram.seconds", 300));
         hologramOffset = config.getDouble("hologram.offset", 1.1D);
     }
@@ -63,6 +75,14 @@ public final class ProbConfigManager implements Manager {
 
     public List<String> hologramFormat() {
         return hologramFormat;
+    }
+
+    public boolean hologramCompact() {
+        return hologramCompact;
+    }
+
+    public String hologramCompactFormat() {
+        return hologramCompactFormat;
     }
 
     public int hologramSeconds() {

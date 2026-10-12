@@ -24,6 +24,9 @@ public final class ConfigManager implements Manager {
     private double minAttackRotation = 2.5D;
     private int runningHorizon = 15;
     private int smoothWindows = 3;
+    private boolean updateEnabled = true;
+    private boolean updateDownload = true;
+    private int updateCheckHours = 6;
 
     private double suspicion = 0.5D;
     private double gain = 1.0D;
@@ -97,6 +100,9 @@ public final class ConfigManager implements Manager {
         minAttackRotation = config.getDouble("analysis.min-attack-rotation", 2.5D);
         runningHorizon = Math.max(0, config.getInt("analysis.running-horizon", 15));
         smoothWindows = Math.max(1, config.getInt("buffer.smooth-windows", 3));
+        updateEnabled = config.getBoolean("update.enabled", true);
+        updateDownload = config.getBoolean("update.download", true);
+        updateCheckHours = Math.max(1, config.getInt("update.check-hours", 6));
 
         suspicion = config.getDouble("buffer.suspicion", 0.5D);
         gain = config.getDouble("buffer.gain", 1.0D);
@@ -197,6 +203,18 @@ public final class ConfigManager implements Manager {
 
     public int smoothWindows() {
         return smoothWindows;
+    }
+
+    public boolean updateEnabled() {
+        return updateEnabled;
+    }
+
+    public boolean updateDownload() {
+        return updateDownload;
+    }
+
+    public int updateCheckHours() {
+        return updateCheckHours;
     }
 
     public double minAttackRotation() {

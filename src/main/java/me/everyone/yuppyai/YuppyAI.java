@@ -27,6 +27,7 @@ import me.everyone.yuppyai.manager.SetupManager;
 import me.everyone.yuppyai.manager.TestServerManager;
 import me.everyone.yuppyai.manager.ThemeManager;
 import me.everyone.yuppyai.manager.TrackerManager;
+import me.everyone.yuppyai.manager.UpdateManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class YuppyAI extends JavaPlugin {
@@ -53,6 +54,9 @@ public final class YuppyAI extends JavaPlugin {
     private NpcManager npcManager;
     private SetupManager setupManager;
     private TestServerManager testServerManager;
+    private UpdateManager updateManager;
+    private String buildVersion = "";
+    private String buildFlavour = "";
 
     @Override
     public void onEnable() {
@@ -78,6 +82,8 @@ public final class YuppyAI extends JavaPlugin {
         npcManager = register(new NpcManager(this));
         setupManager = register(new SetupManager(this));
         testServerManager = register(new TestServerManager(this));
+        readBuild();
+        updateManager = register(new UpdateManager(this));
 
         for (Manager manager : managers.values()) {
             try {
@@ -120,6 +126,42 @@ public final class YuppyAI extends JavaPlugin {
 
     public ConfigManager config() {
         return configManager;
+    }
+
+    public UpdateManager updates() {
+        return updateManager;
+    }
+
+    /** This jar's version, as Gradle stamped it at build time. */
+    public String buildVersion() {
+        return buildVersion;
+    }
+
+    /** Which of the two jars this is - "1.16.5" or "1.21.11". The update check
+     *  asks for its own flavour by name; handing a 1.21 build to a 1.16 server
+     *  would be worse than not updating at all. */
+    public String buildFlavour() {
+        return buildFlavour;
+    }
+
+    /** The installed jar, or null when it cannot be located. A staged update
+     *  has to carry the same file name for the server to apply it. */
+    public java.nio.file.Path pluginJar() {
+        java.io.File file = getFile();
+        return file == null ? null : file.toPath();
+    }
+
+    private void readBuild() {
+        java.util.Properties properties = new java.util.Properties();
+        try (java.io.InputStream in = getResource("build.properties")) {
+            if (in != null) {
+                properties.load(in);
+            }
+        } catch (java.io.IOException unreadable) {
+            getLogger().warning("Could not read build.properties: " + unreadable.getMessage());
+        }
+        buildVersion = properties.getProperty("version", getDescription().getVersion()).trim();
+        buildFlavour = properties.getProperty("flavour", "").trim();
     }
 
     public ApiManager api() {

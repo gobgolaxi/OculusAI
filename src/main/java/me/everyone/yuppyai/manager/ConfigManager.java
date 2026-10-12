@@ -22,6 +22,7 @@ public final class ConfigManager implements Manager {
     private int combatTicks = 40;
     private double minRotation = 5.0D;
     private double minAttackRotation = 2.5D;
+    private int runningHorizon = 15;
 
     private double suspicion = 0.5D;
     private double gain = 1.0D;
@@ -94,6 +95,7 @@ public final class ConfigManager implements Manager {
         combatTicks = config.getInt("analysis.combat-ticks", 40);
         minRotation = config.getDouble("analysis.min-rotation", 5.0D);
         minAttackRotation = config.getDouble("analysis.min-attack-rotation", 2.5D);
+        runningHorizon = Math.max(0, config.getInt("analysis.running-horizon", 15));
 
         suspicion = config.getDouble("buffer.suspicion", 0.5D);
         gain = config.getDouble("buffer.gain", 1.0D);
@@ -187,6 +189,10 @@ public final class ConfigManager implements Manager {
 
     public double minRotation() {
         return minRotation;
+    }
+
+    public int runningHorizon() {
+        return runningHorizon;
     }
 
     public double minAttackRotation() {

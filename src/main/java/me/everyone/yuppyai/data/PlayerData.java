@@ -37,7 +37,7 @@ public final class PlayerData {
 
     private final Deque<Double> scaleHistory = new ArrayDeque<>();
     private final Deque<AttackMoment> attackHistory = new ArrayDeque<>();
-    private final RunningStats running = new RunningStats(FeatureSchemas.AIM);
+    private final RunningStats running;
 
     private volatile double buffer;
     private volatile double probability;
@@ -59,7 +59,12 @@ public final class PlayerData {
     private volatile boolean sprinting;
 
     public PlayerData(Player player) {
+        this(player, 0);
+    }
+
+    public PlayerData(Player player, int runningHorizon) {
         this.uuid = player.getUniqueId();
+        this.running = new RunningStats(FeatureSchemas.AIM, runningHorizon);
         bind(player);
     }
 

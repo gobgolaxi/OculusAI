@@ -35,7 +35,7 @@ public final class DataManager implements Manager {
     public PlayerData add(Player player) {
         return players.compute(player.getUniqueId(), (uuid, existing) -> {
             if (existing == null) {
-                return new PlayerData(player);
+                return new PlayerData(player, plugin.config().runningHorizon());
             }
             existing.bind(player);
             return existing;

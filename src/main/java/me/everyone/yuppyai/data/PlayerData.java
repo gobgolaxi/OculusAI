@@ -9,6 +9,7 @@ import java.util.UUID;
 import me.everyone.yuppyai.analysis.AttackMoment;
 import me.everyone.yuppyai.analysis.FeatureSchemas;
 import me.everyone.yuppyai.analysis.RotationSample;
+import me.everyone.yuppyai.analysis.MedianWindow;
 import me.everyone.yuppyai.analysis.RunningStats;
 import org.bukkit.entity.Player;
 
@@ -33,6 +34,7 @@ public final class PlayerData {
 
     private final Deque<RotationSample> window = new ArrayDeque<>();
     private final Deque<Double> bufferHistory = new ArrayDeque<>();
+    private final MedianWindow probabilitySmoothing;
     private final Deque<Reading> readings = new ArrayDeque<>();
 
     private final Deque<Double> scaleHistory = new ArrayDeque<>();
@@ -59,12 +61,17 @@ public final class PlayerData {
     private volatile boolean sprinting;
 
     public PlayerData(Player player) {
-        this(player, 0);
+        this(player, 0, 1);
     }
 
     public PlayerData(Player player, int runningHorizon) {
+        this(player, runningHorizon, 1);
+    }
+
+    public PlayerData(Player player, int runningHorizon, int smoothWindows) {
         this.uuid = player.getUniqueId();
         this.running = new RunningStats(FeatureSchemas.AIM, runningHorizon);
+        this.probabilitySmoothing = new MedianWindow(smoothWindows);
         bind(player);
     }
 
@@ -195,6 +202,11 @@ public final class PlayerData {
 
     public boolean inCombat(long combatMs) {
         return System.currentTimeMillis() - lastAttackMs <= combatMs;
+    }
+
+    /** The reading the buffer should integrate: see {@link MedianWindow}. */
+    public double smooth(double value) {
+        return probabilitySmoothing.add(value);
     }
 
     public void applyProbability(double value, double suspicion, double gain, double decay, double max) {

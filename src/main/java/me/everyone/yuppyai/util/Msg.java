@@ -11,6 +11,7 @@ public final class Msg {
 
     private static final Pattern TAG = Pattern.compile("<(/?)([^<>]+)>");
     private static final Map<String, String> TOKENS = createTokens();
+    private static final String LEGACY_CODES = "0123456789abcdefklmnorx";
 
     private Msg() {
     }
@@ -51,10 +52,40 @@ public final class Msg {
             cursor = matcher.end();
         }
         out.append(gradiented.substring(cursor));
-        return out.toString()
-                .replace("&lt;", "<")
-                .replace("&gt;", ">")
-                .replace("&amp;", "&");
+        return legacy(out.toString());
+    }
+
+    /** Turns `&c` into a colour, and unescapes the HTML-style escapes.
+     *
+     * <p>Both halves have to happen here and in this order. `&amp;` starts
+     * with an ampersand followed by `a`, which is itself a valid colour code,
+     * so translating codes first would eat the escape and leave `§amp;`. The
+     * escape is taken out of the way, codes are translated, and the literal
+     * ampersand goes back last.
+     *
+     * <p>`&` is supported because every other plugin's config accepts it and
+     * an operator writing `&cno analysing` is not going to guess that this one
+     * wanted `<red>`. */
+    private static String legacy(String input) {
+        String out = input
+                .replace("&lt;", "\u0000LT\u0000")
+                .replace("&gt;", "\u0000GT\u0000")
+                .replace("&amp;", "\u0000AMP\u0000");
+        StringBuilder builder = new StringBuilder(out.length());
+        for (int i = 0; i < out.length(); i++) {
+            char current = out.charAt(i);
+            if (current == '&' && i + 1 < out.length()
+                    && LEGACY_CODES.indexOf(Character.toLowerCase(out.charAt(i + 1))) >= 0) {
+                builder.append('\u00a7').append(Character.toLowerCase(out.charAt(i + 1)));
+                i++;
+                continue;
+            }
+            builder.append(current);
+        }
+        return builder.toString()
+                .replace("\u0000LT\u0000", "<")
+                .replace("\u0000GT\u0000", ">")
+                .replace("\u0000AMP\u0000", "&");
     }
 
     private static String resolveTag(String slash, String token) {

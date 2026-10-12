@@ -14,6 +14,8 @@ public final class ProbConfigManager implements Manager {
     private int hologramLines = 6;
     private boolean hologramCompact = true;
     private String hologramCompactFormat = "";
+    private int staleSeconds = 3;
+    private String staleFormat = "";
     private int hologramSeconds = 300;
     private double hologramOffset = 1.1D;
 
@@ -61,6 +63,11 @@ public final class ProbConfigManager implements Manager {
                 "<white>%player% <dark_gray>| <gray>aim <white>%probability% "
                 + "<dark_gray>| <gray>buf <white>%buffer%<dark_gray>/<white>%max_buffer% "
                 + "<dark_gray>| %bar%");
+        // A window lands about every half second during a fight, so three
+        // seconds of silence is a stop rather than a gap.
+        staleSeconds = Math.max(1, config.getInt("hologram.stale-seconds", 3));
+        staleFormat = config.getString("hologram.stale-format",
+                "<white>%player% <dark_gray>| &cno analysing");
         hologramSeconds = Math.max(1, config.getInt("hologram.seconds", 300));
         hologramOffset = config.getDouble("hologram.offset", 1.1D);
     }
@@ -83,6 +90,14 @@ public final class ProbConfigManager implements Manager {
 
     public String hologramCompactFormat() {
         return hologramCompactFormat;
+    }
+
+    public long staleMs() {
+        return staleSeconds * 1000L;
+    }
+
+    public String staleFormat() {
+        return staleFormat;
     }
 
     public int hologramSeconds() {

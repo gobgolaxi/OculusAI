@@ -204,6 +204,23 @@ public final class PlayerData {
         return System.currentTimeMillis() - lastAttackMs <= combatMs;
     }
 
+    /** Whether windows are actually arriving for this player right now.
+     *
+     * <p>False covers every reason a reading can stop, and they are all worth
+     * showing rather than hiding behind a stale number: the player is out of
+     * combat, is not swinging, their rotation is below the gate, their world is
+     * excluded, they hold the bypass permission, or the service is not
+     * answering. A probability left on screen from twenty seconds ago looks
+     * exactly like a live one and is the thing most likely to mislead whoever
+     * is watching.
+     *
+     * <p>A window arrives about every half second while a fight is going, so a
+     * few seconds of silence is already a stop rather than a gap. */
+    public boolean analysing(long staleMs) {
+        return windowsAnalysed > 0
+                && System.currentTimeMillis() - lastProbabilityMs <= staleMs;
+    }
+
     /** The reading the buffer should integrate: see {@link MedianWindow}. */
     public double smooth(double value) {
         return probabilitySmoothing.add(value);

@@ -8,6 +8,16 @@ hologram:
   compact: true
   compact-format: "<white>%player% <dark_gray>| <gray>aim <white>%probability% <dark_gray>| <gray>buf <white>%buffer%<dark_gray>/<white>%max_buffer% <dark_gray>| %bar%"
 
+  # Что показывать, когда окна не идут. Число, оставшееся с прошлой минуты,
+  # выглядит точно так же, как живое, и именно это сильнее всего вводит в
+  # заблуждение того, кто смотрит. Причины все попадают сюда и все достойны
+  # показа: игрок вне боя, не бьёт, ротация ниже гейта, его мир исключён, у
+  # него право bypass, или сервис не отвечает.
+  # Окно приходит примерно раз в полсекунды боя, поэтому пара секунд тишины -
+  # это уже остановка, а не пауза. Работают и <red>, и &c.
+  stale-seconds: 3
+  stale-format: "<white>%player% <dark_gray>| &cno analysing"
+
   # Используется только при compact: false.
   format:
     - "<dark_gray>◆◆◆ <gradient:%primary%:%secondary%><bold>%player%</bold></gradient> <dark_gray>◆◆◆"

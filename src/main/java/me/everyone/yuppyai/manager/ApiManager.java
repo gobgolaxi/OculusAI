@@ -27,8 +27,21 @@ public final class ApiManager implements Manager {
 
     private final AtomicBoolean reachable = new AtomicBoolean(true);
     private final AtomicLong throttledLoggedAt = new AtomicLong(0L);
+    private final AtomicLong probes = new AtomicLong(0L);
     private static final long THROTTLE_LOG_INTERVAL_MS = 60_000L;
-    private static final long PROBE_PERIOD_TICKS = 20L * 30L;
+    // Probe often, pull settings rarely. Recovery is what the short period is
+    // for: while the service is down nothing is analysed, so thirty seconds of
+    // it after every blip is thirty seconds of unchecked combat.
+    private static final long PROBE_PERIOD_TICKS = 20L * 5L;
+    private static final int SETTINGS_EVERY_PROBES = 6;
+    // Training is minutes of work behind one request. The ordinary timeout is
+    // a second and a half, so sending /train on it guarantees a timeout, and a
+    // timeout is what marks the service unreachable - which is why analysis
+    // used to pause for every training run the plugin started itself. The run
+    // is fire-and-forget from here: the service keeps going whatever this
+    // client does, so the call gets room to answer and is not allowed to vote
+    // on whether the service is up.
+    private static final long TRAIN_TIMEOUT_MS = 10L * 60L * 1000L;
 
     private final YuppyAI plugin;
     private final Executor executor = Executors.newFixedThreadPool(2, runnable -> {
@@ -208,7 +221,12 @@ public final class ApiManager implements Manager {
     }
 
     public CompletableFuture<JsonObject> train() {
-        return postDataset("/train", new JsonObject());
+        HttpRequest request = builder("/train", plugin.config().datasetKey())
+                .timeout(Duration.ofMillis(TRAIN_TIMEOUT_MS))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(new JsonObject().toString()))
+                .build();
+        return send(request, false);
     }
 
     public CompletableFuture<JsonObject> removeSession(String id) {
@@ -293,7 +311,9 @@ public final class ApiManager implements Manager {
     }
 
     private void probe() {
-        refreshSettings();
+        if (probes.getAndIncrement() % SETTINGS_EVERY_PROBES == 0) {
+            refreshSettings();
+        }
         if (reachable.get()) {
             return;
         }
@@ -319,9 +339,17 @@ public final class ApiManager implements Manager {
     }
 
     private CompletableFuture<JsonObject> send(HttpRequest request) {
+        return send(request, true);
+    }
+
+    /** ``votes`` is whether a failure here should mark the service unreachable.
+     *  A long request that times out says nothing about the service's health. */
+    private CompletableFuture<JsonObject> send(HttpRequest request, boolean votes) {
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(response -> {
-                    markReachable(true);
+                    if (votes) {
+                        markReachable(true);
+                    }
                     if (response.statusCode() == 429) {
                         noteThrottled(response.body());
                         return null;
@@ -335,7 +363,9 @@ public final class ApiManager implements Manager {
                     return new JsonParser().parse(response.body()).getAsJsonObject();
                 })
                 .exceptionally(throwable -> {
-                    markReachable(false);
+                    if (votes) {
+                        markReachable(false);
+                    }
                     return null;
                 });
     }

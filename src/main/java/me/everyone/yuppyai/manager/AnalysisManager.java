@@ -158,7 +158,11 @@ public final class AnalysisManager implements Manager {
     }
 
     private void accept(PlayerData data, double probability) {
-        data.applyProbability(probability,
+        // The buffer integrates the smoothed reading, not the raw one. Recording
+        // still gets the raw value - a session is a record of what was measured
+        // - but the thing that decides a kick should not be swayed by one
+        // degenerate window.
+        data.applyProbability(data.smooth(probability),
                 plugin.config().suspicion(),
                 plugin.config().gain(),
                 plugin.config().decay(),

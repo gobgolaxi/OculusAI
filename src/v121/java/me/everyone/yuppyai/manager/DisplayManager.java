@@ -370,8 +370,12 @@ public final class DisplayManager implements Manager {
             // whether a buffer of 4.6 is climbing towards a kick or a reading
             // of 0.9 just arrived. Both numbers fit if the bar goes.
             builder.append("<white>").append(target.name()).append("<dark_gray>: ");
-            builder.append("<gray>").append(Msg.percent(target.probability()));
-            builder.append("<dark_gray>/<white>").append(Msg.round(target.buffer(), 1));
+            if (!target.analysing(plugin.probConfig().staleMs())) {
+                builder.append("&cno analysing");
+            } else {
+                builder.append("<gray>").append(Msg.percent(target.probability()));
+                builder.append("<dark_gray>/<white>").append(Msg.round(target.buffer(), 1));
+            }
             first = false;
         }
         return Msg.parse(builder.toString());
@@ -379,11 +383,19 @@ public final class DisplayManager implements Manager {
 
     private String actionBarForTarget(PlayerData target) {
         double fraction = target.buffer() / plugin.config().bufferMax();
+        if (!target.analysing(plugin.probConfig().staleMs())) {
+            return Msg.parse(plugin.probConfig().staleFormat(),
+                    placeholders(target, fraction, 10, Map.of("trend", "-----")));
+        }
         return Msg.parse(plugin.probConfig().actionBarFormat(), placeholders(target, fraction, 10, null));
     }
 
     private String compactActionBarForTarget(PlayerData target) {
         double fraction = target.buffer() / plugin.config().bufferMax();
+        if (!target.analysing(plugin.probConfig().staleMs())) {
+            return Msg.parse(plugin.probConfig().staleFormat(),
+                    placeholders(target, fraction, 10, Map.of("trend", "-----")));
+        }
         return Msg.parse("<%accent%>⚠ <white>%bar% <dark_gray>| <white>%player% <dark_gray>| <gray>%probability%",
                 placeholders(target, fraction, 10, Map.of("trend", compactHistory(target.bufferHistory()))));
     }
@@ -495,7 +507,10 @@ public final class DisplayManager implements Manager {
         if (trend.isEmpty()) {
             trend = "-";
         }
-        String state = target.windowsAnalysed() == 0 ? "waiting for combat" : "live reading";
+        String state = target.analysing(plugin.probConfig().staleMs())
+                ? "live reading"
+                : (target.windowsAnalysed() == 0 ? "&cno analysing &7(waiting for combat)"
+                                                 : "&cno analysing");
 
         int max = Math.max(1, plugin.probConfig().hologramLines());
         List<String> lines = new ArrayList<>(max);
@@ -516,6 +531,13 @@ public final class DisplayManager implements Manager {
 
     private String compactLine(PlayerData target) {
         double fraction = target.buffer() / plugin.config().bufferMax();
+        // A number left over from a minute ago looks exactly like a live one,
+        // which is the thing most likely to mislead whoever is watching. When
+        // windows stop arriving the line says that instead.
+        if (!target.analysing(plugin.probConfig().staleMs())) {
+            return Msg.parse(plugin.probConfig().staleFormat(),
+                    placeholders(target, fraction, 10, Map.of("trend", "-----")));
+        }
         return Msg.parse(plugin.probConfig().hologramCompactFormat(),
                 placeholders(target, fraction, 10, Map.of("trend", compactHistory(target.bufferHistory()))));
     }

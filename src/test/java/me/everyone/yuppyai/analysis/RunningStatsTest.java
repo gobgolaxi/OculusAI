@@ -100,6 +100,82 @@ class RunningStatsTest {
     }
 
     @Test
+    @DisplayName("a decaying horizon still starts as its own mean")
+    void decayingSingleWindow() {
+        RunningStats stats = new RunningStats(NAMES, 15);
+        stats.add(new double[]{3.0D, -1.5D});
+        Map<String, Double> map = stats.toMap();
+
+        assertEquals(3.0D, map.get("a_run_mean"), 1.0E-12D);
+        assertEquals(-1.5D, map.get("b_run_mean"), 1.0E-12D);
+        assertEquals(0.0D, map.get("a_run_std"), 1.0E-12D);
+    }
+
+    @Test
+    @DisplayName("a decaying horizon matches the exponential average the long way round")
+    void decayingMatchesDirectArithmetic() {
+        double[][] windows = {{1.0D, 10.0D}, {2.0D, 14.0D}, {6.0D, 12.0D}, {3.0D, 20.0D}};
+        int horizon = 3;
+        double alpha = 2.0D / (horizon + 1.0D);
+        RunningStats stats = new RunningStats(NAMES, horizon);
+        for (double[] window : windows) {
+            stats.add(window);
+        }
+        Map<String, Double> map = stats.toMap();
+
+        for (int column = 0; column < NAMES.length; column++) {
+            double mean = windows[0][column];
+            double variance = 0.0D;
+            for (int i = 1; i < windows.length; i++) {
+                double delta = windows[i][column] - mean;
+                mean += alpha * delta;
+                variance = (1.0D - alpha) * (variance + alpha * delta * delta);
+            }
+            assertEquals(mean, map.get(NAMES[column] + "_run_mean"), 1.0E-9D);
+            assertEquals(Math.sqrt(variance), map.get(NAMES[column] + "_run_std"), 1.0E-9D);
+        }
+    }
+
+    @Test
+    @DisplayName("old history stops deciding the mean once the horizon decays")
+    void decayingForgetsTheAlibi() {
+        // The point of the horizon: a long honest session must not be able to
+        // swallow a change in behaviour. Cumulatively it does - after a
+        // thousand windows at zero, twenty windows at one barely move the
+        // mean - and that is how a cheat switched on late used to dissolve in
+        // its own player's history.
+        RunningStats cumulative = new RunningStats(NAMES, 0);
+        RunningStats decaying = new RunningStats(NAMES, 15);
+        for (int i = 0; i < 1000; i++) {
+            cumulative.add(new double[]{0.0D, 0.0D});
+            decaying.add(new double[]{0.0D, 0.0D});
+        }
+        for (int i = 0; i < 20; i++) {
+            cumulative.add(new double[]{1.0D, 1.0D});
+            decaying.add(new double[]{1.0D, 1.0D});
+        }
+
+        assertTrue(cumulative.toMap().get("a_run_mean") < 0.05D,
+                "a cumulative mean is still dominated by the thousand quiet windows");
+        assertTrue(decaying.toMap().get("a_run_mean") > 0.8D,
+                "a decaying mean should have caught up with the recent twenty");
+    }
+
+    @Test
+    @DisplayName("horizon zero is the old unbounded behaviour")
+    void horizonZeroIsCumulative() {
+        RunningStats explicit = new RunningStats(NAMES, 0);
+        RunningStats byDefault = new RunningStats(NAMES);
+        for (double value : new double[]{1.0D, 7.0D, 3.0D}) {
+            explicit.add(new double[]{value, value});
+            byDefault.add(new double[]{value, value});
+        }
+
+        assertEquals(0, explicit.horizon());
+        assertEquals(byDefault.toMap(), explicit.toMap());
+    }
+
+    @Test
     @DisplayName("every schema names the columns the service expects")
     void schemasMatchTheService() {
         assertEquals(17, FeatureSchemas.names(FeatureSchemas.V2).size());

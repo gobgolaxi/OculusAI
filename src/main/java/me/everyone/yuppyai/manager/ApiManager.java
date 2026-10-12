@@ -12,6 +12,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -52,6 +53,10 @@ public final class ApiManager implements Manager {
     private HttpClient client;
     private BukkitTask probeTask;
     private volatile List<Exclusion> exclusions = List.of();
+    /** Which dataset schemas the service will accept. Empty until the first
+     *  settings fetch lands, which is why the dataset manager treats empty as
+     *  "assume only what has always worked" rather than as "nothing works". */
+    private volatile Set<Integer> serviceSchemas = Set.of();
 
     private record Exclusion(String world, String region) {}
 
@@ -132,9 +137,26 @@ public final class ApiManager implements Manager {
         return false;
     }
 
+    public Set<Integer> serviceSchemas() {
+        return serviceSchemas;
+    }
+
     private void refreshSettings() {
         get("/plugin/settings").thenAccept(response -> {
-            if (response == null || !response.has("analysis_exclusions")) return;
+            if (response == null) return;
+            if (response.has("feature_versions")) {
+                Set<Integer> schemas = new java.util.LinkedHashSet<>();
+                response.getAsJsonArray("feature_versions").forEach(element -> {
+                    try {
+                        schemas.add(element.getAsInt());
+                    } catch (RuntimeException notANumber) {
+                        // A schema list with junk in it is the service's
+                        // problem; take the entries that parse.
+                    }
+                });
+                serviceSchemas = Set.copyOf(schemas);
+            }
+            if (!response.has("analysis_exclusions")) return;
             List<Exclusion> loaded = new ArrayList<>();
             response.getAsJsonArray("analysis_exclusions").forEach(element -> {
                 if (!element.isJsonObject()) return;

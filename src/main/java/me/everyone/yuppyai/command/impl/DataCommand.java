@@ -72,11 +72,14 @@ public final class DataCommand extends SubCommand {
     }
 
     private void start(CommandSender sender, String[] args) {
-        int schema = DatasetManager.FEATURE_VERSION;
+        // Default is auto: record into the newest schema the service also
+        // knows, so a plugin that updated itself ahead of the service does not
+        // fail the commit after the capture was already made.
+        int schema = DatasetManager.SCHEMA_AUTO;
         if (args.length > 1) {
             schema = DatasetManager.parseSchema(args[1]);
-            if (schema < 0) {
-                reply(sender, "<red>Usage: <white>/yai data train [v2|v3|v4|v5|both]");
+            if (schema == -1) {
+                reply(sender, "<red>Usage: <white>/yai data train [auto|v2|v3|v4|v5|v6|both]");
                 return;
             }
         }
@@ -86,8 +89,12 @@ public final class DataCommand extends SubCommand {
         }
         plugin.datasets().setSchema(schema);
         int started = plugin.datasets().start(sender);
+        int resolved = plugin.datasets().effectiveSchema();
+        String shown = schema == DatasetManager.SCHEMA_AUTO
+                ? DatasetManager.schemaName(resolved) + " (auto)"
+                : DatasetManager.schemaName(schema);
         reply(sender, "<green>Recording <white>" + started + "<green> player(s) as <white>"
-                + DatasetManager.schemaName(schema)
+                + shown
                 + "<green>. Windows are only taken while they fight - "
                 + "<white>/yai data stop<green> saves everything.");
     }

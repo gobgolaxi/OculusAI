@@ -11,6 +11,11 @@ public final class FeatureSchemas {
     public static final int V3 = 3;
     public static final int V4 = 4;
     public static final int V5 = 5;
+    /** The same columns as v5. What differs is the pool on the service: v6
+     *  also admits the captures made before the hit features existed, with
+     *  those columns genuinely absent. Nothing about a recording changes, so
+     *  the column list is shared rather than copied. */
+    public static final int V6 = 6;
 
     public static final String[] AIM = {
             "scale_vs_baseline",
@@ -77,7 +82,7 @@ public final class FeatureSchemas {
     }
 
     public static List<String> names(int version) {
-        if (version == V5) {
+        if (version == V5 || version == V6) {
             List<String> names = new ArrayList<>(List.of(AIM_V5));
             names.addAll(List.of(HIT));
             for (String name : AIM_V5) {
@@ -104,7 +109,8 @@ public final class FeatureSchemas {
     }
 
     public static boolean known(int version) {
-        return version == V2 || version == V3 || version == V4 || version == V5;
+        return version == V2 || version == V3 || version == V4
+                || version == V5 || version == V6;
     }
 
     public static Map<String, Double> slice(Map<String, Double> features, int version) {

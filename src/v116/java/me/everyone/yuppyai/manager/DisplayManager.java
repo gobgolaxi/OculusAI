@@ -316,7 +316,7 @@ public final class DisplayManager implements Manager {
 
     private String compactLine(PlayerData target) {
         double fraction = target.buffer() / plugin.config().bufferMax();
-        return Msg.parse("<%accent%>⚠ <white>%bar% <dark_gray>| <white>%player% <dark_gray>| <gray>%probability%",
+        return Msg.parse(plugin.probConfig().hologramCompactFormat(),
                 placeholders(target, fraction, 10, Map.of("trend", compactHistory(target.bufferHistory()))));
     }
 

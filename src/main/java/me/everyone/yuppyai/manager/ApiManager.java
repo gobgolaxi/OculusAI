@@ -235,6 +235,15 @@ public final class ApiManager implements Manager {
         return post("/sessions/remove", body);
     }
 
+    /** The newest published build for this jar's flavour. Does not vote on
+     *  reachability: a version check failing says nothing about whether the
+     *  service can answer a prediction, and must never pause analysis. */
+    public CompletableFuture<JsonObject> latestBuild(String flavour) {
+        String path = "/plugin/latest?flavour="
+                + java.net.URLEncoder.encode(flavour, java.nio.charset.StandardCharsets.UTF_8);
+        return send(builder(path, plugin.config().apiKey()).GET().build(), false);
+    }
+
     public CompletableFuture<JsonObject> status() {
         return get("/status");
     }

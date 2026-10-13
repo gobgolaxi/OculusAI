@@ -40,8 +40,12 @@ public final class ProbConfigManager implements Manager {
         }
 
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
+        // A triangle for where the buffer is heading, then the name, then the
+        // two numbers. The name stays here - unlike the hologram, this line
+        // does not hang over the player it is about.
         actionBarFormat = config.getString("actionbar",
-                "<%accent%>⚠ <white>%bar% <dark_gray>| <white>%player% <dark_gray>| <gray>%probability%");
+                "%arrow% <white>%player% <dark_gray>| <gray>%probability% "
+                + "<dark_gray>| <white>%buffer%<dark_gray>/<white>%max_buffer%");
         hologramFormat = config.getStringList("hologram.format");
         if (hologramFormat.isEmpty()) {
             hologramFormat = List.of(

@@ -187,7 +187,7 @@ public final class DisplayManager implements Manager {
             // which says that something is happening without saying what -
             // whether a buffer of 4.6 is climbing towards a kick or a reading
             // of 0.9 just arrived. Both numbers fit if the bar goes.
-            builder.append("<white>").append(target.name()).append("<dark_gray>: ");
+            builder.append(arrow(target)).append(" <white>").append(target.name()).append("<dark_gray>: ");
             if (!target.analysing(plugin.probConfig().staleMs())) {
                 builder.append("&cno analysing");
             } else {
@@ -202,7 +202,7 @@ public final class DisplayManager implements Manager {
     private String actionBarForTarget(PlayerData target) {
         double fraction = target.buffer() / plugin.config().bufferMax();
         if (!target.analysing(plugin.probConfig().staleMs())) {
-            return Msg.parse("<white>%player% <dark_gray>| " + plugin.probConfig().staleFormat(),
+            return Msg.parse("%arrow% <white>%player% <dark_gray>| &cno analysing",
                     placeholders(target, fraction, 10, Map.of("trend", "-----")));
         }
         return Msg.parse(plugin.probConfig().actionBarFormat(), placeholders(target, fraction, 10, null));
@@ -211,10 +211,10 @@ public final class DisplayManager implements Manager {
     private String compactActionBarForTarget(PlayerData target) {
         double fraction = target.buffer() / plugin.config().bufferMax();
         if (!target.analysing(plugin.probConfig().staleMs())) {
-            return Msg.parse("<white>%player% <dark_gray>| " + plugin.probConfig().staleFormat(),
+            return Msg.parse("%arrow% <white>%player% <dark_gray>| &cno analysing",
                     placeholders(target, fraction, 10, Map.of("trend", "-----")));
         }
-        return Msg.parse("<%accent%>⚠ <white>%bar% <dark_gray>| <white>%player% <dark_gray>| <gray>%probability%",
+        return Msg.parse(plugin.probConfig().actionBarFormat(),
                 placeholders(target, fraction, 10, Map.of("trend", compactHistory(target.bufferHistory()))));
     }
 
@@ -356,6 +356,26 @@ public final class DisplayManager implements Manager {
         return historyDigits(history, 5, false);
     }
 
+    /** Which way the buffer is going, as one glyph: up means the last window
+     *  pushed it towards a punishment, down means it is draining. Direction is
+     *  the thing a watcher cannot get from the number alone - 3.1 on the way
+     *  up and 3.1 on the way down are the same number and opposite situations. */
+    private String arrow(PlayerData target) {
+        List<Double> history = target.bufferHistory();
+        if (history.size() < 2) {
+            return "<dark_gray>\u25ac";
+        }
+        double last = history.get(history.size() - 1);
+        double previous = history.get(history.size() - 2);
+        if (last > previous + 0.01D) {
+            return "<red>\u25b2";
+        }
+        if (last < previous - 0.01D) {
+            return "<green>\u25bc";
+        }
+        return "<dark_gray>\u25ac";
+    }
+
     private String compactHistory(List<Double> history) {
         StringBuilder builder = new StringBuilder(5);
         int start = Math.max(0, history.size() - 5);
@@ -426,6 +446,7 @@ public final class DisplayManager implements Manager {
         var theme = plugin.theme().current();
         Map<String, String> placeholders = new HashMap<>();
         placeholders.put("bar", Msg.bar(fraction, barWidth));
+        placeholders.put("arrow", arrow(target));
         placeholders.put("probability", Msg.percent(target.probability()));
         placeholders.put("buffer", Msg.round(target.buffer(), 1));
         placeholders.put("max_buffer", Msg.round(plugin.config().bufferMax(), 0));

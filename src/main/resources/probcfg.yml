@@ -1,4 +1,7 @@
-actionbar: "<%accent%>⚠ <white>%bar% <dark_gray>| <white>%player% <dark_gray>| <gray>%probability%"
+# Строка над хотбаром. Треугольник - куда идёт буфер: вверх к наказанию,
+# вниз - утекает. Ник здесь нужен: смотреть можно и не на того, за кем
+# следишь. Плейсхолдер %arrow% доступен и в остальных форматах.
+actionbar: "%arrow% <white>%player% <dark_gray>| <gray>%probability% <dark_gray>| <white>%buffer%<dark_gray>/<white>%max_buffer%"
 
 hologram:
   # Голограмма над головой в одну строку. Шесть строк в бою закрывают собой

@@ -64,7 +64,7 @@ public final class ThemeManager implements Manager {
 
     public String title(String suffix) {
         return Msg.parse("<gradient:" + current.primary() + ":" + current.secondary()
-                + "><bold>ʏᴜᴘᴘʏᴀɪ</bold></gradient> <dark_gray>- <white>" + suffix);
+                + "><bold>ᴏᴄᴜʟᴜsᴀɪ</bold></gradient> <dark_gray>- <white>" + suffix);
     }
 
     public String accent(String text) {
@@ -78,7 +78,7 @@ public final class ThemeManager implements Manager {
     public String prefix(String template) {
         if (template == null || template.isBlank() || !template.contains("%primary%")) {
             return Msg.parse("<gradient:" + current.primary() + ":" + current.secondary()
-                    + "><bold>ʏᴜᴘᴘʏᴀɪ</bold></gradient> <dark_gray>» <gray>");
+                    + "><bold>ᴏᴄᴜʟᴜsᴀɪ</bold></gradient> <dark_gray>» <gray>");
         }
         return Msg.parse(template
                 .replace("%primary%", current.primary())

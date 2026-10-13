@@ -124,8 +124,7 @@ public final class MonitorManager implements Manager {
 
         StringBuilder out = new StringBuilder();
         if (session.lines % HEADER_EVERY == 0) {
-            out.append(Msg.parse(plugin.config().prefix()
-                    + "<gray>Monitor <dark_gray>" + rows.size()));
+            out.append(Msg.parse(plugin.config().prefix() + "<dark_gray>" + rows.size()));
         }
 
         if (rows.isEmpty()) {
@@ -155,8 +154,11 @@ public final class MonitorManager implements Manager {
         String dot = data.buffer() >= plugin.config().punishAt() ? "<red>\u25cf"
                 : (data.buffer() >= plugin.config().alertAt() ? "<gold>\u25cf" : "<dark_gray>\u25cf");
 
-        return " " + dot + " <white>" + pad(data.name(), 16)
-                + " <gray>" + pad(Msg.percent(data.probability()), 4)
+        // The reading carries its own colour, so the row needs no legend: a
+        // glance down the column sorts itself.
+        return " " + dot + " <gray>" + pad(data.name(), 16)
+                + " <" + Msg.heatColour(data.probability()) + ">"
+                + pad(Msg.percent(data.probability()), 4)
                 + " " + Msg.bar(fraction, BAR_WIDTH);
     }
 

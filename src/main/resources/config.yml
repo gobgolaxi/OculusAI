@@ -5,7 +5,9 @@ theme:
   name: "aurora"
 
 api:
-  url: ""
+  # Адрес сервиса. Пусто означает публичный сервис - тот же, что в api.site;
+  # свой адрес нужен только для локального инстанса.
+  url: "https://oculusai.space"
   timeout-ms: 1500
   key: ""
   dataset-key: ""

@@ -11,7 +11,7 @@ public final class ConfigManager implements Manager {
 
     private String prefix = "";
     private String language = "ru";
-    private String apiUrl = "http://127.0.0.1:8000";
+    private String apiUrl = "https://oculusai.space";
     private int apiTimeoutMs = 1500;
     private String apiKey = "";
     private String site = "https://oculusai.space";
@@ -86,11 +86,16 @@ public final class ConfigManager implements Manager {
 
         prefix = config.getString("prefix", "");
         language = config.getString("language", "ru");
+        // Read before api.url: an empty url falls back to this, so the site has
+        // to be the one from this config and not the one from the last load.
+        site = stripTrailingSlash(config.getString("api.site", "https://oculusai.space"));
         String url = config.getString("api.url", "");
-        apiUrl = stripTrailingSlash(url == null || url.isBlank() ? "http://127.0.0.1:8000" : url);
+        // Empty means "the public service": a fresh install should reach the
+        // real API without editing anything, and a local instance is the case
+        // that sets the field.
+        apiUrl = stripTrailingSlash(url == null || url.isBlank() ? site : url);
         apiTimeoutMs = config.getInt("api.timeout-ms", 1500);
         apiKey = config.getString("api.key", "");
-        site = stripTrailingSlash(config.getString("api.site", "https://oculusai.space"));
         datasetKey = config.getString("api.dataset-key", "");
 
         windowTicks = Math.max(3, config.getInt("analysis.window-ticks", 20));

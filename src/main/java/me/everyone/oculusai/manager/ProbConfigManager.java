@@ -45,29 +45,29 @@ public final class ProbConfigManager implements Manager {
         hologramFormat = config.getStringList("hologram.format");
         if (hologramFormat.isEmpty()) {
             hologramFormat = List.of(
-                    "<dark_gray>◆◆◆ <gradient:%primary%:%secondary%><bold>%player%</bold></gradient> <dark_gray>◆◆◆",
                     "<gray>⚡ <white>%probability% <dark_gray>| <gray>❤ buffer <white>%buffer%<dark_gray>/<white>%max_buffer%",
                     "<gray>♫ %bar%",
                     "<dark_gray>♬ trend <gray>%trend%",
                     "<dark_gray>☹ %state%",
                     "<dark_gray>♠ windows <white>%windows%");
         }
-        hologramLines = Math.max(1, config.getInt("hologram.lines", 6));
+        hologramLines = Math.max(1, config.getInt("hologram.lines", 5));
         // One line by default. Six lines of hologram over a player's head in a
         // fight is a wall between the watcher and what they are watching, and
         // the two numbers that decide anything - the reading and the buffer -
         // fit on one line with room to spare. The multi-line `format` above is
         // still there for anyone who sets compact to false.
         hologramCompact = config.getBoolean("hologram.compact", true);
+        // No name on the hologram: it floats over the player, whose own
+        // nameplate is right under it.
         hologramCompactFormat = config.getString("hologram.compact-format",
-                "<white>%player% <dark_gray>| <gray>aim <white>%probability% "
+                "<gray>aim <white>%probability% "
                 + "<dark_gray>| <gray>buf <white>%buffer%<dark_gray>/<white>%max_buffer% "
                 + "<dark_gray>| %bar%");
         // A window lands about every half second during a fight, so three
         // seconds of silence is a stop rather than a gap.
         staleSeconds = Math.max(1, config.getInt("hologram.stale-seconds", 3));
-        staleFormat = config.getString("hologram.stale-format",
-                "<white>%player% <dark_gray>| &cno analysing");
+        staleFormat = config.getString("hologram.stale-format", "&cno analysing");
         hologramSeconds = Math.max(1, config.getInt("hologram.seconds", 300));
         hologramOffset = config.getDouble("hologram.offset", 1.1D);
     }

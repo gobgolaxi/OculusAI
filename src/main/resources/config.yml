@@ -10,7 +10,7 @@ api:
   key: ""
   dataset-key: ""
   # Куда отправлять за ключом, если он не указан.
-  site: "https://silentiumdlc.space"
+  site: "https://oculusai.space"
 
 # Проверка обновлений через сервис. Новая сборка скачивается в папку обновлений
 # сервера и применяется при следующем запуске - заменять jar под работающим
@@ -97,6 +97,6 @@ history:
 
 test-server:
   enabled: false
-  world: "yuppyai_test"
+  world: "oculusai_test"
   scoreboard-refresh-ticks: 100
   model-refresh-seconds: 30

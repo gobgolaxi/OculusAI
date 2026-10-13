@@ -54,7 +54,7 @@ dashboard:
     stored: "<gray>Сохранено: <white>%value%"
   cheater:
     name: "<red>Окна cheater"
-    line1: "<gray>Записываются через <white>/yai data train"
+    line1: "<gray>Записываются через <white>/oai data train"
     line2: "<gray>потом коммитятся как <white>add cheater"
   legit:
     name: "<green>Окна legit"
@@ -149,8 +149,8 @@ sessions:
   title: "Datasets"
   empty:
     name: "<red>Сессий пока нет"
-    line1: "<gray>Запиши одну через <white>/yai data train <player>"
-    line2: "<gray>потом закоммить через <white>/yai data add ..."
+    line1: "<gray>Запиши одну через <white>/oai data train <player>"
+    line2: "<gray>потом закоммить через <white>/oai data add ..."
   previous: "<yellow>Предыдущая страница"
   next: "<yellow>Следующая страница"
   auto-tag: "<gold>auto"
@@ -183,7 +183,7 @@ history:
   empty:
     name: "<red>Пока ничего нет"
     line1: "<gray>Readings появляются только во время боя."
-    line2: "<gray>Поиграй с манекеном: <white>/yai npc"
+    line2: "<gray>Поиграй с манекеном: <white>/oai npc"
   time:
     seconds: "%value%с назад"
     minutes: "%value%м назад"
@@ -291,16 +291,16 @@ connect:
   open: "<gray>Открой ссылку под своим аккаунтом, чтобы привязать сервер:"
   hover: "<gray>Нажми, чтобы открыть"
   failed: "<red>Сервис не ответил. Проверь <white>api.url<red> в config.yml."
-  expired: "<red>Ссылка истекла. Напиши <white>/yai connect<red> ещё раз."
+  expired: "<red>Ссылка истекла. Напиши <white>/oai connect<red> ещё раз."
   done: "<green>Сервер привязан. <gray>Ключ сохранён и привязан к <white>%address%<gray>."
 guide:
   title: "<white>Как пользоваться"
   what: "ИИ-античит по аиму. Смотрит бои и оценивает их."
-  watch: "<white>/yai monitor<gray> - живой список, красная точка = подозрительно."
-  check: "<white>/yai prob ник<gray> - следить за одним игроком."
-  act: "<white>/yai journal<gray> - что уже сработало. <white>/yai history ник<gray> - прошлые показания."
+  watch: "<white>/oai monitor<gray> - живой список, красная точка = подозрительно."
+  check: "<white>/oai prob ник<gray> - следить за одним игроком."
+  act: "<white>/oai journal<gray> - что уже сработало. <white>/oai history ник<gray> - прошлые показания."
   numbers: "Проценты - это сейчас, полоска - буфер. Алерт на <white>%alert%<gray>, наказание на <white>%punish%<gray>."
-  test: "<white>/yai npc<gray> - заспавнить манекен и проверить самому."
+  test: "<white>/oai npc<gray> - заспавнить манекен и проверить самому."
 monitor-cmd:
   started: "<gray>Слежу за <white>%players%<gray>."
   started-all: "<gray>Слежу за всеми."

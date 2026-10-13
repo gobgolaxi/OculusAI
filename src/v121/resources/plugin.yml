@@ -1,7 +1,7 @@
-name: YuppyAI
+name: OculusAI
 version: '${version}'
 
-main: me.everyone.yuppyai.YuppyAI
+main: me.everyone.oculusai.OculusAI
 api-version: '1.21'
 load: POSTWORLD
 author: everyone
@@ -11,39 +11,39 @@ depend: [ProtocolLib]
 softdepend: [WorldGuard, WorldEdit]
 
 commands:
-  yuppyai:
-    description: Main YuppyAI command.
-    usage: /yai help
-    aliases: [yai, ai]
+  oculusai:
+    description: Main OculusAI command.
+    usage: /oai help
+    aliases: [oai, ai]
 
 permissions:
-  yuppyai.command:
-    description: Access to /yai.
+  oculusai.command:
+    description: Access to /oai.
     default: false
-  yuppyai.alerts:
+  oculusai.alerts:
     description: Receive detection alerts.
     default: false
-  yuppyai.journal:
+  oculusai.journal:
     description: Open the live suspicion journal.
     default: false
-  yuppyai.vanish:
+  oculusai.vanish:
     description: Enter and leave hidden spectator observation.
     default: false
-  yuppyai.data:
+  oculusai.data:
     description: Record and label training data.
     default: false
-  yuppyai.bypass:
+  oculusai.bypass:
     description: Never analysed.
     default: false
-  yuppyai.npc:
+  oculusai.npc:
     description: Spawn a sparring dummy that attacks you.
     default: false
-  yuppyai.connect:
-    description: Bind this server to a YuppyAI account.
+  oculusai.connect:
+    description: Bind this server to a OculusAI account.
     default: op
-  yuppyai.report:
+  oculusai.report:
     description: Report a player to the panel.
     default: true
-  yuppyai.diag:
+  oculusai.diag:
     description: Inspect why a player's windows are or are not analysed.
     default: op

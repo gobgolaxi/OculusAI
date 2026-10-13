@@ -1,6 +1,6 @@
-# YuppyAI
+# OculusAI
 
-**Сайт и панель: [silentiumdlc.space](https://silentiumdlc.space/)** · [Релизы](https://github.com/gobgolaxi/YuppyAI/releases)
+**Сайт и панель: [oculusai.space](https://oculusai.space/)** · [Релизы](https://github.com/gobgolaxi/OculusAI/releases)
 
 Античит для Paper, который оценивает аим нейросетью, а не фиксированными порогами.
 Плагин режет бой на окна, считает по ним признаки и отправляет их в сервис, а тот
@@ -11,11 +11,11 @@
 
 1. Paper (или форк) 1.16.5+ и ProtocolLib.
 2. Положить jar и ProtocolLib в `plugins/`, запустить сервер.
-3. В `plugins/YuppyAI/config.yml` указать `api.url`.
-4. Написать `/yai connect` на сервере и открыть выданную ссылку под своим аккаунтом —
+3. В `plugins/OculusAI/config.yml` указать `api.url`.
+4. Написать `/oai connect` на сервере и открыть выданную ссылку под своим аккаунтом —
    ключ и IP сервера пропишутся сами. Аккаунт и бесплатный Pro на 3 дня —
-   на [silentiumdlc.space](https://silentiumdlc.space/).
-5. `/yai guide` в игре — короткая инструкция.
+   на [oculusai.space](https://oculusai.space/).
+5. `/oai guide` в игре — короткая инструкция.
 
 Ключ можно вписать и руками в `api.key`, тогда IP сервера нужно указать в панели самому:
 без адреса ключ не работает.
@@ -24,23 +24,23 @@
 
 | Команда | Что делает |
 |---|---|
-| `/yai connect` | привязать сервер к аккаунту одной ссылкой |
-| `/yai guide` | как пользоваться античитом, в один экран |
-| `/yai monitor` | живой список подозрительных |
-| `/yai prob <ник>` | следить за одним игроком |
-| `/yai history <ник>` | прошлые показания, хранятся на диске |
-| `/yai journal` | журнал сработок |
-| `/yai player <ник>` | буфер и история игрока |
-| `/yai forget <ник>` | сбросить подозрение |
-| `/yai vanish` | скрытое наблюдение |
-| `/yai npc` | манекен-спарринг для проверки |
-| `/yai data` | запись обучающих данных |
-| `/yai diag [ник]` | почему окна игрока анализируются или нет |
-| `/yai dashboard` | меню настроек |
-| `/yai reload` | перечитать конфиг |
+| `/oai connect` | привязать сервер к аккаунту одной ссылкой |
+| `/oai guide` | как пользоваться античитом, в один экран |
+| `/oai monitor` | живой список подозрительных |
+| `/oai prob <ник>` | следить за одним игроком |
+| `/oai history <ник>` | прошлые показания, хранятся на диске |
+| `/oai journal` | журнал сработок |
+| `/oai player <ник>` | буфер и история игрока |
+| `/oai forget <ник>` | сбросить подозрение |
+| `/oai vanish` | скрытое наблюдение |
+| `/oai npc` | манекен-спарринг для проверки |
+| `/oai data` | запись обучающих данных |
+| `/oai diag [ник]` | почему окна игрока анализируются или нет |
+| `/oai dashboard` | меню настроек |
+| `/oai reload` | перечитать конфиг |
 
-Права: `yuppyai.command`, `yuppyai.alerts`, `yuppyai.journal`, `yuppyai.vanish`,
-`yuppyai.data`, `yuppyai.npc`, `yuppyai.connect`, `yuppyai.diag`, `yuppyai.bypass`.
+Права: `oculusai.command`, `oculusai.alerts`, `oculusai.journal`, `oculusai.vanish`,
+`oculusai.data`, `oculusai.npc`, `oculusai.connect`, `oculusai.diag`, `oculusai.bypass`.
 
 ## Сборка
 
@@ -55,6 +55,6 @@
 
 ## Ссылки
 
-- Панель и тарифы — [silentiumdlc.space](https://silentiumdlc.space/)
-- Состояние сервиса — [silentiumdlc.space/stats](https://silentiumdlc.space/stats)
-- Документация — [silentiumdlc.space/guide](https://silentiumdlc.space/guide)
+- Панель и тарифы — [oculusai.space](https://oculusai.space/)
+- Состояние сервиса — [oculusai.space/stats](https://oculusai.space/stats)
+- Документация — [oculusai.space/guide](https://oculusai.space/guide)

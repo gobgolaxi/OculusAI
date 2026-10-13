@@ -369,12 +369,13 @@ public final class DisplayManager implements Manager {
             // which says that something is happening without saying what -
             // whether a buffer of 4.6 is climbing towards a kick or a reading
             // of 0.9 just arrived. Both numbers fit if the bar goes.
-            builder.append("<white>").append(target.name()).append("<dark_gray>: ");
+            builder.append("<gray>").append(target.name()).append(' ');
             if (!target.analysing(plugin.probConfig().staleMs())) {
-                builder.append("&cno analysing");
+                builder.append("<dark_gray>\u2014");
             } else {
-                builder.append("<gray>").append(Msg.percent(target.probability()));
-                builder.append("<dark_gray>/<white>").append(Msg.round(target.buffer(), 1));
+                builder.append('<').append(Msg.heatColour(target.probability())).append('>');
+                builder.append(Msg.percent(target.probability()));
+                builder.append("<dark_gray>/<gray>").append(Msg.round(target.buffer(), 1));
             }
             first = false;
         }
@@ -384,7 +385,7 @@ public final class DisplayManager implements Manager {
     private String actionBarForTarget(PlayerData target) {
         double fraction = target.buffer() / plugin.config().bufferMax();
         if (!target.analysing(plugin.probConfig().staleMs())) {
-            return Msg.parse(plugin.probConfig().staleFormat(),
+            return Msg.parse("<gray>%player% <dark_gray>\u2014",
                     placeholders(target, fraction, 10, Map.of("trend", "-----")));
         }
         return Msg.parse(plugin.probConfig().actionBarFormat(), placeholders(target, fraction, 10, null));
@@ -393,10 +394,10 @@ public final class DisplayManager implements Manager {
     private String compactActionBarForTarget(PlayerData target) {
         double fraction = target.buffer() / plugin.config().bufferMax();
         if (!target.analysing(plugin.probConfig().staleMs())) {
-            return Msg.parse(plugin.probConfig().staleFormat(),
+            return Msg.parse("<gray>%player% <dark_gray>\u2014",
                     placeholders(target, fraction, 10, Map.of("trend", "-----")));
         }
-        return Msg.parse("<%accent%>⚠ <white>%bar% <dark_gray>| <white>%player% <dark_gray>| <gray>%probability%",
+        return Msg.parse(plugin.probConfig().actionBarFormat(),
                 placeholders(target, fraction, 10, Map.of("trend", compactHistory(target.bufferHistory()))));
     }
 
@@ -655,6 +656,10 @@ public final class DisplayManager implements Manager {
         Map<String, String> placeholders = new HashMap<>();
         placeholders.put("bar", Msg.bar(fraction, barWidth));
         placeholders.put("probability", Msg.percent(target.probability()));
+        // The reading colours itself by how high it is, so a format needs no
+        // <red>/<yellow> of its own and the eye needs no number to read first.
+        placeholders.put("heat", Msg.heatColour(target.probability()));
+        placeholders.put("buffer_heat", Msg.heatColour(fraction));
         placeholders.put("buffer", Msg.round(target.buffer(), 1));
         placeholders.put("max_buffer", Msg.round(plugin.config().bufferMax(), 0));
         placeholders.put("player", target.name());

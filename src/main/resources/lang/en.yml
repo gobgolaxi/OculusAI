@@ -260,17 +260,13 @@ vanish:
   gamemode-blocked: "<red>You cannot change gamemode while vanished."
 player-cmd:
   usage: "<red>Usage: <white>%value%"
-  header: "<gray><st>          <reset> <white>%player% <gray><st>          "
-  buffer: "<gray>Buffer: <white>%value%<dark_gray>/%max%"
-  probability: "<gray>Last probability: <white>%value%"
-  windows: "<gray>Windows analysed: <white>%value%"
-  in-combat: "<green>Currently in combat."
-  not-in-combat: "<dark_gray>Not in combat."
-  recording: "<gold>Recording: <white>%value%<gold> windows captured."
-  buffer-history: "<gray>Buffer history:"
-  journal-header: "<gray><st>    <reset> <gold>Journal <gray><st>    "
-  peak-buffer: "<gray>Peak buffer: <white>%value%"
-  prob-history: "<gray>Probability history:"
+  header: "<white>%player%"
+  reading: "<%heat%>%probability% %bar% <gray>%buffer%<dark_gray>/%max%"
+  state: "<dark_gray>%trend%  <gray>%windows%<dark_gray> windows  %state%"
+  state-combat: "<green>in combat"
+  state-idle: "<dark_gray>out of combat"
+  state-recording: "<dark_gray>  <gold>recording %value%"
+  journal: "<dark_gray>peak <gray>%peak%%history%"
   no-data: "<dark_gray>No data yet — readings only appear while fighting."
 setup:
   not-connected: "<red>Anticheat is not connected to the API - nothing is being analysed."
@@ -306,7 +302,7 @@ monitor-cmd:
 prob:
   stopped: "<gray>Stopped watching."
   not-watching: "<gray>You were not watching anyone."
-  watching: "<gray>Watching <white>%player%<gray>. Buffer <white>%buffer%<gray>, last reading <white>%probability%<gray>, windows analysed <white>%windows%"
+  watching: "<gray>Watching <white>%player%<dark_gray> · <gray>%probability%<dark_gray> · buffer <gray>%buffer%<dark_gray> · windows <gray>%windows%"
   no-data: "<dark_gray>Nothing analysed yet - readings only appear while they fight."
 forget:
   usage: "<red>Usage: <white>%value%"

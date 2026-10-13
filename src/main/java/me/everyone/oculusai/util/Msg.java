@@ -1,6 +1,7 @@
 package me.everyone.oculusai.util;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -244,12 +245,33 @@ public final class Msg {
         return String.format(Locale.ROOT, "#%02x%02x%02x", red, green, 70);
     }
 
+    private static final char[] SPARK = {'\u2581', '\u2582', '\u2583', '\u2584',
+                                        '\u2585', '\u2586', '\u2587', '\u2588'};
+
+    /** The last readings as one eight-level sparkline. Where a bar says how
+     *  much, this says which way - and it costs the same line it is printed
+     *  on, which a list of numbers does not. */
+    public static String spark(List<Double> values, double max, int width) {
+        if (values == null || values.isEmpty() || max <= 0.0D) {
+            return "";
+        }
+        int from = Math.max(0, values.size() - width);
+        StringBuilder builder = new StringBuilder(width);
+        for (int i = from; i < values.size(); i++) {
+            double clamped = Math.max(0.0D, Math.min(1.0D, values.get(i) / max));
+            builder.append(SPARK[(int) Math.round(clamped * (SPARK.length - 1))]);
+        }
+        return builder.toString();
+    }
+
+    /** A solid bar rather than pipes and dots: at a glance it reads as one
+     *  length, and the length is the only thing it is there to say. */
     public static String bar(double fraction, int width) {
         double clamped = Math.max(0.0D, Math.min(1.0D, fraction));
         int filled = (int) Math.round(clamped * width);
         StringBuilder builder = new StringBuilder("<").append(heatColour(clamped)).append('>');
-        builder.append("|".repeat(filled));
-        builder.append("<dark_gray>").append(".".repeat(width - filled));
+        builder.append("\u2588".repeat(filled));
+        builder.append("<dark_gray>").append("\u2591".repeat(width - filled));
         return builder.toString();
     }
 }

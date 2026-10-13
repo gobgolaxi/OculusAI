@@ -8,7 +8,7 @@ val mcVersion: String = project.findProperty("mcVersion") as String? ?: "1.16.5"
 val versionDir = if (mcVersion.startsWith("1.21")) "v121" else "v116"
 val modern = versionDir == "v121"
 
-group = "me.everyone.yuppyai"
+group = "me.everyone.oculusai"
 // The real version, not a placeholder: the plugin asks the service whether a
 // newer build exists and compares against this, so a jar reporting
 // 1.0-SNAPSHOT forever can never know it is out of date. Override per build

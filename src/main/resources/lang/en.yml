@@ -54,7 +54,7 @@ dashboard:
     stored: "<gray>Stored: <white>%value%"
   cheater:
     name: "<red>Cheater windows"
-    line1: "<gray>Recorded with <white>/yai data train"
+    line1: "<gray>Recorded with <white>/oai data train"
     line2: "<gray>then committed with <white>add cheater"
   legit:
     name: "<green>Legit windows"
@@ -149,8 +149,8 @@ sessions:
   title: "Datasets"
   empty:
     name: "<red>No sessions yet"
-    line1: "<gray>Record one with <white>/yai data train <player>"
-    line2: "<gray>then commit it with <white>/yai data add ..."
+    line1: "<gray>Record one with <white>/oai data train <player>"
+    line2: "<gray>then commit it with <white>/oai data add ..."
   previous: "<yellow>Previous page"
   next: "<yellow>Next page"
   auto-tag: "<gold>auto"
@@ -183,7 +183,7 @@ history:
   empty:
     name: "<red>Nothing yet"
     line1: "<gray>Readings only appear while fighting."
-    line2: "<gray>Try a sparring dummy: <white>/yai npc"
+    line2: "<gray>Try a sparring dummy: <white>/oai npc"
   time:
     seconds: "%value%s ago"
     minutes: "%value%m ago"
@@ -286,16 +286,16 @@ connect:
   open: "<gray>Open this link while signed in to bind the server:"
   hover: "<gray>Click to open"
   failed: "<red>The service did not answer. Check <white>api.url<red> in config.yml."
-  expired: "<red>The link expired. Run <white>/yai connect<red> again."
+  expired: "<red>The link expired. Run <white>/oai connect<red> again."
   done: "<green>Server connected. <gray>The key is saved and bound to <white>%address%<gray>."
 guide:
   title: "<white>How to use"
   what: "AI anticheat for aim. It watches fights and scores them."
-  watch: "<white>/yai monitor<gray> - live list, red dot = suspicious."
-  check: "<white>/yai prob player<gray> - follow one player closely."
-  act: "<white>/yai journal<gray> - what already triggered. <white>/yai history player<gray> - past readings."
+  watch: "<white>/oai monitor<gray> - live list, red dot = suspicious."
+  check: "<white>/oai prob player<gray> - follow one player closely."
+  act: "<white>/oai journal<gray> - what already triggered. <white>/oai history player<gray> - past readings."
   numbers: "Percent is this moment, the bar is the buffer. Alert at <white>%alert%<gray>, punish at <white>%punish%<gray>."
-  test: "<white>/yai npc<gray> - spawn a dummy and try it yourself."
+  test: "<white>/oai npc<gray> - spawn a dummy and try it yourself."
 monitor-cmd:
   started: "<gray>Watching <white>%players%<gray>."
   started-all: "<gray>Watching everyone."

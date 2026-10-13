@@ -1,1 +1,1 @@
-rootProject.name = "YuppyAI"
+rootProject.name = "OculusAI"

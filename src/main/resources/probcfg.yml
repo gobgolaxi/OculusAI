@@ -1,24 +1,12 @@
-# Как выглядят живые показания: голограмма над головой и строка над хотбаром.
-#
-# Общий принцип этих форматов - показывать только то, чего на экране ещё нет.
-# Ник игрока парит над ним и так, подписи вроде "aim" и "buffer" повторяются в
-# каждом кадре и ничего не добавляют, поэтому остались два числа: показание
-# текущего окна и полоса буфера - насколько близко до наказания.
-#
-# Плейсхолдеры: %probability% %buffer% %max_buffer% %bar% %player% %trend%
-#               %windows% %state% %heat% %buffer_heat%
-#               %primary% %secondary% %accent% %accent_soft%
-# %heat% - цвет по величине показания, %buffer_heat% - по заполненности буфера.
-
-# Над хотбаром. Здесь ник нужен: смотреть можно и не на того, за кем следишь.
-actionbar: "<gray>%player% <%heat%>%probability% %bar%"
+actionbar: "<%accent%>⚠ <white>%bar% <dark_gray>| <white>%player% <dark_gray>| <gray>%probability%"
 
 hologram:
   # Голограмма над головой в одну строку. Шесть строк в бою закрывают собой
-  # того, за кем следишь.
+  # того, за кем следишь, а два числа, которые что-то решают, — показание и
+  # буфер — помещаются в одну строку с запасом.
   # false вернёт многострочный format ниже.
   compact: true
-  compact-format: "<%heat%>%probability% %bar%"
+  compact-format: "<white>%player% <dark_gray>| <gray>aim <white>%probability% <dark_gray>| <gray>buf <white>%buffer%<dark_gray>/<white>%max_buffer% <dark_gray>| %bar%"
 
   # Что показывать, когда окна не идут. Число, оставшееся с прошлой минуты,
   # выглядит точно так же, как живое, и именно это сильнее всего вводит в
@@ -28,13 +16,16 @@ hologram:
   # Окно приходит примерно раз в полсекунды боя, поэтому пара секунд тишины -
   # это уже остановка, а не пауза. Работают и <red>, и &c.
   stale-seconds: 3
-  stale-format: "<dark_gray>—"
+  stale-format: "<white>%player% <dark_gray>| &cno analysing"
 
-  # Используется только при compact: false. Те же два числа плюс ход
-  # последних окон и счётчик - для разбора, а не для боя.
+  # Используется только при compact: false.
   format:
-    - "<%heat%>%probability% %bar%"
-    - "<dark_gray>%trend%  <gray>%windows%"
-  lines: 2
+    - "<dark_gray>◆◆◆ <gradient:%primary%:%secondary%><bold>%player%</bold></gradient> <dark_gray>◆◆◆"
+    - "<gray>⚡ <white>%probability% <dark_gray>| <gray>❤ buffer <white>%buffer%<dark_gray>/<white>%max_buffer%"
+    - "<gray>♫ %bar%"
+    - "<dark_gray>♬ trend <gray>%trend%"
+    - "<dark_gray>☹ %state%"
+    - "<dark_gray>♠ windows <white>%windows%"
+  lines: 6
   seconds: 300
   offset: 1.1

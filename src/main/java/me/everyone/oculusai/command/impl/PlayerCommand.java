@@ -31,47 +31,58 @@ public final class PlayerCommand extends SubCommand {
         }
 
         double max = plugin.config().bufferMax();
-        double fraction = max > 0.0D ? data.buffer() / max : 0.0D;
 
-        // Three lines instead of a labelled block. Every label that was here -
-        // "Buffer:", "Last probability:", "Windows analysed:" - repeated what
-        // the number next to it already says to anyone who runs this command,
-        // and pushed the numbers apart so none of them could be compared.
         replyKey(sender, "player-cmd.header", Map.of("player", data.name()));
-        replyKey(sender, "player-cmd.reading", Map.of(
-                "heat", Msg.heatColour(data.probability()),
-                "probability", Msg.percent(data.probability()),
-                "bar", Msg.bar(fraction, 10),
-                "buffer", Msg.round(data.buffer(), 1),
+        replyKey(sender, "player-cmd.buffer", Map.of(
+                "value", Msg.round(data.buffer(), 1),
                 "max", Msg.round(max, 0)));
+        replyKey(sender, "player-cmd.probability", Map.of(
+                "value", Msg.percent(data.probability())));
+        replyKey(sender, "player-cmd.windows", Map.of(
+                "value", Integer.toString(data.windowsAnalysed())));
 
-        String trend = Msg.spark(data.bufferHistory(), max, 12);
-        String state = plugin.lang().text(data.inCombat(plugin.config().combatMs())
-                ? "player-cmd.state-combat" : "player-cmd.state-idle");
-        if (data.recording()) {
-            state = state + plugin.lang().text("player-cmd.state-recording",
-                    Map.of("value", Integer.toString(data.recordedCount())));
+        if (data.inCombat(plugin.config().combatMs())) {
+            replyKey(sender, "player-cmd.in-combat");
+        } else {
+            replyKey(sender, "player-cmd.not-in-combat");
         }
-        replyKey(sender, "player-cmd.state", Map.of(
-                "trend", trend.isEmpty() ? "\u2014" : trend,
-                "windows", Integer.toString(data.windowsAnalysed()),
-                "state", state));
+
+        if (data.recording()) {
+            replyKey(sender, "player-cmd.recording", Map.of(
+                    "value", Integer.toString(data.recordedCount())));
+        }
+
+        List<Double> history = data.bufferHistory();
+        if (!history.isEmpty()) {
+            replyKey(sender, "player-cmd.buffer-history");
+            StringBuilder sb = new StringBuilder("<dark_gray>");
+            for (int i = 0; i < history.size(); i++) {
+                if (i > 0) sb.append("<dark_gray>, ");
+                sb.append("<white>").append(Msg.round(history.get(i), 1));
+            }
+            reply(sender, sb.toString());
+        }
 
         JournalManager.Entry entry = findJournalEntry(data.uuid());
         if (entry != null) {
-            StringBuilder history = new StringBuilder();
-            long now = System.currentTimeMillis();
-            for (JournalManager.Snapshot snap : entry.history()) {
-                long age = (now - snap.capturedAt()) / 1000;
-                String ageStr = age < 60
-                        ? age + "s"
-                        : (age < 3600 ? (age / 60) + "m" : (age / 3600) + "h");
-                history.append("  <dark_gray>").append(ageStr)
-                       .append(" <gray>").append(Msg.percent(snap.probability()));
+            replyKey(sender, "player-cmd.journal-header");
+            replyKey(sender, "player-cmd.peak-buffer", Map.of(
+                    "value", Msg.round(entry.peakBuffer(), 1)));
+
+            List<JournalManager.Snapshot> snapshots = entry.history();
+            if (!snapshots.isEmpty()) {
+                replyKey(sender, "player-cmd.prob-history");
+                long now = System.currentTimeMillis();
+                for (JournalManager.Snapshot snap : snapshots) {
+                    long age = (now - snap.capturedAt()) / 1000;
+                    String ageStr = age < 60
+                            ? age + "s"
+                            : (age < 3600 ? (age / 60) + "m" : (age / 3600) + "h");
+                    reply(sender, "<dark_gray>- <gray>" + ageStr
+                            + " <dark_gray>| <white>" + Msg.percent(snap.probability())
+                            + " <dark_gray>| <gray>buf <white>" + Msg.round(snap.buffer(), 1));
+                }
             }
-            replyKey(sender, "player-cmd.journal", Map.of(
-                    "peak", Msg.round(entry.peakBuffer(), 1),
-                    "history", history.toString()));
         }
 
         if (data.windowsAnalysed() == 0) {

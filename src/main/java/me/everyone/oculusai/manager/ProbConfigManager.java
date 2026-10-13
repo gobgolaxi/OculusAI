@@ -59,11 +59,10 @@ public final class ProbConfigManager implements Manager {
         // still there for anyone who sets compact to false.
         hologramCompact = config.getBoolean("hologram.compact", true);
         // No name on the hologram: it floats over the player, whose own
-        // nameplate is right under it.
+        // nameplate is right under it. No labels and no buffer figure either -
+        // the reading and the length of the bar say the same thing shorter.
         hologramCompactFormat = config.getString("hologram.compact-format",
-                "<gray>aim <white>%probability% "
-                + "<dark_gray>| <gray>buf <white>%buffer%<dark_gray>/<white>%max_buffer% "
-                + "<dark_gray>| %bar%");
+                "<white>%probability% %bar%");
         // A window lands about every half second during a fight, so three
         // seconds of silence is a stop rather than a gap.
         staleSeconds = Math.max(1, config.getInt("hologram.stale-seconds", 3));

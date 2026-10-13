@@ -384,7 +384,7 @@ public final class DisplayManager implements Manager {
     private String actionBarForTarget(PlayerData target) {
         double fraction = target.buffer() / plugin.config().bufferMax();
         if (!target.analysing(plugin.probConfig().staleMs())) {
-            return Msg.parse(plugin.probConfig().staleFormat(),
+            return Msg.parse("<white>%player% <dark_gray>| " + plugin.probConfig().staleFormat(),
                     placeholders(target, fraction, 10, Map.of("trend", "-----")));
         }
         return Msg.parse(plugin.probConfig().actionBarFormat(), placeholders(target, fraction, 10, null));
@@ -393,7 +393,7 @@ public final class DisplayManager implements Manager {
     private String compactActionBarForTarget(PlayerData target) {
         double fraction = target.buffer() / plugin.config().bufferMax();
         if (!target.analysing(plugin.probConfig().staleMs())) {
-            return Msg.parse(plugin.probConfig().staleFormat(),
+            return Msg.parse("<white>%player% <dark_gray>| " + plugin.probConfig().staleFormat(),
                     placeholders(target, fraction, 10, Map.of("trend", "-----")));
         }
         return Msg.parse("<%accent%>⚠ <white>%bar% <dark_gray>| <white>%player% <dark_gray>| <gray>%probability%",

@@ -41,25 +41,33 @@ public final class ProbConfigManager implements Manager {
 
         YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
         actionBarFormat = config.getString("actionbar",
-                "<gray>%player% <%heat%>%probability% %bar%");
+                "<%accent%>⚠ <white>%bar% <dark_gray>| <white>%player% <dark_gray>| <gray>%probability%");
         hologramFormat = config.getStringList("hologram.format");
         if (hologramFormat.isEmpty()) {
             hologramFormat = List.of(
-                    "<%heat%>%probability% %bar%",
-                    "<dark_gray>%trend%  <gray>%windows%");
+                    "<dark_gray>◆◆◆ <gradient:%primary%:%secondary%><bold>%player%</bold></gradient> <dark_gray>◆◆◆",
+                    "<gray>⚡ <white>%probability% <dark_gray>| <gray>❤ buffer <white>%buffer%<dark_gray>/<white>%max_buffer%",
+                    "<gray>♫ %bar%",
+                    "<dark_gray>♬ trend <gray>%trend%",
+                    "<dark_gray>☹ %state%",
+                    "<dark_gray>♠ windows <white>%windows%");
         }
-        hologramLines = Math.max(1, config.getInt("hologram.lines", 2));
-        // One line by default, and that line carries only what the screen does
-        // not already have: the player's name floats over his head anyway, and
-        // labels like "aim" and "buffer" repeat in every frame without saying
-        // anything. What is left is the reading and how full the buffer is.
+        hologramLines = Math.max(1, config.getInt("hologram.lines", 6));
+        // One line by default. Six lines of hologram over a player's head in a
+        // fight is a wall between the watcher and what they are watching, and
+        // the two numbers that decide anything - the reading and the buffer -
+        // fit on one line with room to spare. The multi-line `format` above is
+        // still there for anyone who sets compact to false.
         hologramCompact = config.getBoolean("hologram.compact", true);
         hologramCompactFormat = config.getString("hologram.compact-format",
-                "<%heat%>%probability% %bar%");
+                "<white>%player% <dark_gray>| <gray>aim <white>%probability% "
+                + "<dark_gray>| <gray>buf <white>%buffer%<dark_gray>/<white>%max_buffer% "
+                + "<dark_gray>| %bar%");
         // A window lands about every half second during a fight, so three
         // seconds of silence is a stop rather than a gap.
         staleSeconds = Math.max(1, config.getInt("hologram.stale-seconds", 3));
-        staleFormat = config.getString("hologram.stale-format", "<dark_gray>\u2014");
+        staleFormat = config.getString("hologram.stale-format",
+                "<white>%player% <dark_gray>| &cno analysing");
         hologramSeconds = Math.max(1, config.getInt("hologram.seconds", 300));
         hologramOffset = config.getDouble("hologram.offset", 1.1D);
     }

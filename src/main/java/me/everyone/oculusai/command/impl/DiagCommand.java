@@ -53,6 +53,15 @@ public final class DiagCommand extends SubCommand {
         line(sender, "service", plugin.api().reachable(),
                 plugin.api().reachable() ? "reachable" : "paused, not answering");
 
+        // Captures the service has not taken yet. Silent when there are none,
+        // because an empty queue is the normal state and says nothing.
+        int held = plugin.uploads().size();
+        if (held > 0) {
+            line(sender, "captures", false, held + " capture(s), "
+                    + plugin.uploads().windows() + " windows not sent yet -"
+                    + " retrying every " + me.everyone.oculusai.manager.UploadQueue.RETRY_SECONDS + "s");
+        }
+
         int needed = plugin.config().windowTicks();
         int have = data.windowSize();
         line(sender, "window", have >= needed, have + "/" + needed + " samples");

@@ -27,6 +27,7 @@ import me.everyone.oculusai.manager.SetupManager;
 import me.everyone.oculusai.manager.TestServerManager;
 import me.everyone.oculusai.manager.ThemeManager;
 import me.everyone.oculusai.manager.TrackerManager;
+import me.everyone.oculusai.manager.UploadQueue;
 import me.everyone.oculusai.manager.UpdateManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -53,6 +54,7 @@ public final class OculusAI extends JavaPlugin {
     private CommandManager commandManager;
     private NpcManager npcManager;
     private SetupManager setupManager;
+    private UploadQueue uploadQueue;
     private TestServerManager testServerManager;
     private UpdateManager updateManager;
     private String buildVersion = "";
@@ -68,6 +70,7 @@ public final class OculusAI extends JavaPlugin {
         apiManager = register(new ApiManager(this));
         dataManager = register(new DataManager(this));
         trackerManager = register(new TrackerManager(this));
+        uploadQueue = register(new UploadQueue(this));
         datasetManager = register(new DatasetManager(this));
         punishmentManager = register(new PunishmentManager(this));
         analysisManager = register(new AnalysisManager(this));
@@ -174,6 +177,11 @@ public final class OculusAI extends JavaPlugin {
 
     public TrackerManager tracker() {
         return trackerManager;
+    }
+
+    /** Captures the service has not accepted yet, retried on a timer. */
+    public UploadQueue uploads() {
+        return uploadQueue;
     }
 
     public DatasetManager datasets() {

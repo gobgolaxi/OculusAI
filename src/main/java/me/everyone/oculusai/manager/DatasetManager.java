@@ -277,15 +277,27 @@ public final class DatasetManager implements Manager {
             return CompletableFuture.completedFuture(0);
         }
 
+        List<double[]> sliced = sliced(names, rows, version);
+        List<double[]> context = data.recordedContext();
+        // Cleared up front, because a failed send no longer leaves the rows
+        // here: they go to the retry queue, and holding them in both places
+        // would send the same capture twice the next time /oai data stop runs.
+        data.clearRecorded();
+
+        UploadQueue.Batch batch = new UploadQueue.Batch(label, data.name(),
+                data.uuid().toString(), FeatureSchemas.names(version), sliced,
+                enabled, source, person, context, version);
+
         return plugin.api()
-                .addSamples(label, data.name(), data.uuid().toString(),
-                        FeatureSchemas.names(version), sliced(names, rows, version),
-                        enabled, source, person, data.recordedContext(), version)
+                .addSamples(batch.label(), batch.player(), batch.uuid(),
+                        batch.featureNames(), batch.rows(), batch.enabled(),
+                        batch.source(), batch.person(), batch.context(),
+                        batch.featureVersion())
                 .thenApply(response -> {
                     if (response == null) {
+                        plugin.uploads().offer(batch);
                         return null;
                     }
-                    data.clearRecorded();
                     return response.has("stored") ? response.get("stored").getAsInt() : rows.size();
                 });
     }
@@ -305,13 +317,21 @@ public final class DatasetManager implements Manager {
 
         List<CompletableFuture<Integer>> sends = new ArrayList<>(BOTH_SCHEMAS.length);
         for (int version : BOTH_SCHEMAS) {
+            UploadQueue.Batch batch = new UploadQueue.Batch(label, data.name(),
+                    data.uuid().toString(), FeatureSchemas.names(version),
+                    sliced(names, rows, version), true, "manual", person, context, version);
             sends.add(plugin.api()
-                    .addSamples(label, data.name(), data.uuid().toString(),
-                            FeatureSchemas.names(version), sliced(names, rows, version),
-                            true, "manual", person, context, version)
-                    .thenApply(response -> response == null
-                            ? null
-                            : (response.has("stored") ? response.get("stored").getAsInt() : rows.size())));
+                    .addSamples(batch.label(), batch.player(), batch.uuid(),
+                            batch.featureNames(), batch.rows(), batch.enabled(),
+                            batch.source(), batch.person(), batch.context(),
+                            batch.featureVersion())
+                    .thenApply(response -> {
+                        if (response == null) {
+                            plugin.uploads().offer(batch);
+                            return null;
+                        }
+                        return response.has("stored") ? response.get("stored").getAsInt() : rows.size();
+                    }));
         }
 
         return CompletableFuture.allOf(sends.toArray(new CompletableFuture[0]))

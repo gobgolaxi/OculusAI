@@ -33,7 +33,10 @@ public final class PacketManager implements Manager {
                 PacketType.Play.Client.POSITION,
                 PacketType.Play.Client.POSITION_LOOK,
                 PacketType.Play.Client.LOOK,
-                PacketType.Play.Client.FLYING) {
+                // Движение без позиции и поворота - только флаг земли. На
+                // 1.21 это GROUND; прежняя константа здесь не
+                // зарегистрирована, и подписка на неё молча ничего не ловила.
+                PacketType.Play.Client.GROUND) {
             @Override
             public void onPacketReceiving(PacketEvent event) {
                 try {
@@ -80,10 +83,10 @@ public final class PacketManager implements Manager {
             return;
         }
 
-        if (isFlying(type)) {
+        if (isMovement(type)) {
             data.noteGround(player.isOnGround());
             data.noteSprint(player.isSprinting());
-            if (type == PacketType.Play.Client.POSITION || type == PacketType.Play.Client.FLYING) {
+            if (type == PacketType.Play.Client.POSITION || type == PacketType.Play.Client.GROUND) {
                 data.addSample(data.lastYaw(), data.lastPitch(), plugin.config().windowTicks());
                 return;
             }
@@ -128,10 +131,10 @@ public final class PacketManager implements Manager {
                 || player.hasPotionEffect(PotionEffectType.BLINDNESS);
     }
 
-    private boolean isFlying(PacketType type) {
+    private boolean isMovement(PacketType type) {
         return type == PacketType.Play.Client.POSITION
                 || type == PacketType.Play.Client.POSITION_LOOK
                 || type == PacketType.Play.Client.LOOK
-                || type == PacketType.Play.Client.FLYING;
+                || type == PacketType.Play.Client.GROUND;
     }
 }

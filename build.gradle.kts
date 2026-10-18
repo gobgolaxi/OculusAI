@@ -72,8 +72,11 @@ tasks {
     }
 
     runServer {
+        // IPv4 принудительно: машина разработчика двустековая, и без этого
+        // клиент ходит к сервису то с IPv4, то с IPv6. Ключ привязан к одному
+        // адресу, так что половина запросов получала бы 001.
+        jvmArgs("-Xms2G", "-Xmx2G", "-Djava.net.preferIPv4Stack=true")
         minecraftVersion(mcVersion)
-        jvmArgs("-Xms2G", "-Xmx2G")
     }
 
     processResources {

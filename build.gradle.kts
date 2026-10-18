@@ -12,8 +12,8 @@ group = "me.everyone.oculusai"
 // The real version, not a placeholder: the plugin asks the service whether a
 // newer build exists and compares against this, so a jar reporting
 // 1.0-SNAPSHOT forever can never know it is out of date. Override per build
-// with -PpluginVersion=1.0.5.
-version = (project.findProperty("pluginVersion") as String? ?: "1.0.4")
+// with -PpluginVersion=1.0.6.
+version = (project.findProperty("pluginVersion") as String? ?: "1.0.5")
 
 repositories {
     mavenCentral()

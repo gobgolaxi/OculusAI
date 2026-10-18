@@ -22,7 +22,6 @@ import me.everyone.oculusai.command.impl.PlayerCommand;
 import me.everyone.oculusai.command.impl.ProbCommand;
 import me.everyone.oculusai.command.impl.ReloadCommand;
 import me.everyone.oculusai.command.impl.ReportCommand;
-import me.everyone.oculusai.command.impl.VanishCommand;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -49,7 +48,6 @@ public final class CommandManager implements Manager, CommandExecutor, TabComple
         subCommands.add(new ProbCommand(plugin));
         subCommands.add(new MonitorCommand(plugin));
         subCommands.add(new PlayerCommand(plugin));
-        subCommands.add(new VanishCommand(plugin));
         subCommands.add(new ForgetCommand(plugin));
         subCommands.add(new DataCommand(plugin));
         subCommands.add(new ReportCommand(plugin));

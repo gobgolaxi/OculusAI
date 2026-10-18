@@ -29,12 +29,26 @@ public final class HistoryManager implements Manager {
     public record Event(long at, String type, String detail) {
     }
 
+    /** Сколько раз с игроком что-то случилось за всё время.
+     *
+     *  Считается отдельно от ленты событий, а не выводится из неё: лента
+     *  обрезана последними шестьюдесятью записями, и игрок, которого
+     *  предупреждали триста раз, по ней выглядел бы как предупреждённый
+     *  шестьдесят. Счётчик не обнуляется ничем, кроме /oai forget. */
+    public record Tally(int alerts, int punishments, int quits, double peakProbability) {
+    }
+
     private static final class Record {
         private volatile String name;
         private volatile long firstSeenAt;
         private volatile long lastSeenAt;
         private volatile double peakBuffer;
+        private volatile double peakProbability;
         private volatile int windowsAnalysed;
+        private volatile int alerts;
+        private volatile int punishments;
+        private volatile int quits;
+        private volatile long lastAlertAt;
         private final Deque<PlayerData.Reading> readings = new ArrayDeque<>();
         private final Deque<Event> events = new ArrayDeque<>();
         private volatile boolean dirty;
@@ -93,6 +107,7 @@ public final class HistoryManager implements Manager {
             record.lastSeenAt = newest.capturedAt();
             record.windowsAnalysed = Math.max(record.windowsAnalysed, data.windowsAnalysed());
             record.peakBuffer = Math.max(record.peakBuffer, newest.buffer());
+            record.peakProbability = Math.max(record.peakProbability, newest.probability());
             record.readings.addLast(newest);
             trim(record);
             record.dirty = true;
@@ -102,9 +117,20 @@ public final class HistoryManager implements Manager {
 
     public void note(UUID uuid, String name, String type, String detail) {
         Record record = load(uuid, name);
+        long now = System.currentTimeMillis();
         synchronized (record) {
             record.name = name == null || name.isBlank() ? record.name : name;
-            record.events.addLast(new Event(System.currentTimeMillis(), type,
+            switch (type) {
+                case "alert" -> {
+                    record.alerts++;
+                    record.lastAlertAt = now;
+                }
+                case "punish" -> record.punishments++;
+                case "quit", "kick" -> record.quits++;
+                default -> {
+                }
+            }
+            record.events.addLast(new Event(now, type,
                     detail == null ? "" : detail));
             while (record.events.size() > 60) {
                 record.events.pollFirst();
@@ -174,6 +200,44 @@ public final class HistoryManager implements Manager {
             records.put(uuid, record);
         }
         return record.peakBuffer;
+    }
+
+    /** Счётчики за всё время. Для игрока, о котором нечего сказать, нули. */
+    public Tally tally(UUID uuid) {
+        Record record = records.get(uuid);
+        if (record == null) {
+            record = read(uuid);
+            if (record == null) {
+                return new Tally(0, 0, 0, 0.0D);
+            }
+            records.put(uuid, record);
+        }
+        return new Tally(record.alerts, record.punishments, record.quits,
+                record.peakProbability);
+    }
+
+    public long lastAlertAt(UUID uuid) {
+        Record record = records.get(uuid);
+        if (record == null) {
+            record = read(uuid);
+            if (record == null) {
+                return 0L;
+            }
+            records.put(uuid, record);
+        }
+        return record.lastAlertAt;
+    }
+
+    public long firstSeenAt(UUID uuid) {
+        Record record = records.get(uuid);
+        if (record == null) {
+            record = read(uuid);
+            if (record == null) {
+                return 0L;
+            }
+            records.put(uuid, record);
+        }
+        return record.firstSeenAt;
     }
 
     public long lastSeenAt(UUID uuid) {
@@ -264,7 +328,16 @@ public final class HistoryManager implements Manager {
             record.firstSeenAt = root.has("first_seen_at") ? root.get("first_seen_at").getAsLong() : 0L;
             record.lastSeenAt = root.has("last_seen_at") ? root.get("last_seen_at").getAsLong() : 0L;
             record.peakBuffer = root.has("peak_buffer") ? root.get("peak_buffer").getAsDouble() : 0.0D;
+            record.peakProbability = root.has("peak_probability")
+                    ? root.get("peak_probability").getAsDouble() : 0.0D;
             record.windowsAnalysed = root.has("windows") ? root.get("windows").getAsInt() : 0;
+            // Файл, записанный до появления счётчиков, их не содержит: ноль -
+            // честный ответ, выводить их задним числом из обрезанной ленты
+            // значило бы выдумать число и показать его как измеренное.
+            record.alerts = root.has("alerts") ? root.get("alerts").getAsInt() : 0;
+            record.punishments = root.has("punishments") ? root.get("punishments").getAsInt() : 0;
+            record.quits = root.has("quits") ? root.get("quits").getAsInt() : 0;
+            record.lastAlertAt = root.has("last_alert_at") ? root.get("last_alert_at").getAsLong() : 0L;
             if (root.has("readings")) {
                 for (var element : root.getAsJsonArray("readings")) {
                     JsonObject item = element.getAsJsonObject();
@@ -318,7 +391,12 @@ public final class HistoryManager implements Manager {
             root.addProperty("first_seen_at", record.firstSeenAt);
             root.addProperty("last_seen_at", record.lastSeenAt);
             root.addProperty("peak_buffer", record.peakBuffer);
+            root.addProperty("peak_probability", record.peakProbability);
             root.addProperty("windows", record.windowsAnalysed);
+            root.addProperty("alerts", record.alerts);
+            root.addProperty("punishments", record.punishments);
+            root.addProperty("quits", record.quits);
+            root.addProperty("last_alert_at", record.lastAlertAt);
             for (PlayerData.Reading reading : record.readings) {
                 JsonObject item = new JsonObject();
                 item.addProperty("t", reading.capturedAt());

@@ -26,9 +26,6 @@ permissions:
   oculusai.journal:
     description: Open the live suspicion journal.
     default: false
-  oculusai.vanish:
-    description: Enter and leave hidden spectator observation.
-    default: false
   oculusai.data:
     description: Record and label training data.
     default: false

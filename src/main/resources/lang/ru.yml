@@ -22,7 +22,6 @@ help:
     history: "Листать историю детектов игрока."
     prob: "Следить за Prob игрока в реальном времени."
     player: "Показать данные подозрений игрока."
-    vanish: "Войти или выйти из скрытого наблюдения."
     forget: "Сбросить текущее подозрение."
     data: "Записывать и размечать обучающие данные."
     dashboard: "Открыть дашборд датасета и модели."
@@ -210,12 +209,17 @@ history:
     windows: "<gray>Окон проанализировано: <white>%value%"
     readings: "<gray>Снятий в истории: <white>%value%"
     last-seen: "<gray>Последний раз: <white>%value%"
+    peak-prob: "<gray>Пиковое показание: <white>%value%"
+    alerts: "<gray>Алертов: <white>%value%"
+    punishments: "<gray>Наказаний: <white>%value%"
+    first-seen: "<gray>Впервые замечен: <white>%value%"
   events: "<gold>Что произошло:"
   event-line: "<dark_gray>- <gray>%age% <dark_gray>| <white>%type% <dark_gray>%detail%"
   event:
     kick: "кикнут"
     quit: "вышел"
     punish: "наказан"
+    alert: "алерт"
   unknown-player: "<red>Истории для <white>%player%<red> не сохранено."
   reading:
     time: "<gray>Когда: <white>%value%"
@@ -252,11 +256,6 @@ journal:
   player-offline: "<red>Этот игрок уже не в сети."
   observe-started: "<gray>Теперь наблюдаешь за <white>%player%<gray> с включённым Prob."
 vanish:
-  enter: "<gray>Ты вошёл в скрытый режим наблюдения."
-  exit: "<gray>Ты вышел из скрытого наблюдения и вернул прошлое состояние."
-  not-vanished: "<gray>Сейчас ты не находишься в скрытом наблюдении."
-  player-offline: "<red>Этот игрок не в сети."
-  observe: "<gray>Теперь ты скрытно наблюдаешь за <white>%player%<gray>."
   gamemode-blocked: "<red>Нельзя менять gamemode во время скрытого наблюдения."
 player-cmd:
   usage: "<red>Использование: <white>%value%"

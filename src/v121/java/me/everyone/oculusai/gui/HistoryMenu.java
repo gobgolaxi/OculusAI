@@ -120,6 +120,22 @@ public final class HistoryMenu extends Menu {
                 Map.of("value", Integer.toString(plugin.history().windowsAnalysed(targetId)))));
         lore.add(plugin.lang().text("history.target.readings",
                 Map.of("value", Integer.toString(ordered.size()))));
+        // Счётчики за всё время. Они переживают перезапуск и не обрезаются
+        // вместе с лентой событий, поэтому «алертов 240» здесь значит ровно
+        // то, что написано, а не «столько влезло в ленту».
+        HistoryManager.Tally tally = plugin.history().tally(targetId);
+        lore.add(plugin.lang().text("history.target.peak-prob",
+                Map.of("value", Msg.percent(tally.peakProbability()))));
+        lore.add(plugin.lang().text("history.target.alerts",
+                Map.of("value", Integer.toString(tally.alerts()))));
+        if (tally.punishments() > 0) {
+            lore.add(plugin.lang().text("history.target.punishments",
+                    Map.of("value", Integer.toString(tally.punishments()))));
+        }
+        long first = plugin.history().firstSeenAt(targetId);
+        if (first > 0L) {
+            lore.add(plugin.lang().text("history.target.first-seen", Map.of("value", ago(first))));
+        }
         long seen = plugin.history().lastSeenAt(targetId);
         if (seen > 0L) {
             lore.add(plugin.lang().text("history.target.last-seen", Map.of("value", ago(seen))));

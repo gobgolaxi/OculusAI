@@ -22,7 +22,6 @@ help:
     history: "Browse a player's detection history."
     prob: "Watch a player's live aim reading."
     player: "View a player's suspicion data."
-    vanish: "Enter or leave hidden spectator observation."
     forget: "Drop the current suspicion and start over."
     data: "Record and label training data."
     dashboard: "Open the dataset and model dashboard."
@@ -210,12 +209,17 @@ history:
     windows: "<gray>Windows analysed: <white>%value%"
     readings: "<gray>Readings in history: <white>%value%"
     last-seen: "<gray>Last seen: <white>%value%"
+    peak-prob: "<gray>Peak reading: <white>%value%"
+    alerts: "<gray>Alerts: <white>%value%"
+    punishments: "<gray>Punished: <white>%value% time(s)"
+    first-seen: "<gray>First seen: <white>%value%"
   events: "<gold>What happened:"
   event-line: "<dark_gray>- <gray>%age% <dark_gray>| <white>%type% <dark_gray>%detail%"
   event:
     kick: "kicked"
     quit: "left"
     punish: "punished"
+    alert: "alerted"
   unknown-player: "<red>No stored history for <white>%player%<red>."
   reading:
     time: "<gray>When: <white>%value%"
@@ -252,11 +256,6 @@ journal:
   player-offline: "<red>This player is no longer online."
   observe-started: "<gray>Observing <white>%player%<gray> in spectator with Prob enabled."
 vanish:
-  enter: "<gray>Entered vanished spectator mode."
-  exit: "<gray>Left vanished observation and restored your previous state."
-  not-vanished: "<gray>You are not in vanished observation."
-  player-offline: "<red>That player is not online."
-  observe: "<gray>Now observing <white>%player%<gray> in vanished spectator mode."
   gamemode-blocked: "<red>You cannot change gamemode while vanished."
 player-cmd:
   usage: "<red>Usage: <white>%value%"

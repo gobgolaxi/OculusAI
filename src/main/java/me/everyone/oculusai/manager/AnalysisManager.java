@@ -179,6 +179,12 @@ public final class AnalysisManager implements Manager {
             return;
         }
         lastAlert.put(data.uuid(), now);
+        // Алерт попадает в историю наравне с киком: на игрока, которого
+        // предупреждали двадцать раз и ни разу не выгнали, смотреть надо
+        // именно по этому счёту.
+        plugin.history().note(data.uuid(), data.name(), "alert",
+                "buffer " + Msg.round(data.buffer(), 1)
+                        + ", p=" + Msg.round(data.probability(), 2));
         alert(data);
         plugin.api().reportAlert(data.name(), data.uuid().toString(),
                 data.probability(), data.buffer());

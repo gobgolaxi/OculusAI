@@ -34,6 +34,10 @@ public final class ForgetCommand extends SubCommand {
 
         plugin.punishments().forget(data.uuid());
         plugin.analysis().forget(data.uuid());
+        // Журнал теперь переживает перезапуск, поэтому забытый игрок должен
+        // уходить и оттуда: иначе он остаётся в списке подозрительных с
+        // буфером, которого у него больше нет.
+        plugin.journal().forget(data.uuid());
         data.recording(false, null);
         data.clearRecorded();
         data.clearWindow();

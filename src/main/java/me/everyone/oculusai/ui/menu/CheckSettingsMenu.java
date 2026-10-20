@@ -126,28 +126,14 @@ public final class CheckSettingsMenu extends Menu {
             case "hitbox" -> List.of(
                     Option.toggle("enabled", Material.LEVER, "checks.hitbox.enabled", true),
                     Option.toggle("test-only", Material.LEVER, "checks.hitbox.test-only", false),
-                    Option.number("max-width", Material.ARMOR_STAND, "checks.hitbox.max-width",
-                            plugin.config().hitboxCheckMaxWidth(), 0.1D, 5.0D, 0.1D, false),
-                    Option.number("max-height", Material.ARMOR_STAND, "checks.hitbox.max-height",
-                            plugin.config().hitboxCheckMaxHeight(), 0.1D, 10.0D, 0.1D, false),
+                    Option.number("max-distance", Material.ARMOR_STAND,
+                            "checks.hitbox.max-distance",
+                            plugin.config().hitboxMaxDistance(), 0.5D, 20.0D, 0.5D, false),
+                    Option.number("hitbox-margin", Material.ARMOR_STAND,
+                            "checks.hitbox.hitbox-margin",
+                            plugin.config().hitboxMargin(), 0.0D, 0.5D, 0.1D, false),
                     Option.millis("cooldown-ms", Material.CLOCK, "checks.hitbox.cooldown-ms",
                             plugin.config().checkHitboxCooldownMs(), 0.0D, 600_000.0D, 1_000.0D));
-            case "nolookhit" -> List.of(
-                    Option.toggle("enabled", Material.LEVER, "checks.nolookhit.enabled", true),
-                    Option.toggle("test-only", Material.LEVER, "checks.nolookhit.test-only", false),
-                    Option.number("max-distance", Material.TARGET,
-                            "checks.nolookhit.max-distance",
-                            plugin.config().noLookHitMaxDistance(), 0.5D, 20.0D, 0.5D, false),
-                    Option.number("hitbox-margin", Material.TARGET,
-                            "checks.nolookhit.hitbox-margin",
-                            plugin.config().noLookHitHitboxMargin(), 0.0D, 0.5D, 0.1D, false),
-                    Option.number("max-angle", Material.COMPASS,
-                            "checks.nolookhit.max-angle",
-                            plugin.config().noLookHitMaxAngle(), 0.0D, 90.0D, 1.0D, true),
-                    Option.millis("cooldown-ms", Material.CLOCK,
-                            "checks.nolookhit.cooldown-ms",
-                            plugin.config().checkNoLookHitCooldownMs(),
-                            0.0D, 600_000.0D, 1_000.0D));
             default -> List.of(
                     Option.toggle("enabled", Material.LEVER,
                             "checks." + checkId + ".enabled", true));
@@ -228,7 +214,6 @@ public final class CheckSettingsMenu extends Menu {
             case "wall" -> Material.IRON_DOOR;
             case "aim" -> Material.ENDER_EYE;
             case "hitbox" -> Material.ARMOR_STAND;
-            case "nolookhit" -> Material.TARGET;
             default -> Material.PAPER;
         };
     }

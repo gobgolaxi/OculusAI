@@ -1,23 +1,32 @@
 package me.everyone.oculusai.check;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.player.EntityTracker;
 import me.everyone.oculusai.player.PlayerData;
-import me.everyone.oculusai.util.Msg;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.util.BoundingBox;
+import org.bukkit.util.Vector;
 
-/** Cancels hits on a target whose server-side hitbox is larger than allowed.
+/** Cancels an attack that does not touch the target's real hitbox.
  *
- * <p>The dimensions come from the live player when possible, because a pose or
- * scale change can happen after the tracker's last tick. NPC dummies fall back
- * to the dimensions recorded by {@link EntityTracker}. */
+ * <p>This is the hitbox check for expanded-hitbox and no-look attacks. The
+ * server cannot see the client's hitbox, but it can see the attack packet and
+ * the last look direction. If that ray never touches the target's actual
+ * server-side box, the client attacked something that is not there. Recent
+ * target boxes cover the movement between the last position packet and the
+ * attack; no confirmation or neural data is involved. */
 public final class HitBoxCheck implements CombatCheck {
 
-    private static final double EPSILON = 1.0E-3D;
-    private static final long MAX_TRACK_AGE_MS = 1000L;
+    private static final double MIN_DISTANCE = 0.1D;
+    private static final double MIN_DISTANCE_SQUARED = MIN_DISTANCE * MIN_DISTANCE;
+    private static final long HISTORY_MS = 500L;
+    private static final int MAX_HISTORY_BOXES = 6;
 
     private final OculusAI plugin;
 
@@ -55,44 +64,143 @@ public final class HitBoxCheck implements CombatCheck {
             return CheckResult.pass();
         }
 
-        double width;
-        double height;
-        Player target = plugin.tracker().player(targetEntityId);
-        if (target != null) {
-            if (target.isDead() || target.getGameMode() == GameMode.SPECTATOR
-                    || !target.getWorld().equals(attacker.getWorld())) {
+        Player online = plugin.tracker().player(targetEntityId);
+        if (online != null) {
+            if (online.isDead() || online.getGameMode() == GameMode.SPECTATOR
+                    || !online.getWorld().equals(attacker.getWorld())) {
                 return CheckResult.pass();
             }
-            BoundingBox bounds = target.getBoundingBox();
-            width = Math.max(bounds.getWidthX(), bounds.getWidthZ());
-            height = bounds.getHeight();
-        } else {
-            EntityTracker.Tracked tracked = plugin.tracker().get(targetEntityId);
-            if (tracked == null
-                    || System.currentTimeMillis() - tracked.at() > MAX_TRACK_AGE_MS
-                    || tracked.worldId() == null
-                    || !tracked.worldId().equals(attacker.getWorld().getUID())) {
-                return CheckResult.pass();
-            }
-            width = tracked.width();
-            height = tracked.height();
-        }
-
-        if (!Double.isFinite(width) || !Double.isFinite(height)
-                || width <= 0.0D || height <= 0.0D) {
+        } else if (!plugin.tracker().playerLike(targetEntityId)) {
             return CheckResult.pass();
         }
 
-        double maxWidth = plugin.config().hitboxCheckMaxWidth();
-        double maxHeight = plugin.config().hitboxCheckMaxHeight();
-        if (width <= maxWidth + EPSILON && height <= maxHeight + EPSILON) {
+        Location eye = attacker.getEyeLocation();
+        World world = eye.getWorld();
+        if (world == null
+                || !world.isChunkLoaded(eye.getBlockX() >> 4, eye.getBlockZ() >> 4)) {
             return CheckResult.pass();
         }
 
-        return CheckResult.cancel(plugin.lang().text("check.reason.hitbox", Map.of(
-                "width", Msg.round(width, 2),
-                "height", Msg.round(height, 2),
-                "max-width", Msg.round(maxWidth, 2),
-                "max-height", Msg.round(maxHeight, 2))));
+        Vector look = lookDirection(data);
+        if (look == null) {
+            return CheckResult.pass();
+        }
+
+        double maxDistance = plugin.config().hitboxMaxDistance();
+        Vector eyeVector = eye.toVector();
+        List<BoundingBox> targets = targetBoxes(online, targetEntityId, world,
+                eyeVector, maxDistance);
+        if (targets.isEmpty()) {
+            return CheckResult.pass();
+        }
+
+        double nearest = Double.MAX_VALUE;
+        for (BoundingBox box : targets) {
+            nearest = Math.min(nearest, eyeVector.distanceSquared(box.getCenter()));
+        }
+        if (nearest < MIN_DISTANCE_SQUARED) {
+            return CheckResult.pass();
+        }
+
+        double reach = maxDistance + 2.0D;
+        double limit = reach * reach;
+        for (BoundingBox box : targets) {
+            if (eyeVector.distanceSquared(box.getCenter()) > limit) {
+                continue;
+            }
+            if (box.rayTrace(eyeVector, look, reach) != null) {
+                return CheckResult.pass();
+            }
+        }
+
+        return CheckResult.cancel(plugin.lang().text("check.reason.hitbox"));
+    }
+
+    private Vector lookDirection(PlayerData data) {
+        double yaw = Math.toRadians(data.lastYaw());
+        double pitch = Math.toRadians(data.lastPitch());
+        double cosPitch = Math.cos(pitch);
+        Vector look = new Vector(-cosPitch * Math.sin(yaw), -Math.sin(pitch),
+                cosPitch * Math.cos(yaw));
+        if (!Double.isFinite(look.getX()) || !Double.isFinite(look.getY())
+                || !Double.isFinite(look.getZ()) || look.lengthSquared() < 1.0E-6D) {
+            return null;
+        }
+        return look.normalize();
+    }
+
+    private List<BoundingBox> targetBoxes(Player online, int entityId, World world,
+                                          Vector eye, double maxDistance) {
+        List<BoundingBox> boxes = new ArrayList<>(MAX_HISTORY_BOXES + 2);
+        double margin = plugin.config().hitboxMargin();
+
+        if (online != null && online.getBoundingBox().getHeight() > 0.05D) {
+            addBox(boxes, online.getBoundingBox(), margin);
+        }
+
+        EntityTracker.Tracked latest = plugin.tracker().get(entityId);
+        long now = System.currentTimeMillis();
+        UUID worldId = world.getUID();
+        BoundingBox current = trackedBox(latest, worldId, now);
+        if (current != null) {
+            addBox(boxes, current, margin);
+        }
+
+        List<EntityTracker.Tracked> recent = plugin.tracker().recent(entityId);
+        int start = Math.max(0, recent.size() - MAX_HISTORY_BOXES);
+        for (int i = start; i < recent.size(); i++) {
+            BoundingBox box = trackedBox(recent.get(i), worldId, now);
+            if (box != null) {
+                addBox(boxes, box, margin);
+            }
+        }
+
+        double range = maxDistance + 2.0D;
+        double limit = range * range;
+        List<BoundingBox> within = new ArrayList<>(boxes.size());
+        for (BoundingBox box : boxes) {
+            if (!world.isChunkLoaded((int) Math.floor(box.getCenterX()) >> 4,
+                    (int) Math.floor(box.getCenterZ()) >> 4)) {
+                continue;
+            }
+            if (eye.distanceSquared(box.getCenter()) <= limit) {
+                within.add(box);
+            }
+        }
+        return within;
+    }
+
+    private BoundingBox trackedBox(EntityTracker.Tracked tracked, UUID worldId, long now) {
+        if (tracked == null
+                || now - tracked.at() > HISTORY_MS
+                || tracked.worldId() == null
+                || !tracked.worldId().equals(worldId)
+                || !Double.isFinite(tracked.width()) || tracked.width() <= 0.01D
+                || !Double.isFinite(tracked.height()) || tracked.height() <= 0.05D) {
+            return null;
+        }
+        double halfWidth = tracked.width() / 2.0D;
+        return new BoundingBox(
+                tracked.x() - halfWidth, tracked.y(), tracked.z() - halfWidth,
+                tracked.x() + halfWidth, tracked.y() + tracked.height(),
+                tracked.z() + halfWidth);
+    }
+
+    private void addBox(List<BoundingBox> boxes, BoundingBox box, double margin) {
+        BoundingBox expanded = new BoundingBox(
+                box.getMinX() - margin, box.getMinY() - margin,
+                box.getMinZ() - margin, box.getMaxX() + margin,
+                box.getMaxY() + margin, box.getMaxZ() + margin);
+        for (BoundingBox existing : boxes) {
+            if (existing.getMinX() == expanded.getMinX()
+                    && existing.getMinY() == expanded.getMinY()
+                    && existing.getMinZ() == expanded.getMinZ()
+                    && existing.getMaxX() == expanded.getMaxX()
+                    && existing.getMaxY() == expanded.getMaxY()
+                    && existing.getMaxZ() == expanded.getMaxZ()) {
+                return;
+            }
+        }
+        boxes.add(expanded);
     }
 }

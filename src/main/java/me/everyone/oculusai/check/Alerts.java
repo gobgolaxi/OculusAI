@@ -101,6 +101,7 @@ public final class Alerts implements Service {
         String detail = Msg.strip(result.detail());
         String checkName = plugin.lang().textOr("check.name." + check.id(), check.id());
         String symbol = plugin.config().alertSymbol();
+        boolean metrics = check.showsMetrics();
         String message = plugin.config().prefix() + plugin.lang().text(
                 test ? "check.test-line" : "check.alert-line",
                 Map.of(
@@ -109,15 +110,21 @@ public final class Alerts implements Service {
                         "detail", detail,
                         "accent", plugin.theme().current().accent(),
                         "symbol", symbol == null ? "" : symbol,
-                        // Old language files used these two placeholders
-                        // directly in the alert line. Keep filling them so an
-                        // upgraded server never prints raw %probability% or
-                        // %buffer% while its custom translation is retained.
-                        "probability", Values.probability(plugin.config(), data.probability()),
-                        "buffer", Values.buffer(plugin.config(), data.buffer()),
-                        "max", Msg.round(plugin.config().bufferMax(), 1),
-                        "metrics", Values.inline(plugin.config(),
-                                data.probability(), data.buffer())));
+                        // Old language files used these placeholders directly
+                        // in the alert line. Only the neural check fills them;
+                        // Wall and HitBox must not print values they never
+                        // produced.
+                        "probability", metrics
+                                ? Values.probability(plugin.config(), data.probability()) : "",
+                        "buffer", metrics
+                                ? Values.buffer(plugin.config(), data.buffer()) : "",
+                        "max", metrics ? Msg.round(plugin.config().bufferMax(), 1) : "",
+                        "metrics", metrics
+                                ? Values.inline(plugin.config(), data.probability(), data.buffer())
+                                : ""));
+        if (!metrics) {
+            message = withoutTrailingSeparator(message);
+        }
 
         send(message, true);
         plugin.history().note(data.uuid(), data.name(), "check-" + check.id(), detail);
@@ -127,6 +134,16 @@ public final class Alerts implements Service {
             plugin.api().reportAlert(data.name(), data.uuid().toString(),
                     data.probability(), data.buffer());
         }
+    }
+
+    /** An empty %metrics% leaves the separator before it behind in the old
+     *  alert layout. Remove it so Wall and HitBox end cleanly after the
+     *  detail instead of showing a dangling middle dot. */
+    private String withoutTrailingSeparator(String message) {
+        String trimmed = message.replaceAll("\\s+$", "");
+        trimmed = trimmed.replaceAll("(?s)§[0-9a-fk-or]\\s*[·|]\\s*$", "");
+        trimmed = trimmed.replaceAll("(?s)\\s*[·|]\\s*$", "");
+        return trimmed.replaceAll("\\s+$", "");
     }
 
     private void send(String message, boolean sound) {

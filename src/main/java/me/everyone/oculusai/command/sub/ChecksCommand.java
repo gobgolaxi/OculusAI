@@ -13,14 +13,14 @@ import org.bukkit.entity.Player;
 public final class ChecksCommand extends SubCommand {
 
     private static final List<String> KEYS =
-            List.of("analysis", "checks", "wall", "aim", "hitbox", "nolookhit", "punish");
+            List.of("analysis", "checks", "wall", "aim", "hitbox", "punish");
     private static final List<String> OPTIONS =
             List.of("status", "on", "off", "analysis", "checks", "wall", "aim",
-                    "hitbox", "nolookhit", "punish");
+                    "hitbox", "punish");
 
     public ChecksCommand(OculusAI plugin) {
         super(plugin, "checks", List.of("check", "settings"), "oculusai.command",
-                "/oai checks [on|off|status|analysis|checks|wall|aim|hitbox|nolookhit|punish]",
+                "/oai checks [on|off|status|analysis|checks|wall|aim|hitbox|punish]",
                 "Open check settings or toggle checks.", false);
     }
 
@@ -74,7 +74,6 @@ public final class ChecksCommand extends SubCommand {
             case "wall" -> "checks.wall.enabled";
             case "aim" -> "checks.aim.enabled";
             case "hitbox" -> "checks.hitbox.enabled";
-            case "nolookhit" -> "checks.nolookhit.enabled";
             case "punish" -> "punishment.enabled";
             default -> "analysis.enabled";
         };
@@ -87,7 +86,6 @@ public final class ChecksCommand extends SubCommand {
                 "wall", state(plugin.config().wallCheckEnabled()),
                 "aim", state(plugin.config().checkAimEnabled()),
                 "hitbox", state(plugin.config().hitboxCheckEnabled()),
-                "nolookhit", state(plugin.config().noLookHitCheckEnabled()),
                 "punish", state(plugin.config().punishmentEnabled())));
     }
 

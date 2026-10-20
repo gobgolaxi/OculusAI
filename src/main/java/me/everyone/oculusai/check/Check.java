@@ -40,4 +40,10 @@ public interface Check {
     default boolean reportsToService() {
         return false;
     }
+
+    /** Whether the alert line should include the neural probability/buffer
+     *  block. Only checks that actually use the model may show it. */
+    default boolean showsMetrics() {
+        return false;
+    }
 }

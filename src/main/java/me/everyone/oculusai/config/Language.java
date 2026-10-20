@@ -10,6 +10,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import me.everyone.oculusai.OculusAI;
@@ -31,6 +32,23 @@ public final class Language implements Service {
             "<gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| "
                     + "<gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| "
                     + "<gray>Наказание %punish%";
+    private static final String STATUS_WITH_NOLOOKHIT_EN =
+            "<gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| "
+                    + "<gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| "
+                    + "<gray>NoLookHit %nolookhit% <dark_gray>| <gray>Aim %aim% <dark_gray>| "
+                    + "<gray>Punishment %punish%";
+    private static final String STATUS_WITH_NOLOOKHIT_RU =
+            "<gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| "
+                    + "<gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| "
+                    + "<gray>NoLookHit %nolookhit% <dark_gray>| <gray>Aim %aim% <dark_gray>| "
+                    + "<gray>Наказание %punish%";
+    private static final List<String> REMOVED_KEYS = List.of(
+            "check-settings.nolookhit",
+            "check.name.nolookhit",
+            "check.desc.nolookhit",
+            "check.reason.nolookhit",
+            "checks.name.nolookhit",
+            "event.check-nolookhit");
 
     private final OculusAI plugin;
     private YamlConfiguration lang;
@@ -167,6 +185,14 @@ public final class Language implements Service {
             added++;
         }
 
+        int removed = 0;
+        for (String key : REMOVED_KEYS) {
+            if (lang.contains(key)) {
+                lang.set(key, null);
+                removed++;
+            }
+        }
+
         int migrated = 0;
         String currentAimReason = lang.getString("check.reason.aim");
         String bundledAimReason = defaults.getString("check.reason.aim");
@@ -180,24 +206,27 @@ public final class Language implements Service {
         String bundledStatus = defaults.getString("checks.status");
         if (bundledStatus != null && !bundledStatus.equals(currentStatus)
                 && (LEGACY_STATUS_EN.equals(currentStatus)
-                || LEGACY_STATUS_RU.equals(currentStatus))) {
+                || LEGACY_STATUS_RU.equals(currentStatus)
+                || STATUS_WITH_NOLOOKHIT_EN.equals(currentStatus)
+                || STATUS_WITH_NOLOOKHIT_RU.equals(currentStatus))) {
             lang.set("checks.status", bundledStatus);
             migrated++;
         }
 
         // Old alert lines only printed %detail%. Keep a custom translation,
-        // but append the coloured probability/buffer block when it has no
-        // metrics at all. New bundled lines already contain %metrics%.
+        // but append the metrics placeholder when it has no metrics at all.
+        // Alerts only fills it for checks that actually use the model.
         migrated += ensureMetrics("check.test-line");
         migrated += ensureMetrics("check.alert-line");
 
-        if (added == 0 && migrated == 0) {
+        if (added == 0 && removed == 0 && migrated == 0) {
             return;
         }
         try {
             lang.save(file);
             plugin.getLogger().info("Language " + file.getName() + " updated: "
-                    + added + " new keys, " + migrated + " migrated values");
+                    + added + " new keys, " + removed + " removed, "
+                    + migrated + " migrated values");
         } catch (IOException exception) {
             plugin.getLogger().log(Level.WARNING,
                     "Could not save new language keys into " + file.getAbsolutePath()

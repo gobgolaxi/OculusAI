@@ -31,8 +31,11 @@ public final class EntityTracker implements Service {
         }
     }
 
-    private static final long HISTORY_MS = 500L;
-    private static final int HISTORY_LIMIT = 12;
+    /** One second covers a client that is a few movement packets behind the
+     *  server. WallCheck keeps its own shorter window; HitBox needs the wider
+     *  one because an attack packet carries no target position of its own. */
+    private static final long HISTORY_MS = 1000L;
+    private static final int HISTORY_LIMIT = 20;
 
     private final OculusAI plugin;
     private final Map<Integer, Tracked> tracked = new ConcurrentHashMap<>();

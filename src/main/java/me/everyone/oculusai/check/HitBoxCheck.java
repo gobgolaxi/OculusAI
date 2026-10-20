@@ -21,7 +21,8 @@ import org.bukkit.util.Vector;
  * the last look direction. If that ray never touches the target's actual
  * server-side box, the client attacked something that is not there. Recent
  * target boxes cover the movement between the last position packet and the
- * attack; no confirmation or neural data is involved.
+ * attack; no neural data is involved. A single borderline miss is not enough
+ * to act, so the normal confirmation rule is used.
  *
  * <p>The attack packet does not carry a rotation. A legitimate flick can
  * therefore be sent before the look packet for the same client tick, leaving
@@ -33,10 +34,10 @@ public final class HitBoxCheck implements CombatCheck {
 
     private static final double MIN_DISTANCE = 0.1D;
     private static final double MIN_DISTANCE_SQUARED = MIN_DISTANCE * MIN_DISTANCE;
-    private static final long HISTORY_MS = 500L;
-    private static final long EYE_HISTORY_MS = 250L;
-    private static final int MAX_HISTORY_BOXES = 12;
-    private static final int MAX_EYE_POSITIONS = 3;
+    private static final long HISTORY_MS = 1000L;
+    private static final long EYE_HISTORY_MS = 500L;
+    private static final int MAX_HISTORY_BOXES = 20;
+    private static final int MAX_EYE_POSITIONS = 8;
 
     private final OculusAI plugin;
 
@@ -50,13 +51,16 @@ public final class HitBoxCheck implements CombatCheck {
     }
 
     @Override
-    public boolean immediate() {
-        return true;
-    }
-
-    @Override
     public boolean testOnly() {
         return plugin.config().checkHitboxTestOnly();
+    }
+
+    /** A hitbox miss is based on the server's view of a packet that carries no
+     *  rotation. One borderline miss is not enough to cancel a normal hit;
+     *  two in a row are still a repeatable geometry failure. */
+    @Override
+    public int confirmations() {
+        return Math.max(2, plugin.config().checkConfirmations());
     }
 
     @Override
@@ -99,8 +103,7 @@ public final class HitBoxCheck implements CombatCheck {
 
         double maxDistance = plugin.config().hitboxMaxDistance();
         Vector eyeVector = eye.toVector();
-        List<BoundingBox> targets = targetBoxes(online, targetEntityId, world,
-                eyeVector, maxDistance);
+        List<BoundingBox> targets = targetBoxes(online, targetEntityId, world);
         if (targets.isEmpty()) {
             return CheckResult.pass();
         }
@@ -142,6 +145,17 @@ public final class HitBoxCheck implements CombatCheck {
         if (window != null && window.size() >= 2) {
             RotationSample previous = window.get(window.size() - 2);
             addLook(looks, previous.yaw(), previous.pitch());
+
+            // The client may have sent the attack before this tick's look
+            // packet. Continue the current rotation for one sample: a normal
+            // flick lands where the next packet is about to point, while a
+            // hit aimed away from the target still does not.
+            float yaw = data.lastYaw();
+            float pitch = data.lastPitch();
+            float yawStep = (float) Math.IEEEremainder(yaw - previous.yaw(), 360.0D);
+            float pitchStep = pitch - previous.pitch();
+            addLook(looks, yaw + yawStep,
+                    (float) clamp(pitch + pitchStep, -90.0D, 90.0D));
         }
         return looks;
     }
@@ -249,8 +263,7 @@ public final class HitBoxCheck implements CombatCheck {
         return Math.max(min, Math.min(max, value));
     }
 
-    private List<BoundingBox> targetBoxes(Player online, int entityId, World world,
-                                          Vector eye, double maxDistance) {
+    private List<BoundingBox> targetBoxes(Player online, int entityId, World world) {
         List<BoundingBox> boxes = new ArrayList<>(MAX_HISTORY_BOXES + 2);
         double margin = plugin.config().hitboxMargin();
 
@@ -275,19 +288,13 @@ public final class HitBoxCheck implements CombatCheck {
             }
         }
 
-        // The current eye is only one of the positions tested. Leave room for
-        // the recent eye positions as well, otherwise a box that was in reach
-        // a moment ago but is just outside the current eye's range is dropped
-        // before the history check can use it.
-        double range = maxDistance + 3.0D;
-        double limit = range * range;
+        // Distance is checked against each candidate eye in touches/aimedAt.
+        // Filtering here against the current eye would drop a box that the
+        // attacker was still able to reach a moment ago while moving.
         List<BoundingBox> within = new ArrayList<>(boxes.size());
         for (BoundingBox box : boxes) {
-            if (!world.isChunkLoaded((int) Math.floor(box.getCenterX()) >> 4,
+            if (world.isChunkLoaded((int) Math.floor(box.getCenterX()) >> 4,
                     (int) Math.floor(box.getCenterZ()) >> 4)) {
-                continue;
-            }
-            if (eye.distanceSquared(box.getCenter()) <= limit) {
                 within.add(box);
             }
         }

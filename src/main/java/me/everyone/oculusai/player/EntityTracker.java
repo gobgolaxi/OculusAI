@@ -3,10 +3,15 @@ package me.everyone.oculusai.player;
 
 import me.everyone.oculusai.core.Service;
 import me.everyone.oculusai.core.TickLoop;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.oculusai.OculusAI;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 public final class EntityTracker implements Service {
@@ -18,15 +23,20 @@ public final class EntityTracker implements Service {
      *  rotation that the model was taught to read as a cheat. Dummies count as
      *  player-like - they are player-shaped NPCs and exist to be recorded
      *  against. */
-    public record Tracked(double x, double y, double z, double height, boolean playerLike) {
+    public record Tracked(double x, double y, double z, double width, double height,
+                          boolean playerLike, UUID worldId, long at) {
 
         public double centreY() {
             return y + height / 2.0D;
         }
     }
 
+    private static final long HISTORY_MS = 500L;
+    private static final int HISTORY_LIMIT = 12;
+
     private final OculusAI plugin;
     private final Map<Integer, Tracked> tracked = new ConcurrentHashMap<>();
+    private final Map<Integer, Deque<Tracked>> history = new ConcurrentHashMap<>();
     private TickLoop.Handle task;
 
     public EntityTracker(OculusAI plugin) {
@@ -45,6 +55,7 @@ public final class EntityTracker implements Service {
             task = null;
         }
         tracked.clear();
+        history.clear();
     }
 
     private void sample() {
@@ -52,20 +63,44 @@ public final class EntityTracker implements Service {
         // to a budget per tick, so that a swing at one could be scored - but a
         // swing at one is no longer analysed at all, so their positions were
         // being written twenty times a second and never read.
+        long now = System.currentTimeMillis();
         for (Player player : plugin.getServer().getOnlinePlayers()) {
             Location location = player.getLocation();
-            tracked.put(player.getEntityId(), new Tracked(
-                    location.getX(), location.getY(), location.getZ(), player.getHeight(), true));
+            World world = location.getWorld();
+            if (world == null) {
+                continue;
+            }
+            remember(player.getEntityId(), new Tracked(
+                    location.getX(), location.getY(), location.getZ(),
+                    player.getWidth(), player.getHeight(), true, world.getUID(), now));
         }
     }
 
-    public void track(int entityId, double x, double y, double z, double height) {
-        track(entityId, x, y, z, height, true);
+    public void track(int entityId, double x, double y, double z, double width,
+                      double height, World world) {
+        track(entityId, x, y, z, width, height, true, world);
     }
 
-    public void track(int entityId, double x, double y, double z, double height,
-                      boolean playerLike) {
-        tracked.put(entityId, new Tracked(x, y, z, height, playerLike));
+    public void track(int entityId, double x, double y, double z, double width,
+                      double height, boolean playerLike, World world) {
+        if (world == null) {
+            return;
+        }
+        remember(entityId, new Tracked(x, y, z, width, height, playerLike,
+                world.getUID(), System.currentTimeMillis()));
+    }
+
+    private void remember(int entityId, Tracked entry) {
+        tracked.put(entityId, entry);
+        Deque<Tracked> entries = history.computeIfAbsent(entityId, key -> new ArrayDeque<>());
+        synchronized (entries) {
+            entries.addLast(entry);
+            long cutoff = entry.at() - HISTORY_MS;
+            while (entries.size() > 1
+                    && (entries.peekFirst().at() < cutoff || entries.size() > HISTORY_LIMIT)) {
+                entries.removeFirst();
+            }
+        }
     }
 
     /** Whether this entity may be analysed at all. An entity nobody is
@@ -76,8 +111,23 @@ public final class EntityTracker implements Service {
         return entry != null && entry.playerLike();
     }
 
+    public List<Tracked> recent(int entityId) {
+        Deque<Tracked> entries = history.get(entityId);
+        if (entries == null) {
+            return List.of();
+        }
+        long cutoff = System.currentTimeMillis() - HISTORY_MS;
+        synchronized (entries) {
+            while (!entries.isEmpty() && entries.peekFirst().at() < cutoff) {
+                entries.removeFirst();
+            }
+            return List.copyOf(entries);
+        }
+    }
+
     public void forget(int entityId) {
         tracked.remove(entityId);
+        history.remove(entityId);
     }
 
     public Tracked get(int entityId) {
@@ -85,6 +135,6 @@ public final class EntityTracker implements Service {
     }
 
     public void forget(Player player) {
-        tracked.remove(player.getEntityId());
+        forget(player.getEntityId());
     }
 }

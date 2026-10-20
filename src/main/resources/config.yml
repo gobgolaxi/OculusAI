@@ -70,9 +70,6 @@ buffer:
 
 display:
   alert-symbol: "⚠"
-  alert-format: "<%primary%>%player%</%primary%> <gray>aim <white>%probability% <dark_gray>| <gray>buffer <white>%buffer%<dark_gray>/<white>%max%"
-  alert-click: "<yellow>[Следить]"
-  alert-click-command: "prob"
 
 punishment:
   enabled: true
@@ -114,6 +111,7 @@ checks:
   enabled: true
   test-mode: true
   alert-cooldown-ms: 5000
+  confirmations: 2
   wall:
     enabled: true
     max-distance: 6.0

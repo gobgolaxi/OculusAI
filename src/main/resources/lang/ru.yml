@@ -220,6 +220,8 @@ history:
     quit: "вышел"
     punish: "наказан"
     alert: "алерт"
+    check-wall: "Wall"
+    check-aim: "Aim"
   unknown-player: "<red>Истории для <white>%player%<red> не сохранено."
   reading:
     time: "<gray>Когда: <white>%value%"
@@ -358,6 +360,11 @@ spawn:
   teleported: "<gray>Телепортирован на спавн тестовой арены."
   disabled: "<red>Тестовый сервер не включён."
 check:
-  test-alert: "<gray>[ТЕСТ] <white>%player%<gray> не прошёл <white>%check%<gray>: %detail%"
-  alert: "<gray><white>%player%<gray> не прошёл <white>%check%<gray>: %detail%"
-  wall: "нет прямой видимости (%distance% бл.)"
+  test-line: "<dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%"
+  alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%"
+  reason:
+    wall: "нет видимости"
+    aim: "prob %probability%"
+  name:
+    wall: "Wall"
+    aim: "Aim"

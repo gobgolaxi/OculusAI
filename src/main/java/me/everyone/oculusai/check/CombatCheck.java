@@ -7,5 +7,13 @@ public interface CombatCheck {
 
     String id();
 
+    default boolean testOnly() {
+        return false;
+    }
+
+    default boolean immediate() {
+        return false;
+    }
+
     CheckResult test(Player attacker, PlayerData data, int targetEntityId);
 }

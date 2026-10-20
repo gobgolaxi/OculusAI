@@ -130,6 +130,10 @@ public final class HistoryStore implements Service {
                 case "punish" -> record.punishments++;
                 case "quit", "kick" -> record.quits++;
                 default -> {
+                    if (type.startsWith("check-")) {
+                        record.alerts++;
+                        record.lastAlertAt = now;
+                    }
                 }
             }
             record.events.addLast(new Event(now, type,

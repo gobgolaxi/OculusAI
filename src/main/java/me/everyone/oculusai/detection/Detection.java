@@ -17,10 +17,6 @@ import me.everyone.oculusai.detection.FeatureVector;
 import me.everyone.oculusai.detection.RotationSample;
 import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.util.Msg;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.entity.Player;
 
 public final class Detection implements Service {
@@ -184,61 +180,17 @@ public final class Detection implements Service {
         // Алерт попадает в историю наравне с киком: на игрока, которого
         // предупреждали двадцать раз и ни разу не выгнали, смотреть надо
         // именно по этому счёту.
-        plugin.history().note(data.uuid(), data.name(), "alert",
-                "buffer " + Msg.round(data.buffer(), 1)
-                        + ", p=" + Msg.round(data.probability(), 2));
-        alert(data);
+        plugin.history().note(data.uuid(), data.name(), "check-aim",
+                "prob " + Msg.percent(data.probability())
+                        + ", buffer " + Msg.round(data.buffer(), 1));
+        plugin.checks().alertAim(data);
+        plugin.getLogger().info(data.name() + " aim buffer "
+                + Msg.round(data.buffer(), 2) + " (p=" + Msg.round(data.probability(), 3) + ")");
         plugin.api().reportAlert(data.name(), data.uuid().toString(),
                 data.probability(), data.buffer());
         if (data.buffer() >= plugin.config().punishAt()) {
             plugin.punishments().handle(data);
         }
-    }
-
-    private void alert(PlayerData data) {
-        var theme = plugin.theme().current();
-        String prefix = Msg.parse(plugin.config().prefix());
-
-        String line = Msg.parse(plugin.config().alertFormat(), Map.of(
-                "player", data.name(),
-                "probability", Msg.percent(data.probability()),
-                "buffer", Msg.round(data.buffer(), 1),
-                "max", Msg.round(plugin.config().bufferMax(), 0),
-                "primary", theme.primary(),
-                "secondary", theme.secondary()));
-
-        String symbol = plugin.config().alertSymbol();
-        String clickLabel = plugin.config().alertClick();
-        String clickLine = clickLabel == null || clickLabel.isBlank()
-                ? ""
-                : Msg.parse(" " + clickLabel);
-        String hoverText = Msg.parse(plugin.lang().text("alert.hover",
-                Map.of("player", data.name())));
-
-        String symbolText = symbol.isBlank()
-                ? ""
-                : Msg.parse("<" + theme.accent() + ">" + symbol + " <reset>");
-
-        TextComponent main = new TextComponent(
-                TextComponent.fromLegacyText(prefix + symbolText + line));
-        if (!clickLine.isEmpty()) {
-            TextComponent click = new TextComponent(TextComponent.fromLegacyText(clickLine));
-            click.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                    "/oai " + plugin.config().alertClickCommand() + " " + data.name()));
-            click.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    new Text(TextComponent.fromLegacyText(hoverText))));
-            main.addExtra(click);
-        }
-
-        for (Player online : plugin.getServer().getOnlinePlayers()) {
-            if (online.hasPermission("oculusai.alerts")) {
-                online.spigot().sendMessage(main);
-                online.playSound(online.getLocation(), plugin.config().alertSound(),
-                        plugin.config().alertSoundVolume(), plugin.config().alertSoundPitch());
-            }
-        }
-        plugin.getLogger().info(data.name() + " aim buffer "
-                + Msg.round(data.buffer(), 2) + " (p=" + Msg.round(data.probability(), 3) + ")");
     }
 
     private double[] aimValues(FeatureVector vector) {

@@ -10,6 +10,7 @@ import org.bukkit.World;
 
 public final class Npc {
 
+    public static final double WIDTH = 0.6D;
     public static final double HEIGHT = 1.8D;
 
     private final int entityId;

@@ -220,6 +220,8 @@ history:
     quit: "left"
     punish: "punished"
     alert: "alerted"
+    check-wall: "Wall"
+    check-aim: "Aim"
   unknown-player: "<red>No stored history for <white>%player%<red>."
   reading:
     time: "<gray>When: <white>%value%"
@@ -358,6 +360,11 @@ spawn:
   teleported: "<gray>Teleported to the test arena spawn."
   disabled: "<red>The test server is not enabled."
 check:
-  test-alert: "<gray>[TEST] <white>%player%<gray> failed <white>%check%<gray>: %detail%"
-  alert: "<gray><white>%player%<gray> failed <white>%check%<gray>: %detail%"
-  wall: "no clear line of sight (%distance% blocks)"
+  test-line: "<dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%"
+  alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%"
+  reason:
+    wall: "no line of sight"
+    aim: "prob %probability%"
+  name:
+    wall: "Wall"
+    aim: "Aim"

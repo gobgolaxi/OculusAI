@@ -31,7 +31,7 @@ public final class PacketBridge implements Service {
 
     @Override
     public void enable() {
-        listener = new PacketAdapter(plugin, ListenerPriority.MONITOR,
+        listener = new PacketAdapter(plugin, ListenerPriority.HIGHEST,
                 PacketType.Play.Client.USE_ENTITY,
                 PacketType.Play.Client.POSITION,
                 PacketType.Play.Client.POSITION_LOOK,
@@ -70,6 +70,9 @@ public final class PacketBridge implements Service {
         PacketType type = event.getPacketType();
 
         if (type == PacketType.Play.Client.USE_ENTITY) {
+            if (event.isCancelled()) {
+                return;
+            }
             var wrapped = event.getPacket().getEnumEntityUseActions().readSafely(0);
             if (wrapped != null && wrapped.getAction() == EnumWrappers.EntityUseAction.ATTACK) {
                 int targetEntityId = event.getPacket().getIntegers().read(0);
@@ -80,9 +83,12 @@ public final class PacketBridge implements Service {
                 if (!plugin.tracker().playerLike(targetEntityId)) {
                     return;
                 }
-                data.markAttack(aimError(data, targetEntityId), player.getFallDistance(),
-                        player.isOnGround(), player.isSprinting(), critBlocked(player));
-                plugin.checks().onAttack(player, data, targetEntityId);
+                if (plugin.checks().onAttack(player, data, targetEntityId)) {
+                    event.setCancelled(true);
+                } else {
+                    data.markAttack(aimError(data, targetEntityId), player.getFallDistance(),
+                            player.isOnGround(), player.isSprinting(), critBlocked(player));
+                }
             }
             return;
         }

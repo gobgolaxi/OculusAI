@@ -78,7 +78,7 @@ public final class Npcs implements Service, Listener {
         protocolManager = ProtocolLibrary.getProtocolManager();
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
 
-        listener = new PacketAdapter(plugin, ListenerPriority.LOW,
+        listener = new PacketAdapter(plugin, ListenerPriority.HIGHEST,
                 PacketType.Play.Client.USE_ENTITY) {
             @Override
             public void onPacketReceiving(PacketEvent event) {
@@ -202,7 +202,8 @@ public final class Npcs implements Service, Listener {
                 attack(npc, target);
             }
             broadcastLook(npc);
-            plugin.tracker().track(npc.entityId(), npc.x(), npc.y(), npc.z(), Npc.HEIGHT);
+            plugin.tracker().track(npc.entityId(), npc.x(), npc.y(), npc.z(),
+                    Npc.WIDTH, Npc.HEIGHT, npc.world());
         }
     }
 
@@ -362,6 +363,9 @@ public final class Npcs implements Service, Listener {
     }
 
     private void handleUse(PacketEvent event) {
+        if (event.isCancelled()) {
+            return;
+        }
         int entityId = event.getPacket().getIntegers().read(0);
         Npc npc = byEntityId(entityId);
         if (npc == null) {

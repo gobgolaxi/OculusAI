@@ -41,9 +41,6 @@ public final class Config implements Service {
     private float alertSoundVolume = 1.0F;
     private float alertSoundPitch = 1.2F;
     private String alertSymbol = "⚠";
-    private String alertFormat = "<%primary%>%player%</%primary%> <gray>aim <white>%probability% <dark_gray>| <gray>buffer <white>%buffer%<dark_gray>/<white>%max%";
-    private String alertClick = "<yellow>[Следить]";
-    private String alertClickCommand = "prob";
 
     private boolean punishmentEnabled = false;
     private String punishmentCommand = "";
@@ -73,6 +70,7 @@ public final class Config implements Service {
     private boolean checksEnabled = true;
     private boolean checkTestMode = true;
     private long checkAlertCooldownMs = 5000L;
+    private int checkConfirmations = 2;
     private boolean wallCheckEnabled = true;
     private double wallCheckMaxDistance = 6.0D;
 
@@ -129,10 +127,6 @@ public final class Config implements Service {
         alertSoundVolume = (float) config.getDouble("buffer.alert-sound-volume", 1.0D);
         alertSoundPitch = (float) config.getDouble("buffer.alert-sound-pitch", 1.2D);
         alertSymbol = config.getString("display.alert-symbol", "⚠");
-        alertFormat = config.getString("display.alert-format",
-                "<%primary%>%player%</%primary%> <gray>aim <white>%probability% <dark_gray>| <gray>buffer <white>%buffer%<dark_gray>/<white>%max%");
-        alertClick = config.getString("display.alert-click", "<yellow>[Следить]");
-        alertClickCommand = config.getString("display.alert-click-command", "prob");
 
         punishmentEnabled = config.getBoolean("punishment.enabled", false);
         punishmentCommand = config.getString("punishment.command", "");
@@ -162,6 +156,7 @@ public final class Config implements Service {
         checksEnabled = config.getBoolean("checks.enabled", true);
         checkTestMode = config.getBoolean("checks.test-mode", true);
         checkAlertCooldownMs = Math.max(0L, config.getLong("checks.alert-cooldown-ms", 5000L));
+        checkConfirmations = Math.max(1, config.getInt("checks.confirmations", 2));
         wallCheckEnabled = config.getBoolean("checks.wall.enabled", true);
         wallCheckMaxDistance = Math.max(0.5D, config.getDouble("checks.wall.max-distance", 6.0D));
     }
@@ -290,18 +285,6 @@ public final class Config implements Service {
         return alertSymbol;
     }
 
-    public String alertFormat() {
-        return alertFormat;
-    }
-
-    public String alertClick() {
-        return alertClick;
-    }
-
-    public String alertClickCommand() {
-        return alertClickCommand;
-    }
-
     public boolean punishmentEnabled() {
         return punishmentEnabled;
     }
@@ -397,6 +380,10 @@ public final class Config implements Service {
 
     public long checkAlertCooldownMs() {
         return checkAlertCooldownMs;
+    }
+
+    public int checkConfirmations() {
+        return checkConfirmations;
     }
 
     public boolean wallCheckEnabled() {

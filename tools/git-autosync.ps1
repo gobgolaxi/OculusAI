@@ -1,7 +1,9 @@
-﻿# Подтягивает origin/main на Windows, когда это безопасно.
+﻿# Автокоммит и автосинк текущей ветки на Windows.
 #
-# Повторяет логику git-autosync.sh: не трогает незакоммиченные правки и
-# собственные неотправленные коммиты, обновляет только fast-forward.
+# Раз в минуту:
+#   1. коммитит все изменения (кроме ignored-файлов);
+#   2. подтягивает upstream (fast-forward или rebase);
+#   3. пушит локальные коммиты в upstream.
 #
 # Запуск вручную:
 #     powershell -ExecutionPolicy Bypass -File tools\git-autosync.ps1
@@ -9,7 +11,6 @@
 
 $ErrorActionPreference = 'Stop'
 
-$branch = 'main'
 $repo = Split-Path -Parent $PSScriptRoot
 $log = Join-Path $repo '.git\autosync.log'
 $stateFile = Join-Path $repo '.git\autosync.state'
@@ -45,69 +46,96 @@ function Show-Toast([string]$title, [string]$text) {
     }
 }
 
+function Fail([string]$text) {
+    Write-Log $text
+    if ((Get-State) -ne $text) {
+        Show-Toast 'OculusAI: autosync' $text
+        Set-State $text
+    }
+    exit 0
+}
+
 Set-Location -LiteralPath $repo
 $env:GIT_TERMINAL_PROMPT = '0'
 
-# Грязное дерево не трогаем. Неотслеживаемые файлы (архивы, сборки) не мешают.
-$dirty = & git status --porcelain --untracked-files=no 2>$null
-if ($LASTEXITCODE -ne 0) {
-    Write-Log 'skip: git status failed'
-    exit 0
+$branch = (& git rev-parse --abbrev-ref HEAD 2>$null).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $branch -or $branch -eq 'HEAD') {
+    Fail 'skip: detached HEAD'
 }
-if ($dirty) {
-    if ((Get-State) -ne 'dirty') {
-        Write-Log 'skip: uncommitted changes'
-        Show-Toast 'OculusAI: autosync paused' 'There are uncommitted changes'
-        Set-State 'dirty'
+
+# 1. Автокоммит.
+& git add -A
+if ($LASTEXITCODE -ne 0) {
+    Fail 'skip: git add failed'
+}
+$staged = & git diff --cached --name-only
+if ($staged) {
+    $message = 'Автосохранение: ' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
+    & git commit --quiet -m $message
+    if ($LASTEXITCODE -ne 0) {
+        Fail 'skip: git commit failed'
     }
-    exit 0
+    Write-Log "committed: $message"
+    Set-State ''
 }
 
-& git fetch --quiet origin $branch
+$upstream = (& git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>$null).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $upstream) {
+    Fail "skip: no upstream for $branch"
+}
+
+$slash = $upstream.IndexOf('/')
+if ($slash -lt 1) {
+    Fail "skip: bad upstream $upstream"
+}
+$remote = $upstream.Substring(0, $slash)
+$remoteBranch = $upstream.Substring($slash + 1)
+
+# 2. Синхронизация с upstream.
+& git fetch --quiet $remote
 if ($LASTEXITCODE -ne 0) {
-    Write-Log 'skip: fetch failed'
-    exit 0
+    Fail 'skip: git fetch failed'
 }
 
+$remoteRef = "$remote/$remoteBranch"
 $head = (& git rev-parse HEAD).Trim()
-$upstream = (& git rev-parse "origin/$branch").Trim()
-
-if ($head -eq $upstream) {
-    exit 0
+$remoteHead = (& git rev-parse $remoteRef 2>$null).Trim()
+if ($LASTEXITCODE -ne 0 -or -not $remoteHead) {
+    $remoteHead = ''
 }
 
-# Мы впереди: свои коммиты ещё не отправлены.
-& git merge-base --is-ancestor "origin/$branch" HEAD
-if ($LASTEXITCODE -eq 0) {
-    $state = "ahead:$head"
-    if ((Get-State) -ne $state) {
-        Write-Log 'skip: unpushed commits, push first'
-        Show-Toast 'OculusAI: unpushed commits' 'Push them or autosync stays paused'
-        Set-State $state
+if ($remoteHead -and $head -ne $remoteHead) {
+    & git merge-base --is-ancestor $remoteRef HEAD
+    if ($LASTEXITCODE -ne 0) {
+        & git merge-base --is-ancestor HEAD $remoteRef
+        if ($LASTEXITCODE -eq 0) {
+            $old = (& git rev-parse --short HEAD).Trim()
+            & git merge --ff-only --quiet $remoteRef
+            if ($LASTEXITCODE -ne 0) {
+                Fail 'skip: fast-forward failed'
+            }
+            $new = (& git rev-parse --short HEAD).Trim()
+            Write-Log "updated $old -> $new"
+        } else {
+            & git rebase --quiet $remoteRef
+            if ($LASTEXITCODE -ne 0) {
+                & git rebase --abort 2>$null
+                Fail 'skip: rebase failed, resolve manually'
+            }
+            Write-Log "rebased onto $remoteRef"
+        }
     }
-    exit 0
 }
 
-# История разошлась: нужен ручной merge/rebase.
-& git merge-base --is-ancestor HEAD "origin/$branch"
-if ($LASTEXITCODE -ne 0) {
-    $state = "diverged:$head:$upstream"
-    if ((Get-State) -ne $state) {
-        Write-Log 'skip: branches diverged, pull manually'
-        Show-Toast 'OculusAI: branches diverged' 'Run git pull manually'
-        Set-State $state
+# 3. Автопуш.
+$head = (& git rev-parse HEAD).Trim()
+$remoteHead = (& git rev-parse $remoteRef 2>$null).Trim()
+if (-not $remoteHead -or $head -ne $remoteHead) {
+    & git push --quiet $remote "HEAD:$remoteBranch"
+    if ($LASTEXITCODE -ne 0) {
+        Fail 'skip: git push failed'
     }
-    exit 0
-}
-
-# Чистый fast-forward.
-$old = (& git rev-parse --short HEAD).Trim()
-& git merge --ff-only --quiet "origin/$branch"
-if ($LASTEXITCODE -eq 0) {
-    $new = (& git rev-parse --short HEAD).Trim()
-    Write-Log "updated $old -> $new"
-    Show-Toast 'OculusAI updated' "$old -> $new"
-    Set-State "synced:$new"
-} else {
-    Write-Log 'skip: fast-forward failed'
+    $short = (& git rev-parse --short HEAD).Trim()
+    Write-Log "pushed $short -> $remote/$remoteBranch"
+    Set-State ''
 }

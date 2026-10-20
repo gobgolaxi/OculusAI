@@ -4,12 +4,13 @@ import com.comphenix.protocol.wrappers.WrappedGameProfile;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import me.everyone.oculusai.manager.TestServerManager.DummyOptions;
+import me.everyone.oculusai.npc.NpcOptions;
 import org.bukkit.Location;
 import org.bukkit.World;
 
 public final class Npc {
 
+    public static final double WIDTH = 0.6D;
     public static final double HEIGHT = 1.8D;
 
     private final int entityId;
@@ -29,14 +30,14 @@ public final class Npc {
 
     private double maxHealth;
     private double health;
-    private DummyOptions options;
+    private NpcOptions options;
 
     private long lastAttackTick;
     private long deathTick = -1L;
     private double strafePhase;
 
     public Npc(int entityId, UUID uuid, String name, WrappedGameProfile profile,
-               UUID owner, Location location, DummyOptions options) {
+               UUID owner, Location location, NpcOptions options) {
         this.entityId = entityId;
         this.uuid = uuid;
         this.name = name;
@@ -53,7 +54,7 @@ public final class Npc {
         this.health = this.maxHealth;
     }
 
-    public void applyOptions(DummyOptions options) {
+    public void applyOptions(NpcOptions options) {
         this.options = options;
         double requested = options.health() > 0 ? options.health() : 20.0D;
         this.maxHealth = requested;
@@ -135,7 +136,7 @@ public final class Npc {
         this.health = health;
     }
 
-    public DummyOptions options() {
+    public NpcOptions options() {
         return options;
     }
 

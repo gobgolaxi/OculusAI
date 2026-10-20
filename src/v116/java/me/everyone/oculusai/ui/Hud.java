@@ -1,0 +1,515 @@
+package me.everyone.oculusai.ui;
+
+
+import me.everyone.oculusai.core.Service;
+import me.everyone.oculusai.core.TickLoop;
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.wrappers.WrappedChatComponent;
+import com.comphenix.protocol.wrappers.WrappedDataWatcher;
+import com.comphenix.protocol.wrappers.WrappedWatchableObject;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import me.everyone.oculusai.OculusAI;
+import me.everyone.oculusai.player.PlayerData;
+import me.everyone.oculusai.util.Msg;
+import org.bukkit.Location;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
+
+public final class Hud implements Service {
+    private static final int DISPLAY_UPDATE_TICKS = 2;
+
+    private record Watch(UUID target, long expiresAt, List<Line> holograms, boolean compact, boolean permanent) {
+    }
+
+    private record Line(int entityId, UUID uuid) {
+    }
+
+    private static final byte ENTITY_FLAG_INVISIBLE = 0x20;
+    private static final byte ARMOR_STAND_FLAG_SMALL = 0x01;
+    private static final byte ARMOR_STAND_FLAG_MARKER = 0x10;
+    private static final AtomicInteger NEXT_ENTITY_ID = new AtomicInteger(2_000_000);
+
+    private final OculusAI plugin;
+    private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
+    private final Map<UUID, Map<UUID, Watch>> watching = new ConcurrentHashMap<>();
+    private TickLoop.Handle task;
+
+    public Hud(OculusAI plugin) {
+        this.plugin = plugin;
+    }
+
+    @Override
+    public void enable() {
+        task = plugin.ticks().every(1L, DISPLAY_UPDATE_TICKS, this::tick);
+    }
+
+    @Override
+    public void disable() {
+        if (task != null) {
+            task.cancel();
+            task = null;
+        }
+        for (Map.Entry<UUID, Map<UUID, Watch>> entry : watching.entrySet()) {
+            Player watcher = plugin.getServer().getPlayer(entry.getKey());
+            if (watcher != null) {
+                for (Watch watch : entry.getValue().values()) {
+                    destroyHolograms(watcher, watch);
+                }
+            }
+        }
+        watching.clear();
+    }
+
+    public void watch(Player watcher, PlayerData target) {
+        // One line unless the operator asked for the tall one. Six lines of
+        // hologram over a head in a fight hide the thing being watched, and the
+        // two numbers that decide anything - the reading and the buffer - fit
+        // on one line.
+        watch(watcher, target, plugin.hudConfig().hologramCompact(), false);
+    }
+
+    public void enableAlwaysProb(Player viewer) {
+    }
+
+    public void disableAlwaysProb(Player viewer) {
+    }
+
+    public boolean isAlwaysProb(UUID viewer) {
+        return false;
+    }
+
+    private void watch(Player watcher, PlayerData target, boolean compact, boolean permanent) {
+        Map<UUID, Watch> watches = watching.computeIfAbsent(watcher.getUniqueId(), ignored -> new ConcurrentHashMap<>());
+        Watch previous = watches.get(target.uuid());
+        if (previous != null && previous.compact() == compact && previous.permanent() == permanent) {
+            return;
+        }
+        previous = watches.remove(target.uuid());
+        if (previous != null) {
+            destroyHolograms(watcher, previous);
+        }
+        Watch watch = new Watch(
+                target.uuid(),
+                permanent ? Long.MAX_VALUE : System.currentTimeMillis() + plugin.hudConfig().hologramSeconds() * 1000L,
+                List.of(),
+                compact,
+                permanent);
+        watches.put(target.uuid(), watch);
+    }
+
+    public void stop(Player watcher) {
+        Map<UUID, Watch> removed = watching.remove(watcher.getUniqueId());
+        if (removed != null) {
+            for (Watch watch : removed.values()) {
+                destroyHolograms(watcher, watch);
+            }
+        }
+    }
+
+    public boolean isWatching(UUID watcher) {
+        Map<UUID, Watch> watches = watching.get(watcher);
+        return watches != null && !watches.isEmpty();
+    }
+
+    private void tick() {
+        long now = System.currentTimeMillis();
+        watching.entrySet().removeIf(entry -> {
+            Player watcher = plugin.getServer().getPlayer(entry.getKey());
+            Map<UUID, Watch> watches = entry.getValue();
+            if (watcher == null || !watcher.isOnline()) {
+                for (Watch watch : watches.values()) {
+                    destroyHolograms(watcher, watch);
+                }
+                return true;
+            }
+
+            watches.entrySet().removeIf(watchEntry -> {
+                Watch watch = watchEntry.getValue();
+                PlayerData target = plugin.data().get(watch.target());
+                if (target == null
+                        || !target.player().isOnline()
+                        || !canKeepWatch(watcher, target.player(), watch.permanent())
+                        || (!watch.permanent() && now > watch.expiresAt())) {
+                    destroyHolograms(watcher, watch);
+                    return true;
+                }
+                return false;
+            });
+
+            if (watches.isEmpty()) {
+                watcher.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                        net.md_5.bungee.api.chat.TextComponent.fromLegacyText(""));
+                return true;
+            }
+
+            watcher.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                    net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBar(watches)));
+            return false;
+        });
+    }
+
+    private String actionBar(Map<UUID, Watch> watches) {
+        List<Watch> temporary = new ArrayList<>();
+        for (Watch watch : watches.values()) {
+            if (!watch.permanent()) {
+                temporary.add(watch);
+            }
+        }
+        if (temporary.isEmpty()) {
+            return "";
+        }
+        if (temporary.size() == 1) {
+            Watch watch = temporary.get(0);
+            PlayerData target = plugin.data().get(watch.target());
+            return target == null ? "" : (watch.compact() ? compactActionBarForTarget(target) : actionBarForTarget(target));
+        }
+        StringBuilder builder = new StringBuilder();
+        boolean first = true;
+        for (Watch watch : temporary) {
+            PlayerData target = plugin.data().get(watch.target());
+            if (target == null) {
+                continue;
+            }
+            if (!first) {
+                builder.append("<dark_gray> | ");
+            }
+            // With one target the action bar has room for the configured
+            // format. With several it used to collapse to a name and a bar,
+            // which says that something is happening without saying what -
+            // whether a buffer of 4.6 is climbing towards a kick or a reading
+            // of 0.9 just arrived. Both numbers fit if the bar goes.
+            builder.append(arrow(target)).append(" <white>").append(target.name()).append("<dark_gray>: ");
+            if (!target.analysing(plugin.hudConfig().staleMs())) {
+                builder.append("&cno analysing");
+            } else {
+                builder.append("<gray>").append(Msg.percent(target.probability()));
+                builder.append("<dark_gray>/<white>").append(Msg.round(target.buffer(), 1));
+            }
+            first = false;
+        }
+        return Msg.parse(builder.toString());
+    }
+
+    private String actionBarForTarget(PlayerData target) {
+        double fraction = target.buffer() / plugin.config().bufferMax();
+        if (!target.analysing(plugin.hudConfig().staleMs())) {
+            return Msg.parse("%arrow% <white>%player% <dark_gray>| &cno analysing",
+                    placeholders(target, fraction, 10, Map.of("trend", "-----")));
+        }
+        return Msg.parse(plugin.hudConfig().actionBarFormat(), placeholders(target, fraction, 10, null));
+    }
+
+    private String compactActionBarForTarget(PlayerData target) {
+        double fraction = target.buffer() / plugin.config().bufferMax();
+        if (!target.analysing(plugin.hudConfig().staleMs())) {
+            return Msg.parse("%arrow% <white>%player% <dark_gray>| &cno analysing",
+                    placeholders(target, fraction, 10, Map.of("trend", "-----")));
+        }
+        return Msg.parse(plugin.hudConfig().actionBarFormat(),
+                placeholders(target, fraction, 10, Map.of("trend", compactHistory(target.bufferHistory()))));
+    }
+
+    private List<Line> createLines() {
+        return createLines(Math.max(1, plugin.hudConfig().hologramLines()));
+    }
+
+    private List<Line> createLines(int count) {
+        List<Line> lines = new ArrayList<>(count);
+        for (int i = 0; i < count; i++) {
+            lines.add(new Line(NEXT_ENTITY_ID.getAndIncrement(), UUID.randomUUID()));
+        }
+        return lines;
+    }
+
+    private void spawnHolograms(Player watcher, PlayerData target, Watch watch) {
+        List<String> lines = hologramLines(target, watch.compact());
+        for (int i = 0; i < watch.holograms().size(); i++) {
+            Line line = watch.holograms().get(i);
+            send(watcher, spawnPacket(line.entityId(), line.uuid(), packetLocation(target, i, lines.size())));
+            send(watcher, metadataPacket(line.entityId(), i < lines.size() ? lines.get(i) : ""));
+        }
+    }
+
+    private void updateHolograms(Player watcher, PlayerData target, Watch watch) {
+        List<String> lines = hologramLines(target, watch.compact());
+        for (int i = 0; i < watch.holograms().size(); i++) {
+            Line line = watch.holograms().get(i);
+            send(watcher, teleportPacket(line.entityId(), packetLocation(target, i, lines.size())));
+            send(watcher, metadataPacket(line.entityId(), i < lines.size() ? lines.get(i) : ""));
+        }
+    }
+
+    private Location packetLocation(PlayerData target, int index, int lineCount) {
+        Location base = target.player().getLocation();
+        double top = Math.max(2.25D, plugin.hudConfig().hologramOffset() + 1.15D);
+        double step = 0.28D;
+        double y = base.getY() + top + (lineCount - index - 1) * step;
+        return new Location(base.getWorld(), base.getX(), y, base.getZ(), 0.0F, 0.0F);
+    }
+
+    private PacketContainer spawnPacket(int entityId, UUID uuid, Location location) {
+        PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.SPAWN_ENTITY, true);
+        packet.getIntegers().write(0, entityId);
+        packet.getUUIDs().write(0, uuid);
+        packet.getEntityTypeModifier().write(0, EntityType.ARMOR_STAND);
+        packet.getDoubles().write(0, location.getX());
+        packet.getDoubles().write(1, location.getY());
+        packet.getDoubles().write(2, location.getZ());
+        return packet;
+    }
+
+    private PacketContainer teleportPacket(int entityId, Location location) {
+        PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.ENTITY_TELEPORT, true);
+        packet.getIntegers().write(0, entityId);
+        packet.getDoubles().write(0, location.getX());
+        packet.getDoubles().write(1, location.getY());
+        packet.getDoubles().write(2, location.getZ());
+        packet.getBytes().write(0, (byte) 0);
+        packet.getBytes().write(1, (byte) 0);
+        packet.getBooleans().write(0, false);
+        return packet;
+    }
+
+    private PacketContainer metadataPacket(int entityId, String line) {
+        List<WrappedWatchableObject> metadata = new ArrayList<>(5);
+        metadata.add(new WrappedWatchableObject(new WrappedDataWatcher.WrappedDataWatcherObject(
+                0, WrappedDataWatcher.Registry.get((Type) Byte.class)), ENTITY_FLAG_INVISIBLE));
+        metadata.add(new WrappedWatchableObject(new WrappedDataWatcher.WrappedDataWatcherObject(
+                2, WrappedDataWatcher.Registry.getChatComponentSerializer(true)),
+                Optional.of(chatComponent(line))));
+        metadata.add(new WrappedWatchableObject(new WrappedDataWatcher.WrappedDataWatcherObject(
+                3, WrappedDataWatcher.Registry.get((Type) Boolean.class)), true));
+        metadata.add(new WrappedWatchableObject(new WrappedDataWatcher.WrappedDataWatcherObject(
+                5, WrappedDataWatcher.Registry.get((Type) Boolean.class)), true));
+        metadata.add(new WrappedWatchableObject(new WrappedDataWatcher.WrappedDataWatcherObject(
+                14, WrappedDataWatcher.Registry.get((Type) Byte.class)),
+                (byte) (ARMOR_STAND_FLAG_SMALL | ARMOR_STAND_FLAG_MARKER)));
+
+        PacketContainer packet = protocolManager.createPacket(PacketType.Play.Server.ENTITY_METADATA, true);
+        packet.getIntegers().write(0, entityId);
+        packet.getWatchableCollectionModifier().write(0, metadata);
+        return packet;
+    }
+
+    private WrappedChatComponent chatComponent(String line) {
+        WrappedChatComponent[] components = WrappedChatComponent.fromChatMessage(line == null ? "" : line);
+        if (components.length == 0) {
+            return WrappedChatComponent.fromText("");
+        }
+        return components[0];
+    }
+
+    private List<String> hologramLines(PlayerData target, boolean compact) {
+        if (compact) {
+            return List.of(compactLine(target));
+        }
+        double fraction = target.buffer() / plugin.config().bufferMax();
+        String trend = historyDigits(target.bufferHistory(), 5, false);
+        if (trend.isEmpty()) {
+            trend = "-";
+        }
+        String state = target.analysing(plugin.hudConfig().staleMs())
+                ? "live reading"
+                : (target.windowsAnalysed() == 0 ? "&cno analysing &7(waiting for combat)"
+                                                 : "&cno analysing");
+
+        int max = Math.max(1, plugin.hudConfig().hologramLines());
+        List<String> lines = new ArrayList<>(max);
+        for (String format : plugin.hudConfig().hologramFormat()) {
+            if (lines.size() >= max) {
+                break;
+            }
+            lines.add(Msg.parse(format, placeholders(target, fraction, 12, Map.of(
+                    "trend", trend,
+                    "windows", Integer.toString(target.windowsAnalysed()),
+                    "state", state))));
+        }
+        while (lines.size() < max) {
+            lines.add(Msg.parse("<dark_gray>"));
+        }
+        return lines;
+    }
+
+    private String compactLine(PlayerData target) {
+        double fraction = target.buffer() / plugin.config().bufferMax();
+        // A number left over from a minute ago looks exactly like a live one,
+        // which is the thing most likely to mislead whoever is watching. When
+        // windows stop arriving the line says that instead.
+        if (!target.analysing(plugin.hudConfig().staleMs())) {
+            return Msg.parse(plugin.hudConfig().staleFormat(),
+                    placeholders(target, fraction, 10, Map.of("trend", "-----")));
+        }
+        return Msg.parse(plugin.hudConfig().hologramCompactFormat(),
+                placeholders(target, fraction, 10, Map.of("trend", compactHistory(target.bufferHistory()))));
+    }
+
+    private String historyDigits(List<Double> history) {
+        return historyDigits(history, 5, false);
+    }
+
+    /** Which way the buffer is going, as one glyph: up means the last window
+     *  pushed it towards a punishment, down means it is draining. Direction is
+     *  the thing a watcher cannot get from the number alone - 3.1 on the way
+     *  up and 3.1 on the way down are the same number and opposite situations. */
+    private String arrow(PlayerData target) {
+        List<Double> history = target.bufferHistory();
+        if (history.size() < 2) {
+            return "<dark_gray>\u25ac";
+        }
+        double last = history.get(history.size() - 1);
+        double previous = history.get(history.size() - 2);
+        if (last > previous + 0.01D) {
+            return "<red>\u25b2";
+        }
+        if (last < previous - 0.01D) {
+            return "<green>\u25bc";
+        }
+        return "<dark_gray>\u25ac";
+    }
+
+    private String compactHistory(List<Double> history) {
+        StringBuilder builder = new StringBuilder(5);
+        int start = Math.max(0, history.size() - 5);
+        for (int i = start; i < history.size(); i++) {
+            int digit = Math.min(9, Math.max(0, (int) Math.round(history.get(i))));
+            builder.append(digit);
+        }
+        while (builder.length() < 5) {
+            builder.insert(0, '-');
+        }
+        if (builder.length() > 5) {
+            return builder.substring(builder.length() - 5);
+        }
+        return builder.toString();
+    }
+
+    private String historyDigits(List<Double> history, int count, boolean padded) {
+        if (history.size() <= 1) {
+            return padded ? "-----" : "";
+        }
+        int start = Math.max(0, history.size() - (count + 1));
+        StringBuilder builder = new StringBuilder();
+        for (int i = start; i < history.size() - 1; i++) {
+            double value = history.get(i);
+            double fraction = value / plugin.config().bufferMax();
+            if (builder.length() > 0) {
+                builder.append(padded ? "" : "<dark_gray> ");
+            }
+            builder.append("<").append(historyColour(fraction)).append(">");
+            builder.append(Math.min(9, Math.max(0, (int) Math.round(value))));
+        }
+        if (padded) {
+            while (builder.length() < count) {
+                builder.append("-");
+            }
+        }
+        return builder.toString();
+    }
+
+    private boolean isVisibleTo(Player viewer, Player target) {
+        if (viewer == null || target == null) {
+            return false;
+        }
+        if (!viewer.isOnline() || !target.isOnline()) {
+            return false;
+        }
+        if (viewer.getUniqueId().equals(target.getUniqueId())) {
+            return false;
+        }
+        return viewer.canSee(target);
+    }
+
+    private boolean canKeepWatch(Player watcher, Player target, boolean permanent) {
+        if (watcher == null || target == null) {
+            return false;
+        }
+        if (!watcher.isOnline() || !target.isOnline()) {
+            return false;
+        }
+        if (watcher.getUniqueId().equals(target.getUniqueId())) {
+            return !permanent;
+        }
+        return watcher.canSee(target);
+    }
+
+    private Map<String, String> placeholders(PlayerData target, double fraction, int barWidth,
+                                             Map<String, String> extra) {
+        var theme = plugin.theme().current();
+        Map<String, String> placeholders = new HashMap<>();
+        placeholders.put("bar", Msg.bar(fraction, barWidth));
+        placeholders.put("arrow", arrow(target));
+        placeholders.put("probability", Msg.percent(target.probability()));
+        placeholders.put("buffer", Msg.round(target.buffer(), 1));
+        placeholders.put("max_buffer", Msg.round(plugin.config().bufferMax(), 0));
+        placeholders.put("player", target.name());
+        placeholders.put("primary", theme.primary());
+        placeholders.put("secondary", theme.secondary());
+        placeholders.put("accent", theme.accent());
+        placeholders.put("accent_soft", theme.accentSoft());
+        if (extra != null) {
+            placeholders.putAll(extra);
+        }
+        return placeholders;
+    }
+
+    private String historyColour(double fraction) {
+        if (fraction >= 0.66D) {
+            return "#ff5a5a";
+        }
+        if (fraction >= 0.33D) {
+            return "#ffd25e";
+        }
+        return "#67f08a";
+    }
+
+    private void destroyHolograms(Player watcher, Watch watch) {
+        watcher.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                net.md_5.bungee.api.chat.TextComponent.fromLegacyText(""));
+    }
+
+    private void send(Player watcher, PacketContainer packet) {
+        protocolManager.sendServerPacket(watcher, packet);
+    }
+
+    public void forget(UUID uuid) {
+        Map<UUID, Watch> removed = watching.remove(uuid);
+        if (removed != null) {
+            Player watcher = plugin.getServer().getPlayer(uuid);
+            if (watcher != null) {
+                for (Watch watch : removed.values()) {
+                    destroyHolograms(watcher, watch);
+                }
+            }
+            return;
+        }
+
+        List<UUID> watchers = new ArrayList<>(watching.keySet());
+        for (UUID watcherId : watchers) {
+            Map<UUID, Watch> watches = watching.get(watcherId);
+            if (watches == null) {
+                continue;
+            }
+            Watch watch = watches.remove(uuid);
+            if (watch != null) {
+                Player watcher = plugin.getServer().getPlayer(watcherId);
+                if (watcher != null) {
+                    destroyHolograms(watcher, watch);
+                }
+            }
+            if (watches.isEmpty()) {
+                watching.remove(watcherId);
+            }
+        }
+    }
+}

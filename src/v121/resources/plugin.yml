@@ -21,7 +21,7 @@ permissions:
     description: Access to /oai.
     default: false
   oculusai.alerts:
-    description: Receive detection alerts.
+    description: Receive detection and check alerts.
     default: false
   oculusai.journal:
     description: Open the live suspicion journal.

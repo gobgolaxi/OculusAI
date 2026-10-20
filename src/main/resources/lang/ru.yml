@@ -221,7 +221,7 @@ history:
     punish: "наказан"
     alert: "алерт"
     check-wall: "Wall"
-    check-aim: "Aim"
+    check-aim: "Neuro Aim"
   unknown-player: "<red>Истории для <white>%player%<red> не сохранено."
   reading:
     time: "<gray>Когда: <white>%value%"
@@ -364,7 +364,7 @@ check:
   alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%"
   reason:
     wall: "нет видимости"
-    aim: "prob %probability%"
+    aim: "prob %probability%, buffer %buffer%"
   name:
     wall: "Wall"
-    aim: "Aim"
+    aim: "Neuro Aim"

@@ -16,13 +16,11 @@ import me.everyone.oculusai.detection.FeatureSchemas;
 import me.everyone.oculusai.detection.FeatureVector;
 import me.everyone.oculusai.detection.RotationSample;
 import me.everyone.oculusai.player.PlayerData;
-import me.everyone.oculusai.util.Msg;
 import org.bukkit.entity.Player;
 
 public final class Detection implements Service {
 
     private final OculusAI plugin;
-    private final Map<UUID, Long> lastAlert = new ConcurrentHashMap<>();
     private final Map<UUID, Boolean> inFlight = new ConcurrentHashMap<>();
     private TickLoop.Handle task;
 
@@ -42,12 +40,10 @@ public final class Detection implements Service {
             task.cancel();
             task = null;
         }
-        lastAlert.clear();
         inFlight.clear();
     }
 
     public void forget(UUID uuid) {
-        lastAlert.remove(uuid);
         inFlight.remove(uuid);
     }
 
@@ -168,27 +164,12 @@ public final class Detection implements Service {
         plugin.history().record(data);
         plugin.journal().record(data);
 
-        if (data.buffer() < plugin.config().alertAt()) {
-            return;
-        }
-        long now = System.currentTimeMillis();
-        Long previous = lastAlert.get(data.uuid());
-        if (previous != null && now - previous < plugin.config().alertCooldownMs()) {
-            return;
-        }
-        lastAlert.put(data.uuid(), now);
-        // Алерт попадает в историю наравне с киком: на игрока, которого
-        // предупреждали двадцать раз и ни разу не выгнали, смотреть надо
-        // именно по этому счёту.
-        plugin.history().note(data.uuid(), data.name(), "check-aim",
-                "prob " + Msg.percent(data.probability())
-                        + ", buffer " + Msg.round(data.buffer(), 1));
-        plugin.checks().alertAim(data);
-        plugin.getLogger().info(data.name() + " aim buffer "
-                + Msg.round(data.buffer(), 2) + " (p=" + Msg.round(data.probability(), 3) + ")");
-        plugin.api().reportAlert(data.name(), data.uuid().toString(),
-                data.probability(), data.buffer());
-        if (data.buffer() >= plugin.config().punishAt()) {
+        // The alert, its history entry and the service report belong to the
+        // check, not to the model: Detection only says that a new reading is
+        // in. Punishment still follows an alert, so a suppressed duplicate
+        // cannot kick twice for the same buffer.
+        boolean alerted = plugin.checks().onPrediction(data);
+        if (alerted && data.buffer() >= plugin.config().punishAt()) {
             plugin.punishments().handle(data);
         }
     }

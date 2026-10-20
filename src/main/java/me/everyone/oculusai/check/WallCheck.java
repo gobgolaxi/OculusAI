@@ -48,6 +48,16 @@ public final class WallCheck implements CombatCheck {
     }
 
     @Override
+    public boolean testOnly() {
+        return plugin.config().checkWallTestOnly();
+    }
+
+    @Override
+    public long cooldownMs() {
+        return plugin.config().checkWallCooldownMs();
+    }
+
+    @Override
     public CheckResult test(Player attacker, PlayerData data, int targetEntityId) {
         if (!plugin.config().wallCheckEnabled()) {
             return CheckResult.pass();

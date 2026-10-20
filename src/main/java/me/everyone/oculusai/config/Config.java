@@ -73,6 +73,12 @@ public final class Config implements Service {
     private int checkConfirmations = 2;
     private boolean wallCheckEnabled = true;
     private double wallCheckMaxDistance = 6.0D;
+    private long checkWallCooldownMs = 5000L;
+    private boolean checkWallTestOnly = false;
+    private boolean checkAimEnabled = true;
+    private int checkAimConfirmations = 1;
+    private long checkAimCooldownMs = 10000L;
+    private boolean checkAimTestOnly = false;
 
     public Config(OculusAI plugin) {
         this.plugin = plugin;
@@ -159,6 +165,14 @@ public final class Config implements Service {
         checkConfirmations = Math.max(1, config.getInt("checks.confirmations", 2));
         wallCheckEnabled = config.getBoolean("checks.wall.enabled", true);
         wallCheckMaxDistance = Math.max(0.5D, config.getDouble("checks.wall.max-distance", 6.0D));
+        checkWallCooldownMs = Math.max(0L, config.getLong(
+                "checks.wall.cooldown-ms", checkAlertCooldownMs));
+        checkWallTestOnly = config.getBoolean("checks.wall.test-only", false);
+        checkAimEnabled = config.getBoolean("checks.aim.enabled", true);
+        checkAimConfirmations = Math.max(1, config.getInt("checks.aim.confirmations", 1));
+        checkAimCooldownMs = Math.max(0L, config.getLong(
+                "checks.aim.cooldown-ms", alertCooldownMs));
+        checkAimTestOnly = config.getBoolean("checks.aim.test-only", false);
     }
 
     private String stripTrailingSlash(String url) {
@@ -392,6 +406,30 @@ public final class Config implements Service {
 
     public double wallCheckMaxDistance() {
         return wallCheckMaxDistance;
+    }
+
+    public long checkWallCooldownMs() {
+        return checkWallCooldownMs;
+    }
+
+    public boolean checkWallTestOnly() {
+        return checkWallTestOnly;
+    }
+
+    public boolean checkAimEnabled() {
+        return checkAimEnabled;
+    }
+
+    public int checkAimConfirmations() {
+        return checkAimConfirmations;
+    }
+
+    public long checkAimCooldownMs() {
+        return checkAimCooldownMs;
+    }
+
+    public boolean checkAimTestOnly() {
+        return checkAimTestOnly;
     }
 
     private Sound parseSound(String value, Sound fallback) {

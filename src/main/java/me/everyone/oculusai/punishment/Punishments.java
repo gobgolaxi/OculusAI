@@ -50,7 +50,7 @@ public final class Punishments implements Service {
                 () -> close(data));
         open.put(data.uuid(), new Case(System.currentTimeMillis(), data.buffer(), task));
 
-        announce(Msg.parse(plugin.config().prefix() + "<gold>Collecting evidence on <white>"
+        plugin.alerts().announce(Msg.parse(plugin.config().prefix() + "<gold>Collecting evidence on <white>"
                 + data.name() + "<gold> for " + seconds + "s <dark_gray>(buffer "
                 + Msg.round(data.buffer(), 1) + ")"));
     }
@@ -75,12 +75,12 @@ public final class Punishments implements Service {
                 + dropped + "<gray> that were not convincing enough";
 
         if (!held) {
-            announce(Msg.parse(plugin.config().prefix() + "<gray>No action against <white>"
+            plugin.alerts().announce(Msg.parse(plugin.config().prefix() + "<gray>No action against <white>"
                     + data.name() + "<gray>: buffer fell to <white>" + Msg.round(data.buffer(), 1)
                     + "<gray>, " + kept + " <dark_gray>(filed as cancelled, not as cheating)"));
             return;
         }
-        announce(Msg.parse(plugin.config().prefix() + "<gray>Evidence on <white>" + data.name()
+        plugin.alerts().announce(Msg.parse(plugin.config().prefix() + "<gray>Evidence on <white>" + data.name()
                 + "<gray>: " + kept));
         punish(data);
     }
@@ -122,20 +122,12 @@ public final class Punishments implements Service {
 
         String broadcast = plugin.config().punishmentBroadcast();
         if (!broadcast.isBlank()) {
-            announce(Msg.parse(plugin.config().prefix() + broadcast, placeholders));
+            plugin.alerts().announce(Msg.parse(plugin.config().prefix() + broadcast, placeholders));
         }
 
         plugin.api().reportKick(data.name(), data.uuid().toString(),
                 data.probability(), data.buffer(),
                 command.isBlank() ? "kick" : "command");
-    }
-
-    private void announce(String message) {
-        for (Player online : plugin.getServer().getOnlinePlayers()) {
-            if (online.hasPermission("oculusai.alerts")) {
-                online.sendMessage(message);
-            }
-        }
     }
 
     public boolean pending(UUID uuid) {

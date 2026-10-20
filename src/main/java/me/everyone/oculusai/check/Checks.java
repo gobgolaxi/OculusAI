@@ -1,28 +1,24 @@
 package me.everyone.oculusai.check;
 
-import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.core.Service;
 import me.everyone.oculusai.player.PlayerData;
-import me.everyone.oculusai.util.Msg;
 import org.bukkit.entity.Player;
 
+/** The list of checks and the two moments they are tested at.
+ *
+ * <p>Packet checks run on an attack; player checks run on every reading the
+ * model produces. Both hand a failed result to {@link Alerts}, which owns the
+ * confirmations, cooldown, message, sound and history. */
 public final class Checks implements Service {
 
-    private static final String ALERTS_PERMISSION = "oculusai.alerts";
-    private static final long CONFIRM_WINDOW_MS = 5000L;
-
     private final OculusAI plugin;
-    private final List<CombatCheck> checks = new ArrayList<>();
-    private final Map<UUID, Long> lastAlert = new ConcurrentHashMap<>();
-    private final Map<UUID, Map<String, Deque<Long>>> failures = new ConcurrentHashMap<>();
+    private final List<CombatCheck> combatChecks = new ArrayList<>();
+    private final List<PlayerCheck> playerChecks = new ArrayList<>();
 
     public Checks(OculusAI plugin) {
         this.plugin = plugin;
@@ -30,139 +26,102 @@ public final class Checks implements Service {
 
     @Override
     public void enable() {
-        checks.clear();
-        checks.add(new WallCheck(plugin));
+        reload();
     }
 
     @Override
     public void disable() {
-        checks.clear();
-        lastAlert.clear();
-        failures.clear();
+        combatChecks.clear();
+        playerChecks.clear();
     }
 
     @Override
     public void reload() {
-        lastAlert.clear();
-        failures.clear();
+        combatChecks.clear();
+        playerChecks.clear();
+        combatChecks.add(new WallCheck(plugin));
+        playerChecks.add(new AimCheck(plugin));
     }
 
+    /** Tests every packet check for an attack. Returns whether the hit should
+     *  be cancelled. */
     public boolean onAttack(Player attacker, PlayerData data, int targetEntityId) {
         if (!plugin.config().checksEnabled() || attacker.hasPermission("oculusai.bypass")) {
             return false;
         }
 
-        long now = System.currentTimeMillis();
-        for (CombatCheck check : checks) {
-            CheckResult result;
-            try {
-                result = check.test(attacker, data, targetEntityId);
-            } catch (Throwable failure) {
-                plugin.getLogger().log(Level.SEVERE,
-                        "Check " + check.id() + " failed while reading an attack", failure);
-                clearFailures(data.uuid(), check.id());
-                continue;
-            }
-            if (!result.failed()) {
-                clearFailures(data.uuid(), check.id());
+        for (CombatCheck check : combatChecks) {
+            CheckResult result = test(check, attacker, data, targetEntityId);
+            if (result == null || !result.failed()) {
+                if (result != null) {
+                    plugin.alerts().reset(data.uuid(), check.id());
+                }
                 continue;
             }
 
             boolean test = check.testOnly() && plugin.config().checkTestMode();
-            int required = test || check.immediate() ? 1 : plugin.config().checkConfirmations();
-            if (required > 1 && !confirmed(data.uuid(), check.id(), required, now)) {
+            if (plugin.alerts().raise(data, check, result, test) == Alerts.Outcome.NONE) {
                 continue;
             }
-
-            if (!check.immediate()) {
-                Long previous = lastAlert.get(data.uuid());
-                if (previous != null && now - previous < plugin.config().checkAlertCooldownMs()) {
-                    clearFailures(data.uuid(), check.id());
-                    return result.cancel();
-                }
-            }
-            lastAlert.put(data.uuid(), now);
-            try {
-                report(data, check, result, test);
-            } catch (Throwable failure) {
-                plugin.getLogger().log(Level.SEVERE,
-                        "Could not report check " + check.id(), failure);
-            }
-            return result.cancel();
+            return !test && result.cancel();
         }
         return false;
     }
 
-    private boolean confirmed(UUID uuid, String checkId, int required, long now) {
-        Map<String, Deque<Long>> byCheck = failures.computeIfAbsent(
-                uuid, key -> new ConcurrentHashMap<>());
-        Deque<Long> times = byCheck.computeIfAbsent(checkId, key -> new ArrayDeque<>());
-        synchronized (times) {
-            long cutoff = now - CONFIRM_WINDOW_MS;
-            while (!times.isEmpty() && times.peekFirst() < cutoff) {
-                times.removeFirst();
+    /** Tests the checks that read the model's output. Returns whether a real
+     *  alert was sent, so the caller can decide about punishment without
+     *  repeating the confirmation and cooldown rules.
+     *
+     *  <p>{@code checks.enabled} is the packet-check switch, as it was before
+     *  the aim check moved here: turning off wall checks must not quietly turn
+     *  off the neural one. Aim has its own switch. */
+    public boolean onPrediction(PlayerData data) {
+        Player player = data.player();
+        if (!player.isOnline() || player.hasPermission("oculusai.bypass")) {
+            return false;
+        }
+
+        boolean alerted = false;
+        for (PlayerCheck check : playerChecks) {
+            CheckResult result = test(check, data);
+            if (result == null || !result.failed()) {
+                if (result != null) {
+                    plugin.alerts().reset(data.uuid(), check.id());
+                }
+                continue;
             }
-            times.addLast(now);
-            if (times.size() < required) {
-                return false;
+
+            boolean test = check.testOnly() && plugin.config().checkTestMode();
+            if (plugin.alerts().raise(data, check, result, test) == Alerts.Outcome.SENT) {
+                alerted |= !test;
             }
-            times.clear();
-            return true;
+        }
+        return alerted;
+    }
+
+    private CheckResult test(CombatCheck check, Player attacker, PlayerData data, int targetEntityId) {
+        try {
+            return check.test(attacker, data, targetEntityId);
+        } catch (Throwable failure) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Check " + check.id() + " failed while reading an attack", failure);
+            plugin.alerts().reset(data.uuid(), check.id());
+            return null;
         }
     }
 
-    private void clearFailures(UUID uuid, String checkId) {
-        Map<String, Deque<Long>> byCheck = failures.get(uuid);
-        if (byCheck == null) {
-            return;
-        }
-        byCheck.remove(checkId);
-        if (byCheck.isEmpty()) {
-            failures.remove(uuid, byCheck);
-        }
-    }
-
-    private void report(PlayerData data, CombatCheck check, CheckResult result, boolean test) {
-        String detail = Msg.strip(result.detail());
-        broadcast(data, check.id(), result.detail(), test);
-
-        String mode = test ? "Test check" : "Check";
-        plugin.getLogger().warning(mode + " " + check.id() + " failed for "
-                + data.name() + ": " + detail);
-        plugin.history().note(data.uuid(), data.name(), "check-" + check.id(), detail);
-    }
-
-    /** Aim failures come from the model rather than the packet path, so they
-     *  are reported through the same line as every other check. */
-    public void alertAim(PlayerData data) {
-        String detail = plugin.lang().text("check.reason.aim",
-                Map.of("probability", Msg.percent(data.probability())));
-        broadcast(data, "aim", detail, false);
-    }
-
-    private void broadcast(PlayerData data, String checkId, String detail, boolean test) {
-        String checkName = plugin.lang().textOr("check.name." + checkId, checkId);
-        String symbol = plugin.config().alertSymbol();
-        String message = plugin.config().prefix() + plugin.lang().text(
-                test ? "check.test-line" : "check.alert-line",
-                Map.of(
-                        "player", data.name(),
-                        "check", checkName,
-                        "detail", detail,
-                        "accent", plugin.theme().current().accent(),
-                        "symbol", symbol == null ? "" : symbol));
-
-        for (Player online : plugin.getServer().getOnlinePlayers()) {
-            if (online.hasPermission(ALERTS_PERMISSION)) {
-                online.sendMessage(message);
-                online.playSound(online.getLocation(), plugin.config().alertSound(),
-                        plugin.config().alertSoundVolume(), plugin.config().alertSoundPitch());
-            }
+    private CheckResult test(PlayerCheck check, PlayerData data) {
+        try {
+            return check.test(data);
+        } catch (Throwable failure) {
+            plugin.getLogger().log(Level.SEVERE,
+                    "Check " + check.id() + " failed while reading a prediction", failure);
+            plugin.alerts().reset(data.uuid(), check.id());
+            return null;
         }
     }
 
     public void forget(UUID uuid) {
-        lastAlert.remove(uuid);
-        failures.remove(uuid);
+        plugin.alerts().forget(uuid);
     }
 }

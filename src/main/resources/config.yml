@@ -115,3 +115,10 @@ checks:
   wall:
     enabled: true
     max-distance: 6.0
+    cooldown-ms: 5000
+    test-only: false
+  aim:
+    enabled: true
+    confirmations: 1
+    cooldown-ms: 10000
+    test-only: false

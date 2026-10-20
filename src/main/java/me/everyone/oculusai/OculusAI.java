@@ -1,6 +1,7 @@
 package me.everyone.oculusai;
 
 import java.util.Properties;
+import me.everyone.oculusai.check.Alerts;
 import me.everyone.oculusai.check.Checks;
 import me.everyone.oculusai.command.Commands;
 import me.everyone.oculusai.config.Config;
@@ -48,6 +49,7 @@ public final class OculusAI extends JavaPlugin {
     private Players players;
     private Storage storage;
     private Ui ui;
+    private Alerts alerts;
     private Punishments punishments;
     private Checks checks;
     private Detection detection;
@@ -74,6 +76,7 @@ public final class OculusAI extends JavaPlugin {
         network = register(new Network(this));
         players = register(new Players(this));
         storage = register(new Storage(this));
+        alerts = register(new Alerts(this));
         punishments = register(new Punishments(this));
         checks = register(new Checks(this));
         detection = register(new Detection(this));
@@ -248,6 +251,10 @@ public final class OculusAI extends JavaPlugin {
 
     public Punishments punishments() {
         return punishments;
+    }
+
+    public Alerts alerts() {
+        return alerts;
     }
 
     public Checks checks() {

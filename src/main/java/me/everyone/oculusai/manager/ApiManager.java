@@ -44,6 +44,11 @@ public final class ApiManager implements Manager {
     // on whether the service is up.
     private static final long TRAIN_TIMEOUT_MS = 10L * 60L * 1000L;
 
+    /** How long a dataset push may take. A capture of a few hundred windows
+     *  is a quarter of a megabyte of JSON, and the service has to write it
+     *  down before it answers. */
+    private static final long DATASET_TIMEOUT_MS = 60L * 1000L;
+
     private final OculusAI plugin;
     private final Executor executor = Executors.newFixedThreadPool(2, runnable -> {
         Thread thread = new Thread(runnable, "OculusAI-API");
@@ -331,7 +336,15 @@ public final class ApiManager implements Manager {
     }
 
     private CompletableFuture<JsonObject> postDataset(String path, JsonObject body) {
+        // A dataset push is not a question, it is a delivery: a few hundred
+        // windows, a quarter of a megabyte of JSON, and the service writes a
+        // CSV and answers. The ordinary timeout is a second and a half, which
+        // a big capture can easily outlast - and a timeout is read as "the
+        // service is down", so the capture ends up in the retry queue for a
+        // reason that has nothing to do with the service being down.
         HttpRequest.Builder builder = builder(path, plugin.config().datasetKey())
+                .timeout(Duration.ofMillis(Math.max(plugin.config().apiTimeoutMs(),
+                        DATASET_TIMEOUT_MS)))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
         return send(builder.build());
@@ -389,6 +402,13 @@ public final class ApiManager implements Manager {
                         plugin.getLogger().warning("Service answered " + response.statusCode()
                                 + " for " + request.uri().getPath() + ": "
                                 + abbreviate(response.body()));
+                        if (response.statusCode() == 403
+                                && response.body() != null
+                                && response.body().contains("\"001\"")) {
+                            plugin.getLogger().warning("The service does not accept this key"
+                                    + " from this address: the server address in the panel is not"
+                                    + " the one this server connects from. /oai connect rebinds it.");
+                        }
                         return null;
                     }
                     return new JsonParser().parse(response.body()).getAsJsonObject();

@@ -9,8 +9,9 @@ import java.util.Locale;
 import java.util.Map;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.command.SubCommand;
-import me.everyone.oculusai.command.sub.DashboardCommand;
+import me.everyone.oculusai.command.sub.ChecksCommand;
 import me.everyone.oculusai.command.sub.ConnectCommand;
+import me.everyone.oculusai.command.sub.DashboardCommand;
 import me.everyone.oculusai.command.sub.DataCommand;
 import me.everyone.oculusai.command.sub.DiagCommand;
 import me.everyone.oculusai.command.sub.ForgetCommand;
@@ -56,6 +57,7 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
         subCommands.add(new NpcCommand(plugin));
         subCommands.add(new ConnectCommand(plugin));
         subCommands.add(new DashboardCommand(plugin));
+        subCommands.add(new ChecksCommand(plugin));
         subCommands.add(new DiagCommand(plugin));
         subCommands.add(new ReloadCommand(plugin));
 

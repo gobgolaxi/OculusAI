@@ -26,6 +26,7 @@ help:
     data: "Записывать и размечать обучающие данные."
     dashboard: "Открыть дашборд датасета и модели."
     reload: "Перечитать config.yml."
+    checks: "Открыть настройки проверок или переключить их."
     npc: "Заспавнить манекен, который атакует тебя."
 theme:
   aurora: "Aurora"
@@ -352,6 +353,20 @@ kickanim:
   lightning: "Молния"
   firework: "Фейерверк"
   wither: "Визер"
+checks:
+  usage: "<red>Использование: <white>%value%"
+  status: "<gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Наказание %punish%"
+  enabled: "<green>%name% включён."
+  disabled: "<gray>%name% выключен."
+  state:
+    on: "<green>вкл"
+    off: "<red>выкл"
+  name:
+    analysis: "Анализ"
+    checks: "Проверки ударов"
+    wall: "Wall"
+    aim: "Neuro Aim"
+    punish: "Наказание"
 reload:
   done: "<green>Перезагружено <gray>за <white>%value%мс<gray>."
 npc:

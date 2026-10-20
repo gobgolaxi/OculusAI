@@ -26,6 +26,7 @@ help:
     data: "Record and label training data."
     dashboard: "Open the dataset and model dashboard."
     reload: "Re-read config.yml."
+    checks: "Open check settings or toggle checks."
     npc: "Spawn a sparring dummy that attacks you."
 theme:
   aurora: "Aurora"
@@ -354,6 +355,20 @@ kickanim:
   lightning: "Lightning"
   firework: "Firework"
   wither: "Wither"
+checks:
+  usage: "<red>Usage: <white>%value%"
+  status: "<gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Punishment %punish%"
+  enabled: "<green>%name% enabled."
+  disabled: "<gray>%name% disabled."
+  state:
+    on: "<green>on"
+    off: "<red>off"
+  name:
+    analysis: "Analysis"
+    checks: "Attack checks"
+    wall: "Wall"
+    aim: "Neuro Aim"
+    punish: "Punishment"
 reload:
   done: "<green>Reloaded <gray>in <white>%value%ms<gray>."
 npc:

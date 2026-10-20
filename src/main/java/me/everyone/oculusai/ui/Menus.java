@@ -14,6 +14,7 @@ import me.everyone.oculusai.ui.menu.HistoryMenu;
 import me.everyone.oculusai.ui.menu.JournalMenu;
 import me.everyone.oculusai.ui.gui.Menu;
 import me.everyone.oculusai.ui.menu.SessionsMenu;
+import me.everyone.oculusai.ui.menu.SettingsMenu;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -45,6 +46,11 @@ public final class Menus implements Service, Listener {
     public void openDashboard(Player player) {
         plugin.mainThread().run(
                 () -> new DashboardMenu(plugin, player).open());
+    }
+
+    public void openSettings(Player player) {
+        plugin.mainThread().run(
+                () -> new SettingsMenu(plugin, player).open());
     }
 
     public void refreshStatus(Player player, Menu menu) {

@@ -26,6 +26,9 @@ public final class PlayerListener implements Listener {
     public void onJoin(PlayerJoinEvent event) {
         plugin.data().add(event.getPlayer());
         plugin.journal().refreshFor(event.getPlayer());
+        Player joining = event.getPlayer();
+        plugin.worker().execute(() -> plugin.history().preload(
+                joining.getUniqueId(), joining.getName()));
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

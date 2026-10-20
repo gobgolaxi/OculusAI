@@ -95,6 +95,7 @@ public final class HistoryStore implements Service {
     private final Map<UUID, String> names = new ConcurrentHashMap<>();
     private final Map<UUID, Long> lastSeen = new ConcurrentHashMap<>();
     private ScheduledFuture<?> flushTask;
+    private volatile long lastPurgeAt;
 
     public HistoryStore(OculusAI plugin) {
         this.plugin = plugin;
@@ -112,7 +113,10 @@ public final class HistoryStore implements Service {
         loadIndex();
 
         // Retention is a directory scan; keep it off the enable path.
-        plugin.worker().execute(this::purgeOldFiles);
+        plugin.worker().execute(() -> {
+            lastPurgeAt = System.currentTimeMillis();
+            purgeOldFiles();
+        });
 
         long period = Math.max(20L, plugin.config().historyFlushSeconds() * 20L) * 50L;
         flushTask = plugin.worker().repeat(this::flushAll, period, period, TimeUnit.MILLISECONDS);
@@ -134,6 +138,13 @@ public final class HistoryStore implements Service {
             names.clear();
             lastSeen.clear();
         });
+    }
+
+    /** Loads a stored record on the worker before the first prediction or
+     *  before the history menu opens. Without this the first touch of a
+     *  player read a JSON file on the tick thread. */
+    public void preload(UUID uuid, String name) {
+        load(uuid, name);
     }
 
     public void record(PlayerData data) {
@@ -445,6 +456,11 @@ public final class HistoryStore implements Service {
     }
 
     private void flushAll() {
+        long now = System.currentTimeMillis();
+        if (now - lastPurgeAt > TimeUnit.HOURS.toMillis(6)) {
+            lastPurgeAt = now;
+            purgeOldFiles();
+        }
         for (Map.Entry<UUID, Record> entry : records.entrySet()) {
             writeIfDirty(entry.getKey(), entry.getValue());
         }
@@ -453,10 +469,10 @@ public final class HistoryStore implements Service {
     }
 
     private void writeIfDirty(UUID uuid, Record record) {
-        Snapshot snapshot = record.snapshot();
         if (!record.dirty) {
             return;
         }
+        Snapshot snapshot = record.snapshot();
         JsonObject root = new JsonObject();
         JsonArray readings = new JsonArray();
         JsonArray events = new JsonArray();

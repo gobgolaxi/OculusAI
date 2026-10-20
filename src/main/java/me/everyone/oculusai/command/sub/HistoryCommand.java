@@ -36,9 +36,7 @@ public final class HistoryCommand extends SubCommand {
                             Map.of("player", args[0]));
                     return;
                 }
-                String name = plugin.history().nameOf(stored);
-                plugin.menus().openHistory((Player) sender, stored,
-                        name == null ? args[0] : name);
+                plugin.menus().openHistory((Player) sender, stored, args[0]);
                 return;
             }
         }

@@ -79,8 +79,14 @@ public final class Menus implements Service, Listener {
     }
 
     public void openHistory(Player viewer, UUID targetId, String targetName) {
-        plugin.mainThread().run(
-                () -> new HistoryMenu(plugin, viewer, targetId, targetName, 0).open());
+        // Read the stored record on the worker first. The menu itself is
+        // built on the main thread, but every history call after this finds
+        // the record in memory.
+        plugin.worker().execute(() -> {
+            plugin.history().preload(targetId, targetName);
+            plugin.mainThread().run(
+                    () -> new HistoryMenu(plugin, viewer, targetId, targetName, 0).open());
+        });
     }
 
     public HistorySort historySort(UUID viewer) {

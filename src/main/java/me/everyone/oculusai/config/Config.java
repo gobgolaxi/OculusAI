@@ -76,7 +76,8 @@ public final class Config implements Service {
     private boolean hitboxCheckEnabled = true;
     private double hitboxMaxDistance = 6.0D;
     private double hitboxMargin = 0.1D;
-    private double hitboxMaxAngle = 15.0D;
+    private double hitboxMaxAngle = 25.0D;
+    private boolean hitboxDebug = false;
     private long checkHitboxCooldownMs = 5000L;
     private boolean checkHitboxTestOnly = false;
     private boolean checkAimEnabled = true;
@@ -182,7 +183,8 @@ public final class Config implements Service {
         // can leave the server one look behind the client. Keep this small:
         // it is a timing tolerance, not a replacement for aiming at the box.
         hitboxMaxAngle = Math.max(0.0D, Math.min(45.0D,
-                config.getDouble("checks.hitbox.max-angle", 15.0D)));
+                config.getDouble("checks.hitbox.max-angle", 25.0D)));
+        hitboxDebug = config.getBoolean("checks.hitbox.debug", false);
         checkHitboxCooldownMs = Math.max(0L, config.getLong(
                 "checks.hitbox.cooldown-ms", checkAlertCooldownMs));
         checkHitboxTestOnly = config.getBoolean("checks.hitbox.test-only", false);
@@ -468,6 +470,10 @@ public final class Config implements Service {
 
     public double hitboxMaxAngle() {
         return hitboxMaxAngle;
+    }
+
+    public boolean hitboxDebug() {
+        return hitboxDebug;
     }
 
     public long checkHitboxCooldownMs() {

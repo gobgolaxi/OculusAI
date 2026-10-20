@@ -2,6 +2,7 @@ package me.everyone.oculusai.check;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.detection.RotationSample;
@@ -56,11 +57,12 @@ public final class HitBoxCheck implements CombatCheck {
     }
 
     /** A hitbox miss is based on the server's view of a packet that carries no
-     *  rotation. One borderline miss is not enough to cancel a normal hit;
-     *  two in a row are still a repeatable geometry failure. */
+     *  rotation. One or two borderline misses are not enough to cancel a
+     *  normal hit; three consecutive failures are a repeatable geometry
+     *  problem rather than a one-tick timing difference. */
     @Override
     public int confirmations() {
-        return Math.max(2, plugin.config().checkConfirmations());
+        return Math.max(3, plugin.config().checkConfirmations());
     }
 
     @Override
@@ -132,12 +134,69 @@ public final class HitBoxCheck implements CombatCheck {
             return CheckResult.pass();
         }
 
+        if (plugin.config().hitboxDebug()) {
+            logMiss(attacker, online, targetEntityId, data, eyes, looks, targets,
+                    reach, Math.sqrt(nearest));
+        }
         return CheckResult.cancel(plugin.lang().text("check.reason.hitbox"));
     }
 
+    private void logMiss(Player attacker, Player online, int targetEntityId,
+                         PlayerData data, List<Vector> eyes, List<Vector> looks,
+                         List<BoundingBox> targets, double reach, double distance) {
+        double best = bestAngle(eyes, looks, targets, reach);
+        String target = online == null ? "#" + targetEntityId : online.getName();
+        int targetPing = online == null ? -1 : online.getPing();
+        plugin.getLogger().warning(String.format(Locale.ROOT,
+                "HitBox debug %s -> %s: angle=%.1f, dist=%.2f, ping=%d/%d, "
+                        + "boxes=%d, eyes=%d, looks=%d, look=%.1f/%.1f",
+                attacker.getName(), target, best, distance, attacker.getPing(),
+                targetPing, targets.size(), eyes.size(), looks.size(),
+                data.lastYaw(), data.lastPitch()));
+    }
+
+    private double bestAngle(List<Vector> eyes, List<Vector> looks,
+                             List<BoundingBox> targets, double reach) {
+        double limit = reach * reach;
+        double best = 180.0D;
+        for (Vector eye : eyes) {
+            for (Vector look : looks) {
+                for (BoundingBox box : targets) {
+                    if (eye.distanceSquared(box.getCenter()) > limit) {
+                        continue;
+                    }
+                    best = Math.min(best, angleTo(eye, look, box));
+                }
+            }
+        }
+        return best;
+    }
+
+    private double angleTo(Vector eye, Vector look, BoundingBox box) {
+        double x = clamp(eye.getX(), box.getMinX(), box.getMaxX());
+        double y = clamp(eye.getY(), box.getMinY(), box.getMaxY());
+        double z = clamp(eye.getZ(), box.getMinZ(), box.getMaxZ());
+        Vector to = new Vector(x - eye.getX(), y - eye.getY(), z - eye.getZ());
+        double length = to.length();
+        if (length < MIN_DISTANCE) {
+            return 0.0D;
+        }
+        double dot = clamp(look.dot(to) / length, -1.0D, 1.0D);
+        return Math.toDegrees(Math.acos(dot));
+    }
+
     private List<Vector> lookDirections(PlayerData data) {
-        List<Vector> looks = new ArrayList<>(2);
+        List<Vector> looks = new ArrayList<>(3);
         addLook(looks, data.lastYaw(), data.lastPitch());
+
+        // The server-side location is normally updated by the same look
+        // packet, but keep it as a second source so a missed listener update
+        // cannot turn every hit into a false positive.
+        Player player = data.player();
+        if (player != null) {
+            Location location = player.getLocation();
+            addLook(looks, location.getYaw(), location.getPitch());
+        }
 
         // Keep the previous reading as well. It covers a hit that was sent
         // before the newest look packet but after the target moved.

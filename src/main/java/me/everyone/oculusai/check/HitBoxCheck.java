@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import me.everyone.oculusai.OculusAI;
+import me.everyone.oculusai.detection.RotationSample;
 import me.everyone.oculusai.player.EntityTracker;
 import me.everyone.oculusai.player.PlayerData;
 import org.bukkit.GameMode;
@@ -20,13 +21,22 @@ import org.bukkit.util.Vector;
  * the last look direction. If that ray never touches the target's actual
  * server-side box, the client attacked something that is not there. Recent
  * target boxes cover the movement between the last position packet and the
- * attack; no confirmation or neural data is involved. */
+ * attack; no confirmation or neural data is involved.
+ *
+ * <p>The attack packet does not carry a rotation. A legitimate flick can
+ * therefore be sent before the look packet for the same client tick, leaving
+ * the server with the previous look. The target boxes and the attacker's eye
+ * are also sampled a tick behind the client. The check therefore accepts the
+ * same hit through a small, configurable cone around the real box instead of
+ * cancelling a normal hit on a one-packet timing difference. */
 public final class HitBoxCheck implements CombatCheck {
 
     private static final double MIN_DISTANCE = 0.1D;
     private static final double MIN_DISTANCE_SQUARED = MIN_DISTANCE * MIN_DISTANCE;
     private static final long HISTORY_MS = 500L;
-    private static final int MAX_HISTORY_BOXES = 6;
+    private static final long EYE_HISTORY_MS = 250L;
+    private static final int MAX_HISTORY_BOXES = 12;
+    private static final int MAX_EYE_POSITIONS = 3;
 
     private final OculusAI plugin;
 
@@ -67,6 +77,7 @@ public final class HitBoxCheck implements CombatCheck {
         Player online = plugin.tracker().player(targetEntityId);
         if (online != null) {
             if (online.isDead() || online.getGameMode() == GameMode.SPECTATOR
+                    || online.isInsideVehicle()
                     || !online.getWorld().equals(attacker.getWorld())) {
                 return CheckResult.pass();
             }
@@ -81,8 +92,8 @@ public final class HitBoxCheck implements CombatCheck {
             return CheckResult.pass();
         }
 
-        Vector look = lookDirection(data);
-        if (look == null) {
+        List<Vector> looks = lookDirections(data);
+        if (looks.isEmpty()) {
             return CheckResult.pass();
         }
 
@@ -103,22 +114,54 @@ public final class HitBoxCheck implements CombatCheck {
         }
 
         double reach = maxDistance + 2.0D;
-        double limit = reach * reach;
-        for (BoundingBox box : targets) {
-            if (eyeVector.distanceSquared(box.getCenter()) > limit) {
-                continue;
-            }
-            if (box.rayTrace(eyeVector, look, reach) != null) {
-                return CheckResult.pass();
-            }
+        List<Vector> eyes = eyePositions(attacker, data, world);
+        if (touches(eyes, looks, targets, reach)) {
+            return CheckResult.pass();
+        }
+
+        // The attack packet carries no rotation of its own. A normal flick can
+        // be sent one packet before the look that goes with it, so the latest
+        // server look can be a tick behind the crosshair. Accept a small cone
+        // around the real box; an attack aimed away from the target is still
+        // far outside it. This is a geometric tolerance, not a size shortcut.
+        double minDot = Math.cos(Math.toRadians(plugin.config().hitboxMaxAngle()));
+        if (aimedAt(eyes, looks, targets, reach, minDot)) {
+            return CheckResult.pass();
         }
 
         return CheckResult.cancel(plugin.lang().text("check.reason.hitbox"));
     }
 
-    private Vector lookDirection(PlayerData data) {
-        double yaw = Math.toRadians(data.lastYaw());
-        double pitch = Math.toRadians(data.lastPitch());
+    private List<Vector> lookDirections(PlayerData data) {
+        List<Vector> looks = new ArrayList<>(2);
+        addLook(looks, data.lastYaw(), data.lastPitch());
+
+        // Keep the previous reading as well. It covers a hit that was sent
+        // before the newest look packet but after the target moved.
+        List<RotationSample> window = data.snapshotWindow(2);
+        if (window != null && window.size() >= 2) {
+            RotationSample previous = window.get(window.size() - 2);
+            addLook(looks, previous.yaw(), previous.pitch());
+        }
+        return looks;
+    }
+
+    private void addLook(List<Vector> looks, float yawDegrees, float pitchDegrees) {
+        Vector look = lookDirection(yawDegrees, pitchDegrees);
+        if (look == null) {
+            return;
+        }
+        for (Vector existing : looks) {
+            if (existing.distanceSquared(look) < 1.0E-6D) {
+                return;
+            }
+        }
+        looks.add(look);
+    }
+
+    private Vector lookDirection(float yawDegrees, float pitchDegrees) {
+        double yaw = Math.toRadians(yawDegrees);
+        double pitch = Math.toRadians(pitchDegrees);
         double cosPitch = Math.cos(pitch);
         Vector look = new Vector(-cosPitch * Math.sin(yaw), -Math.sin(pitch),
                 cosPitch * Math.cos(yaw));
@@ -127,6 +170,83 @@ public final class HitBoxCheck implements CombatCheck {
             return null;
         }
         return look.normalize();
+    }
+
+    private List<Vector> eyePositions(Player attacker, PlayerData data, World world) {
+        List<Vector> eyes = new ArrayList<>(MAX_EYE_POSITIONS + 1);
+        Vector current = attacker.getEyeLocation().toVector();
+        eyes.add(current);
+
+        double eyeHeight = attacker.getEyeHeight();
+        List<EntityTracker.Tracked> recent = plugin.tracker().recent(data.entityId());
+        long now = System.currentTimeMillis();
+        UUID worldId = world.getUID();
+        int start = Math.max(0, recent.size() - MAX_EYE_POSITIONS);
+        for (int i = start; i < recent.size(); i++) {
+            EntityTracker.Tracked tracked = recent.get(i);
+            if (now - tracked.at() > EYE_HISTORY_MS || tracked.worldId() == null
+                    || !tracked.worldId().equals(worldId)) {
+                continue;
+            }
+            Vector eye = new Vector(tracked.x(), tracked.y() + eyeHeight, tracked.z());
+            if (eye.distanceSquared(current) < 1.0E-4D) {
+                continue;
+            }
+            eyes.add(eye);
+        }
+        return eyes;
+    }
+
+    private boolean touches(List<Vector> eyes, List<Vector> looks,
+                            List<BoundingBox> targets, double reach) {
+        double limit = reach * reach;
+        for (Vector eye : eyes) {
+            for (Vector look : looks) {
+                for (BoundingBox box : targets) {
+                    if (eye.distanceSquared(box.getCenter()) > limit) {
+                        continue;
+                    }
+                    if (box.rayTrace(eye, look, reach) != null) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean aimedAt(List<Vector> eyes, List<Vector> looks,
+                            List<BoundingBox> targets, double reach, double minDot) {
+        double limit = reach * reach;
+        for (Vector eye : eyes) {
+            for (Vector look : looks) {
+                for (BoundingBox box : targets) {
+                    if (eye.distanceSquared(box.getCenter()) > limit) {
+                        continue;
+                    }
+                    if (aimedAt(eye, look, box, minDot)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean aimedAt(Vector eye, Vector look, BoundingBox box, double minDot) {
+        double x = clamp(eye.getX(), box.getMinX(), box.getMaxX());
+        double y = clamp(eye.getY(), box.getMinY(), box.getMaxY());
+        double z = clamp(eye.getZ(), box.getMinZ(), box.getMaxZ());
+        Vector to = new Vector(x - eye.getX(), y - eye.getY(), z - eye.getZ());
+        double length = to.length();
+        if (length < MIN_DISTANCE) {
+            return true;
+        }
+        return look.dot(to) / length >= minDot;
+    }
+
+    private static double clamp(double value, double min, double max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     private List<BoundingBox> targetBoxes(Player online, int entityId, World world,
@@ -155,7 +275,11 @@ public final class HitBoxCheck implements CombatCheck {
             }
         }
 
-        double range = maxDistance + 2.0D;
+        // The current eye is only one of the positions tested. Leave room for
+        // the recent eye positions as well, otherwise a box that was in reach
+        // a moment ago but is just outside the current eye's range is dropped
+        // before the history check can use it.
+        double range = maxDistance + 3.0D;
         double limit = range * range;
         List<BoundingBox> within = new ArrayList<>(boxes.size());
         for (BoundingBox box : boxes) {

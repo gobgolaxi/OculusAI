@@ -437,6 +437,9 @@ check-settings:
     hitbox-margin:
       name: "<aqua>Hitbox tolerance"
       hint: "<gray>Extra margin around the real target hitbox, in blocks."
+    max-angle:
+      name: "<aqua>Look tolerance"
+      hint: "<gray>Allowed angle between the look and the target hitbox. Covers the attack packet arriving before the look packet."
 checks:
   usage: "<red>Usage: <white>%value%"
   status: "<gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Punishment %punish%"

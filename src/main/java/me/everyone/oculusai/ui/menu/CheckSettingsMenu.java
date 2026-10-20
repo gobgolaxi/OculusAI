@@ -132,6 +132,9 @@ public final class CheckSettingsMenu extends Menu {
                     Option.number("hitbox-margin", Material.ARMOR_STAND,
                             "checks.hitbox.hitbox-margin",
                             plugin.config().hitboxMargin(), 0.0D, 0.5D, 0.1D, false),
+                    Option.number("max-angle", Material.ARROW,
+                            "checks.hitbox.max-angle",
+                            plugin.config().hitboxMaxAngle(), 0.0D, 45.0D, 1.0D, false),
                     Option.millis("cooldown-ms", Material.CLOCK, "checks.hitbox.cooldown-ms",
                             plugin.config().checkHitboxCooldownMs(), 0.0D, 600_000.0D, 1_000.0D));
             default -> List.of(

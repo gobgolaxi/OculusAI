@@ -435,6 +435,9 @@ check-settings:
     hitbox-margin:
       name: "<aqua>Допуск хитбокса"
       hint: "<gray>Дополнительный запас вокруг реального хитбокса цели в блоках."
+    max-angle:
+      name: "<aqua>Допуск взгляда"
+      hint: "<gray>Допустимый угол между взглядом и хитбоксом цели. Компенсирует пакет атаки, пришедший раньше пакета поворота."
 checks:
   usage: "<red>Использование: <white>%value%"
   status: "<gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Наказание %punish%"

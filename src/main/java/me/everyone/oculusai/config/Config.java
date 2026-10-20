@@ -76,6 +76,7 @@ public final class Config implements Service {
     private boolean hitboxCheckEnabled = true;
     private double hitboxMaxDistance = 6.0D;
     private double hitboxMargin = 0.1D;
+    private double hitboxMaxAngle = 15.0D;
     private long checkHitboxCooldownMs = 5000L;
     private boolean checkHitboxTestOnly = false;
     private boolean checkAimEnabled = true;
@@ -177,6 +178,11 @@ public final class Config implements Service {
                 config.getDouble("checks.hitbox.max-distance", 6.0D));
         hitboxMargin = Math.max(0.0D, Math.min(0.5D,
                 config.getDouble("checks.hitbox.hitbox-margin", 0.1D)));
+        // The attack packet has no rotation of its own, so a legitimate flick
+        // can leave the server one look behind the client. Keep this small:
+        // it is a timing tolerance, not a replacement for aiming at the box.
+        hitboxMaxAngle = Math.max(0.0D, Math.min(45.0D,
+                config.getDouble("checks.hitbox.max-angle", 15.0D)));
         checkHitboxCooldownMs = Math.max(0L, config.getLong(
                 "checks.hitbox.cooldown-ms", checkAlertCooldownMs));
         checkHitboxTestOnly = config.getBoolean("checks.hitbox.test-only", false);
@@ -458,6 +464,10 @@ public final class Config implements Service {
 
     public double hitboxMargin() {
         return hitboxMargin;
+    }
+
+    public double hitboxMaxAngle() {
+        return hitboxMaxAngle;
     }
 
     public long checkHitboxCooldownMs() {

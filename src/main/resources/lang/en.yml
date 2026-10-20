@@ -260,6 +260,8 @@ history:
     alert: "alerted"
     check-wall: "Wall"
     check-aim: "Neuro Aim"
+    check-hitbox: "HitBox"
+    check-nolookhit: "NoLookHit"
   unknown-player: "<red>No stored history for <white>%player%<red>."
   reading:
     time: "<gray>When: <white>%value%"
@@ -429,9 +431,26 @@ check-settings:
     max-distance:
       name: "<aqua>Maximum distance"
       hint: "<gray>Wall does not check farther than this."
+  hitbox:
+    max-width:
+      name: "<aqua>Maximum width"
+      hint: "<gray>Largest allowed target hitbox width."
+    max-height:
+      name: "<aqua>Maximum height"
+      hint: "<gray>Largest allowed target hitbox height."
+  nolookhit:
+    max-distance:
+      name: "<aqua>Maximum distance"
+      hint: "<gray>NoLookHit does not check farther than this."
+    hitbox-margin:
+      name: "<aqua>Hitbox tolerance"
+      hint: "<gray>Extra margin around the target hitbox, in blocks."
+    max-angle:
+      name: "<aqua>Maximum angle"
+      hint: "<gray>Allowed angle between the look direction and the target."
 checks:
   usage: "<red>Usage: <white>%value%"
-  status: "<gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Punishment %punish%"
+  status: "<gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>NoLookHit %nolookhit% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Punishment %punish%"
   enabled: "<green>%name% enabled."
   disabled: "<gray>%name% disabled."
   state:
@@ -442,6 +461,8 @@ checks:
     checks: "Attack checks"
     wall: "Wall"
     aim: "Neuro Aim"
+    hitbox: "HitBox"
+    nolookhit: "NoLookHit"
     punish: "Punishment"
 reload:
   done: "<green>Reloaded <gray>in <white>%value%ms<gray>."
@@ -480,11 +501,17 @@ check:
   desc:
     wall: "<gray>Hits through walls and closed doors."
     aim: "<gray>Neural aim check."
+    hitbox: "<gray>Hits a target whose hitbox is larger than allowed."
+    nolookhit: "<gray>Hits without the crosshair on the target."
   test-line: "<dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   reason:
     wall: "no line of sight"
     aim: "window above threshold"
+    hitbox: "target hitbox %width%x%height% exceeds %max-width%x%max-height%"
+    nolookhit: "attack without looking at the target"
   name:
     wall: "Wall"
     aim: "Neuro Aim"
+    hitbox: "HitBox"
+    nolookhit: "NoLookHit"

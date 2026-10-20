@@ -39,6 +39,8 @@ public final class Checks implements Service {
     public void reload() {
         combatChecks.clear();
         playerChecks.clear();
+        combatChecks.add(new HitBoxCheck(plugin));
+        combatChecks.add(new NoLookHitCheck(plugin));
         combatChecks.add(new WallCheck(plugin));
         playerChecks.add(new AimCheck(plugin));
     }

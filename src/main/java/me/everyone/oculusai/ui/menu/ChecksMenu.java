@@ -96,6 +96,8 @@ public final class ChecksMenu extends Menu {
         return switch (check.id()) {
             case "wall" -> Material.IRON_DOOR;
             case "aim" -> Material.ENDER_EYE;
+            case "hitbox" -> Material.ARMOR_STAND;
+            case "nolookhit" -> Material.TARGET;
             default -> Material.PAPER;
         };
     }

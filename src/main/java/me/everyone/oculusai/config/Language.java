@@ -23,6 +23,14 @@ public final class Language implements Service {
      *  files keep custom translations, but this known bundled value is safe
      *  to replace with the current line. */
     private static final String LEGACY_AIM_REASON = "prob %probability%, buffer %buffer%";
+    private static final String LEGACY_STATUS_EN =
+            "<gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| "
+                    + "<gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| "
+                    + "<gray>Punishment %punish%";
+    private static final String LEGACY_STATUS_RU =
+            "<gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| "
+                    + "<gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| "
+                    + "<gray>Наказание %punish%";
 
     private final OculusAI plugin;
     private YamlConfiguration lang;
@@ -165,6 +173,15 @@ public final class Language implements Service {
         if (LEGACY_AIM_REASON.equals(currentAimReason)
                 && bundledAimReason != null && !bundledAimReason.equals(currentAimReason)) {
             lang.set("check.reason.aim", bundledAimReason);
+            migrated++;
+        }
+
+        String currentStatus = lang.getString("checks.status");
+        String bundledStatus = defaults.getString("checks.status");
+        if (bundledStatus != null && !bundledStatus.equals(currentStatus)
+                && (LEGACY_STATUS_EN.equals(currentStatus)
+                || LEGACY_STATUS_RU.equals(currentStatus))) {
+            lang.set("checks.status", bundledStatus);
             migrated++;
         }
 

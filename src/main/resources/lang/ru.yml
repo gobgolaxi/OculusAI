@@ -258,6 +258,8 @@ history:
     alert: "алерт"
     check-wall: "Wall"
     check-aim: "Neuro Aim"
+    check-hitbox: "HitBox"
+    check-nolookhit: "NoLookHit"
   unknown-player: "<red>Истории для <white>%player%<red> не сохранено."
   reading:
     time: "<gray>Когда: <white>%value%"
@@ -427,9 +429,26 @@ check-settings:
     max-distance:
       name: "<aqua>Максимальная дистанция"
       hint: "<gray>Дальше этой дистанции Wall не проверяет."
+  hitbox:
+    max-width:
+      name: "<aqua>Максимальная ширина"
+      hint: "<gray>Максимально допустимая ширина хитбокса цели."
+    max-height:
+      name: "<aqua>Максимальная высота"
+      hint: "<gray>Максимально допустимая высота хитбокса цели."
+  nolookhit:
+    max-distance:
+      name: "<aqua>Максимальная дистанция"
+      hint: "<gray>Дальше этой дистанции NoLookHit не проверяет."
+    hitbox-margin:
+      name: "<aqua>Допуск хитбокса"
+      hint: "<gray>Дополнительный запас вокруг хитбокса цели в блоках."
+    max-angle:
+      name: "<aqua>Максимальный угол"
+      hint: "<gray>Допустимый угол между взглядом и целью."
 checks:
   usage: "<red>Использование: <white>%value%"
-  status: "<gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Наказание %punish%"
+  status: "<gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>NoLookHit %nolookhit% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Наказание %punish%"
   enabled: "<green>%name% включён."
   disabled: "<gray>%name% выключен."
   state:
@@ -440,6 +459,8 @@ checks:
     checks: "Проверки ударов"
     wall: "Wall"
     aim: "Neuro Aim"
+    hitbox: "HitBox"
+    nolookhit: "NoLookHit"
     punish: "Наказание"
 reload:
   done: "<green>Перезагружено <gray>за <white>%value%мс<gray>."
@@ -478,11 +499,17 @@ check:
   desc:
     wall: "<gray>Удары через стены и закрытые двери."
     aim: "<gray>Нейросетевая проверка прицела."
+    hitbox: "<gray>Удар по цели с увеличенным хитбоксом."
+    nolookhit: "<gray>Удар без наведения на цель."
   test-line: "<dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   reason:
     wall: "нет видимости"
     aim: "окно выше порога"
+    hitbox: "хитбокс цели %width%x%height% больше %max-width%x%max-height%"
+    nolookhit: "удар без наведения на цель"
   name:
     wall: "Wall"
     aim: "Neuro Aim"
+    hitbox: "HitBox"
+    nolookhit: "NoLookHit"

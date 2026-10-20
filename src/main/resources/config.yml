@@ -120,6 +120,22 @@ checks:
     max-distance: 6.0
     cooldown-ms: 5000
     test-only: false
+  hitbox:
+    enabled: true
+    # Максимальный допустимый хитбокс цели. Всё, что больше, отменяет удар.
+    max-width: 0.6
+    max-height: 1.8
+    cooldown-ms: 5000
+    test-only: false
+  nolookhit:
+    enabled: true
+    max-distance: 6.0
+    # Допуск вокруг хитбокса цели: компенсирует движение между пакетами.
+    hitbox-margin: 0.1
+    # Допустимый угол между взглядом и ближайшей точкой хитбокса.
+    max-angle: 15.0
+    cooldown-ms: 5000
+    test-only: false
   aim:
     enabled: true
     # Smoothness: сколько последних окон усреднять перед подачей в буфер.

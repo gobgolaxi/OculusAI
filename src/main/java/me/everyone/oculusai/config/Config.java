@@ -73,6 +73,17 @@ public final class Config implements Service {
     private double wallCheckMaxDistance = 6.0D;
     private long checkWallCooldownMs = 5000L;
     private boolean checkWallTestOnly = false;
+    private boolean hitboxCheckEnabled = true;
+    private double hitboxCheckMaxWidth = 0.6D;
+    private double hitboxCheckMaxHeight = 1.8D;
+    private long checkHitboxCooldownMs = 5000L;
+    private boolean checkHitboxTestOnly = false;
+    private boolean noLookHitCheckEnabled = true;
+    private double noLookHitMaxDistance = 6.0D;
+    private double noLookHitHitboxMargin = 0.1D;
+    private double noLookHitMaxAngle = 15.0D;
+    private long checkNoLookHitCooldownMs = 5000L;
+    private boolean checkNoLookHitTestOnly = false;
     private boolean checkAimEnabled = true;
     private int checkAimSmoothWindows = 3;
     private int checkAimConfirmations = 1;
@@ -167,6 +178,24 @@ public final class Config implements Service {
         checkWallCooldownMs = Math.max(0L, config.getLong(
                 "checks.wall.cooldown-ms", checkAlertCooldownMs));
         checkWallTestOnly = config.getBoolean("checks.wall.test-only", false);
+        hitboxCheckEnabled = config.getBoolean("checks.hitbox.enabled", true);
+        hitboxCheckMaxWidth = Math.max(0.1D,
+                config.getDouble("checks.hitbox.max-width", 0.6D));
+        hitboxCheckMaxHeight = Math.max(0.1D,
+                config.getDouble("checks.hitbox.max-height", 1.8D));
+        checkHitboxCooldownMs = Math.max(0L, config.getLong(
+                "checks.hitbox.cooldown-ms", checkAlertCooldownMs));
+        checkHitboxTestOnly = config.getBoolean("checks.hitbox.test-only", false);
+        noLookHitCheckEnabled = config.getBoolean("checks.nolookhit.enabled", true);
+        noLookHitMaxDistance = Math.max(0.5D,
+                config.getDouble("checks.nolookhit.max-distance", 6.0D));
+        noLookHitHitboxMargin = Math.max(0.0D, Math.min(0.5D,
+                config.getDouble("checks.nolookhit.hitbox-margin", 0.1D)));
+        noLookHitMaxAngle = Math.max(0.0D, Math.min(90.0D,
+                config.getDouble("checks.nolookhit.max-angle", 15.0D)));
+        checkNoLookHitCooldownMs = Math.max(0L, config.getLong(
+                "checks.nolookhit.cooldown-ms", checkAlertCooldownMs));
+        checkNoLookHitTestOnly = config.getBoolean("checks.nolookhit.test-only", false);
         checkAimEnabled = config.getBoolean("checks.aim.enabled", true);
         // The old key was global even though only the aim check used it. Keep
         // reading it as a fallback so an existing config.yml keeps working.
@@ -433,6 +462,50 @@ public final class Config implements Service {
 
     public boolean checkWallTestOnly() {
         return checkWallTestOnly;
+    }
+
+    public boolean hitboxCheckEnabled() {
+        return hitboxCheckEnabled;
+    }
+
+    public double hitboxCheckMaxWidth() {
+        return hitboxCheckMaxWidth;
+    }
+
+    public double hitboxCheckMaxHeight() {
+        return hitboxCheckMaxHeight;
+    }
+
+    public long checkHitboxCooldownMs() {
+        return checkHitboxCooldownMs;
+    }
+
+    public boolean checkHitboxTestOnly() {
+        return checkHitboxTestOnly;
+    }
+
+    public boolean noLookHitCheckEnabled() {
+        return noLookHitCheckEnabled;
+    }
+
+    public double noLookHitMaxDistance() {
+        return noLookHitMaxDistance;
+    }
+
+    public double noLookHitHitboxMargin() {
+        return noLookHitHitboxMargin;
+    }
+
+    public double noLookHitMaxAngle() {
+        return noLookHitMaxAngle;
+    }
+
+    public long checkNoLookHitCooldownMs() {
+        return checkNoLookHitCooldownMs;
+    }
+
+    public boolean checkNoLookHitTestOnly() {
+        return checkNoLookHitTestOnly;
     }
 
     public boolean checkAimEnabled() {

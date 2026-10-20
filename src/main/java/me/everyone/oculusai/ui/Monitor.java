@@ -13,6 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.util.Values;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -178,12 +179,8 @@ public final class Monitor implements Service {
         String dot = data.buffer() >= plugin.config().punishAt() ? "<red>\u25cf"
                 : (data.buffer() >= plugin.config().alertAt() ? "<gold>\u25cf" : "<dark_gray>\u25cf");
 
-        double probability = data.probability();
-        String shown = Double.isNaN(probability) ? "-" : Msg.percent(probability);
-
         return " " + dot + " <white>" + data.name()
-                + " <gray>p " + shown
-                + " <gray>buf " + Msg.round(data.buffer(), 1) + "/" + Msg.round(max, 1)
+                + " " + Values.inline(plugin.config(), data.probability(), data.buffer())
                 + " " + Msg.bar(fraction, 8);
     }
 
@@ -239,7 +236,9 @@ public final class Monitor implements Service {
                 : (data.buffer() >= plugin.config().alertAt() ? "<gold>\u25cf" : "<dark_gray>\u25cf");
 
         return " " + dot + " <white>" + pad(data.name(), 16)
-                + " <gray>" + pad(Msg.percent(data.probability()), 4)
+                + " " + Values.probability(plugin.config(), data.probability())
+                + " <gray>buf " + Values.buffer(plugin.config(), data.buffer())
+                + "<dark_gray>/<gray>" + Msg.round(max, 1)
                 + " " + Msg.bar(fraction, BAR_WIDTH);
     }
 

@@ -19,6 +19,8 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -63,6 +65,10 @@ public final class Updater implements Service {
     private final AtomicReference<String> staged = new AtomicReference<>();
     private HttpClient client;
     private ScheduledFuture<?> task;
+    /** Downloads are minutes of blocking I/O. They must not occupy the shared
+     *  worker: that worker also runs detection, history flushes and the
+     *  service calls, and one 10 MB jar used to stall all of them. */
+    private ExecutorService downloads;
 
     public Updater(OculusAI plugin) {
         this.plugin = plugin;
@@ -77,6 +83,11 @@ public final class Updater implements Service {
                 .connectTimeout(Duration.ofSeconds(15))
                 .followRedirects(HttpClient.Redirect.NORMAL)
                 .build();
+        downloads = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "OculusAI-update-download");
+            thread.setDaemon(true);
+            return thread;
+        });
         long period = Math.max(1L, plugin.config().updateCheckHours()) * 20L * 60L * 60L;
         task = plugin.worker().repeat(this::check, FIRST_CHECK_TICKS * 50L, period * 50L,
                 TimeUnit.MILLISECONDS);
@@ -87,6 +98,10 @@ public final class Updater implements Service {
         if (task != null) {
             task.cancel(false);
             task = null;
+        }
+        if (downloads != null) {
+            downloads.shutdownNow();
+            downloads = null;
         }
     }
 
@@ -131,9 +146,19 @@ public final class Updater implements Service {
             announce(newest, false);
             return;
         }
-        if (download(url, digest)) {
-            staged.set(newest);
-            announce(newest, true);
+        ExecutorService executor = downloads;
+        if (executor == null) {
+            return;
+        }
+        try {
+            executor.execute(() -> {
+                if (download(url, digest)) {
+                    staged.set(newest);
+                    announce(newest, true);
+                }
+            });
+        } catch (java.util.concurrent.RejectedExecutionException stopping) {
+            // The plugin is disabling; leaving the old build alone is correct.
         }
     }
 
@@ -204,6 +229,14 @@ public final class Updater implements Service {
             if (response.statusCode() / 100 != 2) {
                 plugin.getLogger().warning("Update download answered "
                         + response.statusCode() + "; keeping the current build.");
+                return false;
+            }
+            // The original URL was checked before the request. Redirects may
+            // have taken us somewhere else, so check where the bytes actually
+            // came from as well.
+            if (response.uri() == null || !trusted(response.uri().toString())) {
+                plugin.getLogger().warning("Update download redirected to an untrusted "
+                        + "location; refusing the file.");
                 return false;
             }
 

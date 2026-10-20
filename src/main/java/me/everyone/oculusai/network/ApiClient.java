@@ -91,7 +91,7 @@ public final class ApiClient implements Service {
         features.forEach(values::addProperty);
         body.add("features", values);
 
-        return post("/predict", body).thenApply(response -> {
+        return postVoting("/predict", body).thenApply(response -> {
             if (response == null || !response.has("probability")) {
                 return Double.NaN;
             }
@@ -312,7 +312,7 @@ public final class ApiClient implements Service {
                 .timeout(Duration.ofMillis(plugin.config().apiTimeoutMs()))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
-        return send(builder.build());
+        return send(builder.build(), false);
     }
 
     public CompletableFuture<JsonObject> linkStatus(String token) {
@@ -321,14 +321,22 @@ public final class ApiClient implements Service {
                 .timeout(Duration.ofMillis(plugin.config().apiTimeoutMs()))
                 .GET()
                 .build();
-        return send(request);
+        return send(request, false);
     }
 
     private CompletableFuture<JsonObject> post(String path, JsonObject body) {
         HttpRequest.Builder builder = builder(path, plugin.config().apiKey())
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
-        return send(builder.build());
+        return send(builder.build(), false);
+    }
+
+    /** Only prediction is allowed to decide that the service is down. */
+    private CompletableFuture<JsonObject> postVoting(String path, JsonObject body) {
+        HttpRequest.Builder builder = builder(path, plugin.config().apiKey())
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
+        return send(builder.build(), true);
     }
 
     private CompletableFuture<JsonObject> postDataset(String path, JsonObject body) {
@@ -343,11 +351,11 @@ public final class ApiClient implements Service {
                         DATASET_TIMEOUT_MS)))
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString()));
-        return send(builder.build());
+        return send(builder.build(), false);
     }
 
     private CompletableFuture<JsonObject> get(String path) {
-        return send(builder(path, plugin.config().apiKey()).GET().build());
+        return send(builder(path, plugin.config().apiKey()).GET().build(), false);
     }
 
     private void probe() {
@@ -365,7 +373,7 @@ public final class ApiClient implements Service {
     }
 
     private CompletableFuture<JsonObject> health() {
-        return get("/health");
+        return send(builder("/health", plugin.config().apiKey()).GET().build(), true);
     }
 
     private HttpRequest.Builder builder(String path, String key) {
@@ -378,17 +386,24 @@ public final class ApiClient implements Service {
         return builder;
     }
 
-    private CompletableFuture<JsonObject> send(HttpRequest request) {
-        return send(request, true);
-    }
-
-    /** ``votes`` is whether a failure here should mark the service unreachable.
-     *  A long request that times out says nothing about the service's health. */
+    /** ``votes`` is whether this request may change {@link #reachable}.
+     *  Only prediction and the health probe are allowed to: an event report,
+     *  settings refresh or link/pair request failing says nothing about
+     *  whether the model can answer. */
     private CompletableFuture<JsonObject> send(HttpRequest request, boolean votes) {
         return client.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                 .thenApply(response -> {
                     if (votes) {
-                        markReachable(true);
+                        int status = response.statusCode();
+                        if (status / 100 == 2 || status == 429) {
+                            markReachable(true);
+                        } else if (status >= 500) {
+                            // A 500 from the health/predict endpoint is the
+                            // service saying it cannot answer. A 4xx is a
+                            // request/key problem, not a reason to declare the
+                            // whole service unreachable.
+                            markReachable(false);
+                        }
                     }
                     if (response.statusCode() == 429) {
                         noteThrottled(response.body());

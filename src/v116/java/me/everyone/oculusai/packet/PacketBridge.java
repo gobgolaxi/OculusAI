@@ -75,7 +75,7 @@ public final class PacketBridge implements Service {
                 // Only a hit on a player counts as combat. A mob is a
                 // different measurement entirely - it walks a straight line
                 // and never strafes, so honest farming reads like a cheat -
-                // and an entity nobody tracks is not evidence of anything.
+                // and an entity nobody tracks is not proof of anything.
                 if (!plugin.tracker().playerLike(targetEntityId)) {
                     return;
                 }

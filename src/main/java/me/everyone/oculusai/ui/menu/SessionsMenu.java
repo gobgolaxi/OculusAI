@@ -1,5 +1,7 @@
 package me.everyone.oculusai.ui.menu;
 
+import me.everyone.oculusai.ui.gui.Menu;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.ArrayList;
@@ -90,7 +92,7 @@ public final class SessionsMenu extends Menu {
 
     private Material icon(JsonObject session) {
         if (!enabled(session)) {
-            return "evidence".equals(source(session)) ? Material.WRITABLE_BOOK : Material.GRAY_DYE;
+            return Material.GRAY_DYE;
         }
         return "cheater".equals(session.get("label").getAsString())
                 ? Material.REDSTONE : Material.EMERALD;
@@ -101,8 +103,7 @@ public final class SessionsMenu extends Menu {
         String colour = !enabled(session) ? "<dark_gray>"
                 : ("cheater".equals(label) ? "<red>" : "<green>");
         return Msg.parse(colour + session.get("player").getAsString()
-                + " <dark_gray>- <gray>" + label
-                + ("evidence".equals(source(session)) ? " " + plugin.lang().text("sessions.auto-tag") : ""));
+                + " <dark_gray>- <gray>" + label);
     }
 
     private List<String> lore(JsonObject session) {
@@ -112,7 +113,6 @@ public final class SessionsMenu extends Menu {
         lore.add(plugin.lang().text("sessions.windows", Map.of("value", Integer.toString(session.get("samples").getAsInt()))));
         lore.add(plugin.lang().text("sessions.recorded", Map.of("value", session.get("recorded_at").getAsString())));
         String sourceText = switch (source) {
-            case "evidence" -> plugin.lang().text("sessions.source.evidence");
             case "recovered" -> plugin.lang().text("sessions.source.recovered");
             default -> plugin.lang().text("sessions.source.manual");
         };
@@ -122,10 +122,6 @@ public final class SessionsMenu extends Menu {
         lore.add(enabled
                 ? plugin.lang().text("sessions.in-training")
                 : plugin.lang().text("sessions.excluded"));
-        if (!enabled && "evidence".equals(source)) {
-            lore.add(plugin.lang().text("sessions.warning1"));
-            lore.add(plugin.lang().text("sessions.warning2"));
-        }
         lore.add("");
         lore.add(plugin.lang().text(enabled ? "sessions.click.exclude" : "sessions.click.include"));
         lore.add(plugin.lang().text("sessions.click.delete"));

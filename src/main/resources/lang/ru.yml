@@ -103,13 +103,12 @@ dashboard:
     command: "<gray>Команда: <white>%value%"
     line1: "<gray>Не включай это, пока не убедишься,"
     line2: "<gray>что модель реально права на твоём сервере."
-  evidence:
-    name: "<gold>Evidence window"
-    state-on: "<gray>Состояние: <gold>%value%с перед действием"
-    state-off: "<gray>Состояние: <dark_gray>выкл - действует сразу"
-    line1: "<gray>После детекта ещё пишет данные это время,"
-    line2: "<gray>кладёт их как <white>%value%<gray>, и только потом действует."
-    line3: "<gray>Если буфер падает ниже <white>%value%<gray>, всё отменяется."
+  power:
+    name: "<aqua>OculusAI"
+    state-on: "<gray>Состояние: <green>анализ включён"
+    state-off: "<gray>Состояние: <red>анализ выключен"
+    left: "<yellow>ЛКМ <gray>- включить или выключить анализ"
+    right: "<yellow>ПКМ <gray>- открыть настройки"
   alertsound:
     name: "<light_purple>Звук алерта"
     current: "<gray>Текущий: <white>%value%"
@@ -138,8 +137,6 @@ players:
   buffer: "<gray>Буфер: <white>%value%<dark_gray>/%max%"
   last-reading: "<gray>Последний reading: <white>%value%"
   windows: "<gray>Окон проанализировано: <white>%value%"
-  evidence: "<gold>Evidence window: <white>%value%с<gold> осталось"
-  kept-dropped: "<gray>Сохранено <white>%kept%<gray>, отброшено <white>%dropped%"
   recording: "<gold>Записывается <white>%value%<gold> окон"
   only-fighting: "<dark_gray>Readings появляются только во время боя."
   click: "<yellow>Нажми, чтобы смотреть"
@@ -152,19 +149,15 @@ sessions:
     line2: "<gray>потом закоммить через <white>/oai data add ..."
   previous: "<yellow>Предыдущая страница"
   next: "<yellow>Следующая страница"
-  auto-tag: "<gold>auto"
   windows: "<gray>Окон: <white>%value%"
   recorded: "<gray>Записано: <white>%value%"
   source-line: "<gray>Источник: <white>%value%"
   source:
-    evidence: "поймано самим плагином"
     recovered: "восстановлено с диска"
     manual: "записано вручную"
   file: "<gray>Файл: <dark_gray>%value%"
   in-training: "<green>Учитывается в обучении"
   excluded: "<dark_gray>Исключено из обучения"
-  warning1: "<gray>Этот файл плагин поймал сам. Проверь,"
-  warning2: "<gray>что игрок правда читер, прежде чем учить на нём."
   click:
     exclude: "<yellow>Клик <gray>чтобы исключить"
     include: "<yellow>Клик <gray>чтобы включить"
@@ -172,6 +165,40 @@ sessions:
   failed: "<red>Сервис не ответил или отклонил изменение."
   deleted: "<gray>Удалено <white>%value%"
   updated: "<gray>Обновлено <white>%value%"
+settings:
+  title: "Настройки OculusAI"
+  analysis:
+    name: "<aqua>Анализ"
+    on: "<gray>Состояние: <green>включён"
+    off: "<gray>Состояние: <red>выключен"
+    hint: "<gray>Главный выключатель модели и проверок."
+  checks:
+    name: "<aqua>Проверки ударов"
+    on: "<gray>Состояние: <green>включены"
+    off: "<gray>Состояние: <red>выключены"
+    hint: "<gray>Wall и другие проверки на пакет удара."
+  test:
+    name: "<yellow>Тестовый режим"
+    on: "<gray>Состояние: <green>включён"
+    off: "<gray>Состояние: <red>выключен"
+    hint: "<gray>Проверки с test-only не наказывают."
+  wall:
+    name: "<gold>Wall"
+    on: "<gray>Состояние: <green>включён"
+    off: "<gray>Состояние: <red>выключен"
+    hint: "<gray>Удары через стены и закрытые двери."
+  aim:
+    name: "<light_purple>Neuro Aim"
+    on: "<gray>Состояние: <green>включён"
+    off: "<gray>Состояние: <red>выключен"
+    hint: "<gray>Нейросетевая проверка прицела."
+  punish:
+    name: "<red>Наказание"
+    on: "<gray>Состояние: <red>включено"
+    off: "<gray>Состояние: <green>выключено"
+    hint: "<gray>Выполнять команду после подтверждённого детекта."
+  back: "<yellow>Назад в Dashboard"
+  hint: "<dark_gray>ЛКМ по пункту - переключить. ПКМ по OculusAI - настройки."
 history:
   title: "История <dark_gray>%player%"
   no-data: "<dark_gray>У тебя пока нет данных — readings появляются только во время боя."
@@ -314,8 +341,7 @@ monitor-cmd:
   pvp-none: "<dark_gray>Сейчас никто не дерётся."
 forget:
   usage: "<red>Использование: <white>%value%"
-  done: "<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> <white>0%case%%dropped%<gray>. Подозрение начинается заново."
-  case-cancelled: "<gray>, evidence window отменено"
+  done: "<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> <white>0%dropped%<gray>. Подозрение начинается заново."
   dropped: "<gray>, %value% неотправленных окон отброшено"
 alert:
   click: "Следить"
@@ -360,11 +386,11 @@ spawn:
   teleported: "<gray>Телепортирован на спавн тестовой арены."
   disabled: "<red>Тестовый сервер не включён."
 check:
-  test-line: "<dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%"
-  alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%"
+  test-line: "<dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
+  alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   reason:
     wall: "нет видимости"
-    aim: "prob %probability%, buffer %buffer%"
+    aim: "окно выше порога"
   name:
     wall: "Wall"
     aim: "Neuro Aim"

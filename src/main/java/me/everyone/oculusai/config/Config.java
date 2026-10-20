@@ -45,12 +45,7 @@ public final class Config implements Service {
     private boolean punishmentEnabled = false;
     private String punishmentCommand = "";
     private String punishmentBroadcast = "";
-    private boolean evidenceEnabled = true;
-    private int evidenceSeconds = 180;
-    private String evidenceLabel = "cheater";
-    private double evidenceFloor = 0.7D;
-    private double evidenceMinBuffer = 3.0D;
-    private double cancelBelow = 4.0D;
+    private long punishmentCooldownMs = 60_000L;
 
     private int progressSeconds = 15;
     private int monitorPvpSeconds = 5;
@@ -61,12 +56,15 @@ public final class Config implements Service {
 
     private int historyKeep = 2000;
     private int historyFlushSeconds = 30;
+    private int historyMaxPlayers = 5000;
+    private int historyRetentionDays = 30;
 
     private boolean testServerEnabled = false;
     private String testServerWorld = "oculusai_test";
     private int testServerScoreboardTicks = 100;
     private int testServerModelRefreshSeconds = 30;
 
+    private boolean analysisEnabled = true;
     private boolean checksEnabled = true;
     private boolean checkTestMode = true;
     private long checkAlertCooldownMs = 5000L;
@@ -106,11 +104,13 @@ public final class Config implements Service {
         // Empty means "the public service": a fresh install should reach the
         // real API without editing anything, and a local instance is the case
         // that sets the field.
-        apiUrl = stripTrailingSlash(url == null || url.isBlank() ? site : url);
-        apiTimeoutMs = config.getInt("api.timeout-ms", 1500);
+        apiUrl = sanitizeUrl(url == null || url.isBlank() ? site : url);
+        apiTimeoutMs = Math.max(250, Math.min(60_000,
+                config.getInt("api.timeout-ms", 1500)));
         apiKey = config.getString("api.key", "");
         datasetKey = config.getString("api.dataset-key", "");
 
+        analysisEnabled = config.getBoolean("analysis.enabled", true);
         windowTicks = Math.max(3, config.getInt("analysis.window-ticks", 20));
         minAttacks = config.getInt("analysis.min-attacks", 1);
         combatTicks = config.getInt("analysis.combat-ticks", 40);
@@ -122,13 +122,13 @@ public final class Config implements Service {
         updateDownload = config.getBoolean("update.download", true);
         updateCheckHours = Math.max(1, config.getInt("update.check-hours", 6));
 
-        suspicion = config.getDouble("buffer.suspicion", 0.5D);
-        gain = config.getDouble("buffer.gain", 1.0D);
-        decay = config.getDouble("buffer.decay", 1.4D);
-        bufferMax = config.getDouble("buffer.max", 10.0D);
-        alertAt = config.getDouble("buffer.alert-at", 1.7D);
-        punishAt = config.getDouble("buffer.punish-at", 5.0D);
-        alertCooldownMs = config.getLong("buffer.alert-cooldown-ms", 10000L);
+        suspicion = clamp(config.getDouble("buffer.suspicion", 0.5D), 0.0D, 1.0D);
+        gain = Math.max(0.01D, config.getDouble("buffer.gain", 1.0D));
+        decay = Math.max(0.01D, config.getDouble("buffer.decay", 1.4D));
+        bufferMax = Math.max(0.1D, config.getDouble("buffer.max", 10.0D));
+        alertAt = Math.max(0.0D, config.getDouble("buffer.alert-at", 1.7D));
+        punishAt = Math.max(alertAt, config.getDouble("buffer.punish-at", 5.0D));
+        alertCooldownMs = Math.max(0L, config.getLong("buffer.alert-cooldown-ms", 10000L));
         alertSound = config.getString("buffer.alert-sound", "BLOCK_NOTE_BLOCK_BELL");
         alertSoundVolume = (float) config.getDouble("buffer.alert-sound-volume", 1.0D);
         alertSoundPitch = (float) config.getDouble("buffer.alert-sound-pitch", 1.2D);
@@ -137,12 +137,8 @@ public final class Config implements Service {
         punishmentEnabled = config.getBoolean("punishment.enabled", false);
         punishmentCommand = config.getString("punishment.command", "");
         punishmentBroadcast = config.getString("punishment.broadcast", "");
-        evidenceEnabled = config.getBoolean("punishment.evidence.enabled", true);
-        evidenceSeconds = Math.max(1, config.getInt("punishment.evidence.seconds", 180));
-        evidenceLabel = config.getString("punishment.evidence.label", "cheater");
-        evidenceFloor = config.getDouble("punishment.evidence.min-probability", 0.7D);
-        evidenceMinBuffer = config.getDouble("punishment.evidence.min-buffer", 3.0D);
-        cancelBelow = config.getDouble("punishment.evidence.cancel-below", 4.0D);
+        punishmentCooldownMs = Math.max(0L,
+                config.getLong("punishment.cooldown-ms", 60_000L));
 
         progressSeconds = config.getInt("recording.progress-seconds", 15);
         monitorPvpSeconds = Math.max(1, config.getInt("monitor.pvp-seconds", 5));
@@ -153,6 +149,8 @@ public final class Config implements Service {
 
         historyKeep = Math.max(1, config.getInt("history.keep", 2000));
         historyFlushSeconds = Math.max(1, config.getInt("history.flush-seconds", 30));
+        historyMaxPlayers = Math.max(0, config.getInt("history.max-players", 5000));
+        historyRetentionDays = Math.max(0, config.getInt("history.retention-days", 30));
 
         testServerEnabled = config.getBoolean("test-server.enabled", false);
         testServerWorld = config.getString("test-server.world", "oculusai_test");
@@ -177,6 +175,30 @@ public final class Config implements Service {
 
     private String stripTrailingSlash(String url) {
         return url != null && url.endsWith("/") ? url.substring(0, url.length() - 1) : url;
+    }
+
+    /** A malformed URL in config must not throw from every request later. */
+    private String sanitizeUrl(String value) {
+        String candidate = stripTrailingSlash(value == null ? "" : value.trim());
+        try {
+            java.net.URI uri = java.net.URI.create(candidate);
+            String scheme = uri.getScheme();
+            if (uri.getHost() != null
+                    && ("https".equalsIgnoreCase(scheme) || "http".equalsIgnoreCase(scheme))) {
+                return candidate;
+            }
+        } catch (IllegalArgumentException ignored) {
+        }
+        plugin.getLogger().warning("api.url is not a valid http(s) URL; using "
+                + "https://oculusai.space");
+        return "https://oculusai.space";
+    }
+
+    private static double clamp(double value, double min, double max) {
+        if (Double.isNaN(value)) {
+            return min;
+        }
+        return Math.max(min, Math.min(max, value));
     }
 
     public String prefix() {
@@ -311,28 +333,8 @@ public final class Config implements Service {
         return punishmentBroadcast;
     }
 
-    public boolean evidenceEnabled() {
-        return evidenceEnabled;
-    }
-
-    public int evidenceSeconds() {
-        return evidenceSeconds;
-    }
-
-    public String evidenceLabel() {
-        return evidenceLabel;
-    }
-
-    public double evidenceFloor() {
-        return evidenceFloor;
-    }
-
-    public double evidenceMinBuffer() {
-        return evidenceMinBuffer;
-    }
-
-    public double cancelBelow() {
-        return cancelBelow;
+    public long punishmentCooldownMs() {
+        return punishmentCooldownMs;
     }
 
     public String actionBarFormat() {
@@ -368,6 +370,14 @@ public final class Config implements Service {
         return historyFlushSeconds;
     }
 
+    public int historyMaxPlayers() {
+        return historyMaxPlayers;
+    }
+
+    public int historyRetentionDays() {
+        return historyRetentionDays;
+    }
+
     public boolean testServerEnabled() {
         return testServerEnabled;
     }
@@ -382,6 +392,10 @@ public final class Config implements Service {
 
     public int testServerModelRefreshSeconds() {
         return testServerModelRefreshSeconds;
+    }
+
+    public boolean analysisEnabled() {
+        return analysisEnabled;
     }
 
     public boolean checksEnabled() {

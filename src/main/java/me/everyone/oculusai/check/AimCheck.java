@@ -1,9 +1,7 @@
 package me.everyone.oculusai.check;
 
-import java.util.Map;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.player.PlayerData;
-import me.everyone.oculusai.util.Msg;
 
 /** The neural aim check.
  *
@@ -50,8 +48,6 @@ public final class AimCheck implements PlayerCheck {
         if (!plugin.config().checkAimEnabled() || data.buffer() < plugin.config().alertAt()) {
             return CheckResult.pass();
         }
-        return CheckResult.fail(plugin.lang().text("check.reason.aim", Map.of(
-                "probability", Msg.percent(data.probability()),
-                "buffer", Msg.round(data.buffer(), 1))));
+        return CheckResult.fail(plugin.lang().text("check.reason.aim"));
     }
 }

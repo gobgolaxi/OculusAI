@@ -46,7 +46,8 @@ public final class Checks implements Service {
     /** Tests every packet check for an attack. Returns whether the hit should
      *  be cancelled. */
     public boolean onAttack(Player attacker, PlayerData data, int targetEntityId) {
-        if (!plugin.config().checksEnabled() || attacker.hasPermission("oculusai.bypass")) {
+        if (!plugin.config().analysisEnabled() || !plugin.config().checksEnabled()
+                || attacker.hasPermission("oculusai.bypass")) {
             return false;
         }
 
@@ -77,7 +78,8 @@ public final class Checks implements Service {
      *  off the neural one. Aim has its own switch. */
     public boolean onPrediction(PlayerData data) {
         Player player = data.player();
-        if (!player.isOnline() || player.hasPermission("oculusai.bypass")) {
+        if (!plugin.config().analysisEnabled() || !player.isOnline()
+                || player.hasPermission("oculusai.bypass")) {
             return false;
         }
 

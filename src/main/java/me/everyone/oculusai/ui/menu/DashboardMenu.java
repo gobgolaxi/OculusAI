@@ -1,5 +1,7 @@
 package me.everyone.oculusai.ui.menu;
 
+import me.everyone.oculusai.ui.gui.Menu;
+
 import java.util.List;
 import java.util.Map;
 import me.everyone.oculusai.OculusAI;
@@ -12,13 +14,13 @@ import org.bukkit.inventory.ItemStack;
 
 public final class DashboardMenu extends Menu {
 
+    private static final int SLOT_POWER = 4;
     private static final int SLOT_STATUS = 10;
     private static final int SLOT_PLAYERS = 12;
     private static final int SLOT_JOURNAL = 14;
     private static final int SLOT_DUMMY = 16;
 
     private static final int SLOT_PUNISH = 28;
-    private static final int SLOT_EVIDENCE = 30;
     private static final int SLOT_ALERT_SOUND = 32;
     private static final int SLOT_ALWAYS_PROB = 34;
 
@@ -62,6 +64,23 @@ public final class DashboardMenu extends Menu {
             set(slot, edge);
         }
 
+        boolean analysis = plugin.config().analysisEnabled();
+        ItemStack power = item(analysis ? Material.LEVER : Material.STONE_BUTTON,
+                plugin.lang().text("dashboard.power.name"),
+                List.of(
+                        plugin.lang().text(analysis
+                                ? "dashboard.power.state-on" : "dashboard.power.state-off"),
+                        "",
+                        plugin.lang().text("dashboard.power.left"),
+                        plugin.lang().text("dashboard.power.right")));
+        button(SLOT_POWER, power, click -> {
+            if (click.right()) {
+                new SettingsMenu(plugin, viewer).open();
+            } else {
+                toggle("analysis.enabled", true);
+            }
+        });
+
         boolean up = plugin.api().reachable();
         set(SLOT_STATUS, item(up ? Material.LIME_DYE : Material.RED_DYE,
                 plugin.lang().text(up ? "dashboard.service.up" : "dashboard.service.down"),
@@ -91,15 +110,6 @@ public final class DashboardMenu extends Menu {
                         plugin.lang().text(punishing ? "dashboard.punish.state-on" : "dashboard.punish.state-off"),
                         plugin.lang().text("dashboard.punish.command",
                                 Map.of("value", shorten(plugin.config().punishmentCommand()))),
-                        "",
-                        plugin.lang().text("shared.click-toggle"))));
-
-        boolean evidence = plugin.config().evidenceEnabled();
-        set(SLOT_EVIDENCE, item(evidence ? Material.WRITTEN_BOOK : Material.PAPER,
-                plugin.lang().text("dashboard.evidence.name"),
-                List.of(
-                        plugin.lang().text(evidence ? "dashboard.evidence.state-on" : "dashboard.evidence.state-off",
-                                Map.of("value", Integer.toString(plugin.config().evidenceSeconds()))),
                         "",
                         plugin.lang().text("shared.click-toggle"))));
 
@@ -169,7 +179,6 @@ public final class DashboardMenu extends Menu {
     public void onClick(InventoryClickEvent event) {
         switch (event.getSlot()) {
             case SLOT_PUNISH -> toggle("punishment.enabled", false);
-            case SLOT_EVIDENCE -> toggle("punishment.evidence.enabled", true);
             case SLOT_ALERT_SOUND -> cycleAlertSound();
             case SLOT_JOURNAL -> new JournalMenu(plugin, viewer).open();
             case SLOT_PLAYERS -> new PlayersMenu(plugin, viewer).open();

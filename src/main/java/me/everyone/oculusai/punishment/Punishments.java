@@ -2,7 +2,6 @@ package me.everyone.oculusai.punishment;
 
 
 import me.everyone.oculusai.core.Service;
-import me.everyone.oculusai.core.TickLoop;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,13 +10,17 @@ import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.util.Msg;
 import org.bukkit.entity.Player;
 
+/** Executes the configured punishment after a confirmed detection.
+ *
+ * <p>There is deliberately no recording window here. A separate capture made
+ * the plugin keep recording a suspect after the decision had already been
+ * made, delayed the punishment, and produced a second data path whose label
+ * could disagree with the alert. The dataset tools in {@code /oai data} are
+ * the only way to record training windows now. */
 public final class Punishments implements Service {
 
-    private record Case(long openedAt, double buffer, TickLoop.Handle task) {
-    }
-
     private final OculusAI plugin;
-    private final Map<UUID, Case> open = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastPunished = new ConcurrentHashMap<>();
 
     public Punishments(OculusAI plugin) {
         this.plugin = plugin;
@@ -25,76 +28,30 @@ public final class Punishments implements Service {
 
     @Override
     public void disable() {
-        for (Case pending : open.values()) {
-            pending.task().cancel();
-        }
-        open.clear();
+        lastPunished.clear();
     }
 
     public void handle(PlayerData data) {
-        if (!plugin.config().punishmentEnabled() || open.containsKey(data.uuid())) {
+        if (!plugin.config().analysisEnabled()
+                || !plugin.config().punishmentEnabled()
+                || !data.player().isOnline()) {
             return;
         }
-        if (!plugin.config().evidenceEnabled()) {
-            punish(data);
+        long now = System.currentTimeMillis();
+        long cooldown = plugin.config().punishmentCooldownMs();
+        Long previous = lastPunished.get(data.uuid());
+        if (previous != null && now - previous < cooldown) {
             return;
         }
-        if (data.recording()) {
-            punish(data);
-            return;
-        }
-
-        data.recording(true, plugin.config().evidenceLabel(), plugin.config().evidenceFloor());
-        int seconds = plugin.config().evidenceSeconds();
-        TickLoop.Handle task = plugin.ticks().after(seconds * 20L,
-                () -> close(data));
-        open.put(data.uuid(), new Case(System.currentTimeMillis(), data.buffer(), task));
-
-        plugin.alerts().announce(Msg.parse(plugin.config().prefix() + "<gold>Collecting evidence on <white>"
-                + data.name() + "<gold> for " + seconds + "s <dark_gray>(buffer "
-                + Msg.round(data.buffer(), 1) + ")"));
+        lastPunished.put(data.uuid(), now);
+        execute(data);
     }
 
-    private void close(PlayerData data) {
-        open.remove(data.uuid());
-        String label = plugin.config().evidenceLabel();
-        data.recording(false, null);
-
-        int captured = data.recordedCount();
-        int dropped = data.discardedCount();
-        boolean held = data.buffer() >= plugin.config().cancelBelow();
-
-        if (captured > 0) {
-            plugin.datasets().commit(data, label, false, held ? "evidence" : "cancelled");
-        }
-
-        if (!data.player().isOnline()) {
-            return;
-        }
-        String kept = "<gray>kept <white>" + captured + "<gray> windows, dropped <white>"
-                + dropped + "<gray> that were not convincing enough";
-
-        if (!held) {
-            plugin.alerts().announce(Msg.parse(plugin.config().prefix() + "<gray>No action against <white>"
-                    + data.name() + "<gray>: buffer fell to <white>" + Msg.round(data.buffer(), 1)
-                    + "<gray>, " + kept + " <dark_gray>(filed as cancelled, not as cheating)"));
-            return;
-        }
-        plugin.alerts().announce(Msg.parse(plugin.config().prefix() + "<gray>Evidence on <white>" + data.name()
-                + "<gray>: " + kept));
-        punish(data);
+    public void forget(UUID uuid) {
+        lastPunished.remove(uuid);
     }
 
-    private void punish(PlayerData data) {
-        Player player = data.player();
-        if (!player.isOnline()) {
-            return;
-        }
-
-        executeKick(data);
-    }
-
-    private void executeKick(PlayerData data) {
+    private void execute(PlayerData data) {
         Player player = data.player();
         if (!player.isOnline()) {
             return;
@@ -114,10 +71,12 @@ public final class Punishments implements Service {
         } else {
             String commandWithoutSlash = command.startsWith("/")
                     ? command.substring(1) : command;
-            plugin.getServer().dispatchCommand(
-                    plugin.getServer().getConsoleSender(), commandWithoutSlash);
-            plugin.getLogger().info("Executed punishment command for " + data.name()
-                    + ": " + commandWithoutSlash);
+            if (!commandWithoutSlash.isBlank()) {
+                plugin.getServer().dispatchCommand(
+                        plugin.getServer().getConsoleSender(), commandWithoutSlash);
+                plugin.getLogger().info("Executed punishment command for " + data.name()
+                        + ": " + commandWithoutSlash);
+            }
         }
 
         String broadcast = plugin.config().punishmentBroadcast();
@@ -128,25 +87,5 @@ public final class Punishments implements Service {
         plugin.api().reportKick(data.name(), data.uuid().toString(),
                 data.probability(), data.buffer(),
                 command.isBlank() ? "kick" : "command");
-    }
-
-    public boolean pending(UUID uuid) {
-        return open.containsKey(uuid);
-    }
-
-    public long remainingSeconds(UUID uuid) {
-        Case pending = open.get(uuid);
-        if (pending == null) {
-            return 0L;
-        }
-        long elapsed = (System.currentTimeMillis() - pending.openedAt()) / 1000L;
-        return Math.max(0L, plugin.config().evidenceSeconds() - elapsed);
-    }
-
-    public void forget(UUID uuid) {
-        Case pending = open.remove(uuid);
-        if (pending != null) {
-            pending.task().cancel();
-        }
     }
 }

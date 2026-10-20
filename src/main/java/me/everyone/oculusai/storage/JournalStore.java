@@ -94,7 +94,7 @@ public final class JournalStore implements Service {
             history.addLast(new Snapshot(now, data.probability(), data.buffer()));
         }
 
-        private void update(PlayerData data) {
+        private synchronized void update(PlayerData data) {
             long now = System.currentTimeMillis();
             name = data.name();
             lastSeenAt = now;
@@ -142,7 +142,7 @@ public final class JournalStore implements Service {
             return windowsAnalysed;
         }
 
-        public List<Snapshot> history() {
+        public synchronized List<Snapshot> history() {
             return List.copyOf(history);
         }
     }
@@ -150,7 +150,12 @@ public final class JournalStore implements Service {
     private final OculusAI plugin;
     private final Map<UUID, Entry> entries = new ConcurrentHashMap<>();
     private final Map<UUID, StaffState> vanished = new ConcurrentHashMap<>();
-    private volatile boolean dirty;
+    /** Incremented on every mutation. The writer records the value it encoded
+     *  and only clears the "clean up to here" marker if nothing changed while
+     *  it was writing; otherwise the next pass writes the newer state too. */
+    private final java.util.concurrent.atomic.AtomicLong changes =
+            new java.util.concurrent.atomic.AtomicLong();
+    private long written;
     private ScheduledFuture<?> flushTask;
 
     public JournalStore(OculusAI plugin) {
@@ -175,14 +180,14 @@ public final class JournalStore implements Service {
             existing.update(data);
             return existing;
         });
-        dirty = true;
+        changes.incrementAndGet();
     }
 
     /** Убирает игрока из журнала - то, что делает /oai forget. */
     public void forget(UUID uuid) {
         if (entries.remove(uuid) != null) {
-            dirty = true;
-            write();
+            changes.incrementAndGet();
+            plugin.worker().execute(this::write);
         }
     }
 
@@ -263,8 +268,9 @@ public final class JournalStore implements Service {
         return out;
     }
 
-    private void write() {
-        if (!dirty) {
+    private synchronized void write() {
+        long snapshot = changes.get();
+        if (snapshot == written) {
             return;
         }
         JsonObject root = encode(entries.values());
@@ -277,7 +283,7 @@ public final class JournalStore implements Service {
                 writer.write(root.toString());
             }
             Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
-            dirty = false;
+            written = snapshot;
         } catch (IOException failure) {
             plugin.getLogger().log(Level.WARNING, "Could not write the journal", failure);
         }
@@ -366,7 +372,9 @@ public final class JournalStore implements Service {
             flushTask.cancel(false);
             flushTask = null;
         }
-        write();
+        // The worker is still alive; shutdown waits for it, so the final
+        // journal write does not have to block the server thread.
+        plugin.worker().execute(this::write);
         List<UUID> active = new ArrayList<>(vanished.keySet());
         for (UUID uuid : active) {
             Player watcher = plugin.getServer().getPlayer(uuid);

@@ -1,5 +1,7 @@
 package me.everyone.oculusai.ui.menu;
 
+import me.everyone.oculusai.ui.gui.Menu;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -63,13 +65,7 @@ public final class PlayersMenu extends Menu {
         lore.add(Msg.parse(Msg.bar(fraction, 12)));
         lore.add(plugin.lang().text("players.last-reading", Map.of("value", Msg.percent(data.probability()))));
         lore.add(plugin.lang().text("players.windows", Map.of("value", Integer.toString(data.windowsAnalysed()))));
-        if (plugin.punishments().pending(data.uuid())) {
-            lore.add(plugin.lang().text("players.evidence", Map.of(
-                    "value", Long.toString(plugin.punishments().remainingSeconds(data.uuid())))));
-            lore.add(plugin.lang().text("players.kept-dropped", Map.of(
-                    "kept", Integer.toString(data.recordedCount()),
-                    "dropped", Integer.toString(data.discardedCount()))));
-        } else if (data.recording()) {
+        if (data.recording()) {
             lore.add(plugin.lang().text("players.recording", Map.of("value", Integer.toString(data.recordedCount()))));
         }
         if (data.windowsAnalysed() == 0) {

@@ -9,6 +9,7 @@ import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.core.Service;
 import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.util.Values;
 import org.bukkit.entity.Player;
 
 /** One place for everything that happens after a check fails.
@@ -90,8 +91,8 @@ public final class Alerts implements Service {
     }
 
     /** A message that belongs to the alert channel but not to a check - the
-     *  evidence and punishment lines use the same permission and the same
-     *  audience as check alerts. */
+     *  punishment lines use the same permission and the same audience as
+     *  check alerts. */
     public void announce(String message) {
         send(message, false);
     }
@@ -107,7 +108,9 @@ public final class Alerts implements Service {
                         "check", checkName,
                         "detail", detail,
                         "accent", plugin.theme().current().accent(),
-                        "symbol", symbol == null ? "" : symbol));
+                        "symbol", symbol == null ? "" : symbol,
+                        "metrics", Values.inline(plugin.config(),
+                                data.probability(), data.buffer())));
 
         send(message, true);
         plugin.history().note(data.uuid(), data.name(), "check-" + check.id(), detail);

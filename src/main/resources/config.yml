@@ -31,6 +31,9 @@ update:
   check-hours: 6
 
 analysis:
+  # Главный выключатель анализа. Когда false, модель и проверки не запускаются,
+  # но история, журнал и команды продолжают работать.
+  enabled: true
   window-ticks: 20
   # Анализируется только бой по игрокам и манекенам. Удар по мобу или любой
   # другой сущности не считается боем вообще: моб идёт по прямой с постоянной
@@ -76,13 +79,8 @@ punishment:
   # Выполняется от имени консоли. Пусто — обычный kick с причиной ниже.
   command: ""
   broadcast: "<red>%player% <gray>removed after <white>%buffer%<gray> buffer"
-  evidence:
-    enabled: false
-    seconds: 180
-    label: "cheater"
-    min-probability: 0.7
-    min-buffer: 3.0
-    cancel-below: 4.0
+  # Не даёт одному и тому же игроку получать наказание на каждом алерте.
+  cooldown-ms: 60000
 
 recording:
   progress-seconds: 15
@@ -100,6 +98,11 @@ monitor:
 history:
   keep: 2000
   flush-seconds: 30
+  # Сколько игроков держать в памяти одновременно. Старые чистые записи
+  # выгружаются из памяти и при необходимости читаются с диска снова.
+  max-players: 5000
+  # Через сколько дней удалять файлы истории. 0 - хранить вечно.
+  retention-days: 30
 
 test-server:
   enabled: false

@@ -48,6 +48,9 @@ public final class Detection implements Service {
     }
 
     private void tick() {
+        if (!plugin.config().analysisEnabled()) {
+            return;
+        }
         for (PlayerData data : plugin.data().all()) {
             Player player = data.player();
             if (!player.isOnline() || player.hasPermission("oculusai.bypass")) {
@@ -99,7 +102,7 @@ public final class Detection implements Service {
             return;
         }
 
-        if (data.recording() && !data.filtering()) {
+        if (data.recording()) {
             data.record(new ArrayList<>(features.keySet()), toArray(features));
             return;
         }
@@ -119,7 +122,6 @@ public final class Detection implements Service {
                     data.recordScale(scale);
                 }
                 accept(data, probability);
-                sift(data, features, probability);
             });
         }).whenComplete((ignored, throwable) -> inFlight.remove(data.uuid()));
     }
@@ -137,18 +139,6 @@ public final class Detection implements Service {
             total += Math.hypot(yaw, pitch);
         }
         return total;
-    }
-
-    private void sift(PlayerData data, Map<String, Double> features, double probability) {
-        if (!data.filtering()) {
-            return;
-        }
-        if (probability < data.recordingFloor()
-                || data.buffer() < plugin.config().evidenceMinBuffer()) {
-            data.discard();
-            return;
-        }
-        data.record(new ArrayList<>(features.keySet()), toArray(features), probability, data.buffer());
     }
 
     private void accept(PlayerData data, double probability) {

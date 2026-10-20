@@ -1,5 +1,7 @@
 package me.everyone.oculusai.ui.menu;
 
+import me.everyone.oculusai.ui.gui.Menu;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

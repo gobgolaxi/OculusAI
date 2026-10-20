@@ -103,13 +103,12 @@ dashboard:
     command: "<gray>Command: <white>%value%"
     line1: "<gray>Leave this off until you have watched"
     line2: "<gray>the model be right on your own server."
-  evidence:
-    name: "<gold>Evidence window"
-    state-on: "<gray>State: <gold>%value%s before acting"
-    state-off: "<gray>State: <dark_gray>off - acts immediately"
-    line1: "<gray>A detection keeps recording for that long,"
-    line2: "<gray>files it as <white>%value%<gray>, and only then acts."
-    line3: "<gray>A buffer that drains below <white>%value%<gray> calls it off."
+  power:
+    name: "<aqua>OculusAI"
+    state-on: "<gray>State: <green>analysis on"
+    state-off: "<gray>State: <red>analysis off"
+    left: "<yellow>Left click <gray>- toggle analysis"
+    right: "<yellow>Right click <gray>- open settings"
   alertsound:
     name: "<light_purple>Alert Sound"
     current: "<gray>Current: <white>%value%"
@@ -138,8 +137,6 @@ players:
   buffer: "<gray>Buffer: <white>%value%<dark_gray>/%max%"
   last-reading: "<gray>Last reading: <white>%value%"
   windows: "<gray>Windows analysed: <white>%value%"
-  evidence: "<gold>Evidence window: <white>%value%s<gold> left"
-  kept-dropped: "<gray>Kept <white>%kept%<gray>, dropped <white>%dropped%"
   recording: "<gold>Recording <white>%value%<gold> windows"
   only-fighting: "<dark_gray>Readings only appear while fighting."
   click: "<yellow>Click to watch them"
@@ -152,12 +149,10 @@ sessions:
     line2: "<gray>then commit it with <white>/oai data add ..."
   previous: "<yellow>Previous page"
   next: "<yellow>Next page"
-  auto-tag: "<gold>auto"
   windows: "<gray>Windows: <white>%value%"
   recorded: "<gray>Recorded: <white>%value%"
   source-line: "<gray>Source: <white>%value%"
   source:
-    evidence: "caught by the plugin"
     recovered: "rebuilt from disk"
     manual: "recorded by hand"
   file: "<gray>File: <dark_gray>%value%"
@@ -172,6 +167,40 @@ sessions:
   failed: "<red>The service did not answer or refused the change."
   deleted: "<gray>Deleted <white>%value%"
   updated: "<gray>Updated <white>%value%"
+settings:
+  title: "OculusAI settings"
+  analysis:
+    name: "<aqua>Analysis"
+    on: "<gray>State: <green>on"
+    off: "<gray>State: <red>off"
+    hint: "<gray>Master switch for the model and checks."
+  checks:
+    name: "<aqua>Attack checks"
+    on: "<gray>State: <green>on"
+    off: "<gray>State: <red>off"
+    hint: "<gray>Wall and other packet checks."
+  test:
+    name: "<yellow>Test mode"
+    on: "<gray>State: <green>on"
+    off: "<gray>State: <red>off"
+    hint: "<gray>test-only checks do not punish."
+  wall:
+    name: "<gold>Wall"
+    on: "<gray>State: <green>on"
+    off: "<gray>State: <red>off"
+    hint: "<gray>Hits through walls and closed doors."
+  aim:
+    name: "<light_purple>Neuro Aim"
+    on: "<gray>State: <green>on"
+    off: "<gray>State: <red>off"
+    hint: "<gray>The neural aim check."
+  punish:
+    name: "<red>Punishment"
+    on: "<gray>State: <red>on"
+    off: "<gray>State: <green>off"
+    hint: "<gray>Run the configured command after a confirmed detection."
+  back: "<yellow>Back to Dashboard"
+  hint: "<dark_gray>Left click a row to toggle. Right click OculusAI for settings."
 history:
   title: "History <dark_gray>%player%"
   no-data: "<dark_gray>No data for you yet - readings only appear while fighting."
@@ -314,8 +343,7 @@ prob:
   no-data: "<dark_gray>Nothing analysed yet - readings only appear while they fight."
 forget:
   usage: "<red>Usage: <white>%value%"
-  done: "<gray>Forgot <white>%player%<gray>: buffer <white>%buffer%<gray> -> <white>0%case%%dropped%<gray>. Suspicion starts again from nothing."
-  case-cancelled: "<gray>, evidence window cancelled"
+  done: "<gray>Forgot <white>%player%<gray>: buffer <white>%buffer%<gray> -> <white>0%dropped%<gray>. Suspicion starts again from nothing."
   dropped: "<gray>, %value% uncommitted windows dropped"
 alert:
   click: "Watch"
@@ -360,11 +388,11 @@ spawn:
   teleported: "<gray>Teleported to the test arena spawn."
   disabled: "<red>The test server is not enabled."
 check:
-  test-line: "<dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%"
-  alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%"
+  test-line: "<dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
+  alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   reason:
     wall: "no line of sight"
-    aim: "prob %probability%, buffer %buffer%"
+    aim: "window above threshold"
   name:
     wall: "Wall"
     aim: "Neuro Aim"

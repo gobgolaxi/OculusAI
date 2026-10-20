@@ -37,6 +37,9 @@ public final class EntityTracker implements Service {
     private final OculusAI plugin;
     private final Map<Integer, Tracked> tracked = new ConcurrentHashMap<>();
     private final Map<Integer, Deque<Tracked>> history = new ConcurrentHashMap<>();
+    /** Entity id to the online player, refreshed once per tick. WallCheck used
+     *  to scan every online player on every hit to find this mapping. */
+    private final Map<Integer, Player> players = new ConcurrentHashMap<>();
     private TickLoop.Handle task;
 
     public EntityTracker(OculusAI plugin) {
@@ -56,6 +59,7 @@ public final class EntityTracker implements Service {
         }
         tracked.clear();
         history.clear();
+        players.clear();
     }
 
     private void sample() {
@@ -70,6 +74,7 @@ public final class EntityTracker implements Service {
             if (world == null) {
                 continue;
             }
+            players.put(player.getEntityId(), player);
             remember(player.getEntityId(), new Tracked(
                     location.getX(), location.getY(), location.getZ(),
                     player.getWidth(), player.getHeight(), true, world.getUID(), now));
@@ -128,6 +133,13 @@ public final class EntityTracker implements Service {
     public void forget(int entityId) {
         tracked.remove(entityId);
         history.remove(entityId);
+        players.remove(entityId);
+    }
+
+    /** The online player for this entity id, or null for a dummy/unknown. */
+    public Player player(int entityId) {
+        Player player = players.get(entityId);
+        return player != null && player.isOnline() ? player : null;
     }
 
     public Tracked get(int entityId) {

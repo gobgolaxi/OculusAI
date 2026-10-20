@@ -11,13 +11,16 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
@@ -55,11 +58,42 @@ public final class HistoryStore implements Service {
         private final Deque<PlayerData.Reading> readings = new ArrayDeque<>();
         private final Deque<Event> events = new ArrayDeque<>();
         private volatile boolean dirty;
+        private long version;
+
+        private Snapshot snapshot() {
+            synchronized (this) {
+                return new Snapshot(name, firstSeenAt, lastSeenAt, peakBuffer,
+                        peakProbability, windowsAnalysed, alerts, punishments, quits,
+                        lastAlertAt, List.copyOf(readings), List.copyOf(events), version);
+            }
+        }
+
+        private void changed() {
+            version++;
+            dirty = true;
+        }
+
+        private void written(long snapshotVersion) {
+            synchronized (this) {
+                if (version == snapshotVersion) {
+                    dirty = false;
+                }
+            }
+        }
+    }
+
+    private record Snapshot(String name, long firstSeenAt, long lastSeenAt,
+                            double peakBuffer, double peakProbability, int windowsAnalysed,
+                            int alerts, int punishments, int quits, long lastAlertAt,
+                            List<PlayerData.Reading> readings, List<Event> events,
+                            long version) {
     }
 
     private final OculusAI plugin;
     private final Map<UUID, Record> records = new ConcurrentHashMap<>();
     private final Map<String, UUID> byName = new ConcurrentHashMap<>();
+    private final Map<UUID, String> names = new ConcurrentHashMap<>();
+    private final Map<UUID, Long> lastSeen = new ConcurrentHashMap<>();
     private ScheduledFuture<?> flushTask;
 
     public HistoryStore(OculusAI plugin) {
@@ -77,6 +111,9 @@ public final class HistoryStore implements Service {
         }
         loadIndex();
 
+        // Retention is a directory scan; keep it off the enable path.
+        plugin.worker().execute(this::purgeOldFiles);
+
         long period = Math.max(20L, plugin.config().historyFlushSeconds() * 20L) * 50L;
         flushTask = plugin.worker().repeat(this::flushAll, period, period, TimeUnit.MILLISECONDS);
     }
@@ -87,17 +124,23 @@ public final class HistoryStore implements Service {
             flushTask.cancel(false);
             flushTask = null;
         }
-        flushAll();
-        records.clear();
-        byName.clear();
+        // The worker is still alive here (it is shut down after every service),
+        // and shutdown waits for it. Writing the last dirty records there keeps
+        // the server's stop from doing file I/O on the tick thread.
+        plugin.worker().execute(() -> {
+            flushAll();
+            records.clear();
+            byName.clear();
+            names.clear();
+            lastSeen.clear();
+        });
     }
 
     public void record(PlayerData data) {
-        List<PlayerData.Reading> live = data.readings();
-        if (live.isEmpty()) {
+        PlayerData.Reading newest = data.latestReading();
+        if (newest == null) {
             return;
         }
-        PlayerData.Reading newest = live.get(live.size() - 1);
         Record record = load(data.uuid(), data.name());
         synchronized (record) {
             if (!record.readings.isEmpty()
@@ -112,9 +155,9 @@ public final class HistoryStore implements Service {
             record.peakProbability = Math.max(record.peakProbability, newest.probability());
             record.readings.addLast(newest);
             trim(record);
-            record.dirty = true;
+            record.changed();
         }
-        byName.put(data.name().toLowerCase(Locale.ROOT), data.uuid());
+        remember(data.uuid(), data.name(), newest.capturedAt());
     }
 
     public void note(UUID uuid, String name, String type, String detail) {
@@ -122,6 +165,7 @@ public final class HistoryStore implements Service {
         long now = System.currentTimeMillis();
         synchronized (record) {
             record.name = name == null || name.isBlank() ? record.name : name;
+            record.lastSeenAt = Math.max(record.lastSeenAt, now);
             switch (type) {
                 case "alert" -> {
                     record.alerts++;
@@ -141,12 +185,20 @@ public final class HistoryStore implements Service {
             while (record.events.size() > 60) {
                 record.events.pollFirst();
             }
-            record.dirty = true;
+            record.changed();
         }
-        if (name != null && !name.isBlank()) {
-            byName.put(name.toLowerCase(Locale.ROOT), uuid);
+        remember(uuid, name, now);
+        // No synchronous flush here: an alert on the main thread must not wait
+        // for a JSON write. The worker flushes dirty records every period.
+    }
+
+    private void remember(UUID uuid, String name, long seenAt) {
+        lastSeen.merge(uuid, seenAt, Math::max);
+        if (name == null || name.isBlank()) {
+            return;
         }
-        flush(uuid);
+        names.put(uuid, name);
+        byName.put(name.toLowerCase(Locale.ROOT), uuid);
     }
 
     private void trim(Record record) {
@@ -185,6 +237,10 @@ public final class HistoryStore implements Service {
     }
 
     public String nameOf(UUID uuid) {
+        String cached = names.get(uuid);
+        if (cached != null) {
+            return cached;
+        }
         Record record = records.get(uuid);
         if (record == null) {
             record = read(uuid);
@@ -247,15 +303,12 @@ public final class HistoryStore implements Service {
     }
 
     public long lastSeenAt(UUID uuid) {
-        Record record = records.get(uuid);
-        if (record == null) {
-            record = read(uuid);
-            if (record == null) {
-                return 0L;
-            }
-            records.put(uuid, record);
+        Long cached = lastSeen.get(uuid);
+        if (cached != null) {
+            return cached;
         }
-        return record.lastSeenAt;
+        Record record = records.get(uuid);
+        return record == null ? 0L : record.lastSeenAt;
     }
 
     public int windowsAnalysed(UUID uuid) {
@@ -282,21 +335,24 @@ public final class HistoryStore implements Service {
     }
 
     public List<UUID> tracked() {
-        List<UUID> all = new ArrayList<>(byName.values());
-        all.sort(Comparator.comparingLong(this::lastSeenAt).reversed());
+        Set<UUID> unique = new LinkedHashSet<>(byName.values());
+        List<UUID> all = new ArrayList<>(unique);
+        all.sort(Comparator.comparingLong(
+                id -> lastSeen.getOrDefault(id, 0L)).reversed());
         return all;
     }
 
     public void forget(UUID uuid) {
-        Record removed = records.remove(uuid);
-        if (removed != null && removed.name != null) {
-            byName.remove(removed.name.toLowerCase(Locale.ROOT));
-        }
+        records.remove(uuid);
+        byName.entrySet().removeIf(entry -> entry.getValue().equals(uuid));
+        names.remove(uuid);
+        lastSeen.remove(uuid);
         try {
             Files.deleteIfExists(fileOf(uuid));
         } catch (IOException failure) {
             plugin.getLogger().log(Level.WARNING, "Could not delete the history of " + uuid, failure);
         }
+        plugin.worker().execute(this::writeIndex);
     }
 
     private Path directory() {
@@ -308,7 +364,7 @@ public final class HistoryStore implements Service {
     }
 
     private Record load(UUID uuid, String name) {
-        return records.computeIfAbsent(uuid, id -> {
+        Record loaded = records.computeIfAbsent(uuid, id -> {
             Record stored = read(id);
             if (stored != null) {
                 return stored;
@@ -319,6 +375,10 @@ public final class HistoryStore implements Service {
             fresh.lastSeenAt = fresh.firstSeenAt;
             return fresh;
         });
+        if (name != null && !name.isBlank()) {
+            names.putIfAbsent(uuid, name);
+        }
+        return loaded;
     }
 
     private Record read(UUID uuid) {
@@ -363,6 +423,8 @@ public final class HistoryStore implements Service {
                 }
             }
             trim(record);
+            names.put(uuid, record.name);
+            lastSeen.merge(uuid, record.lastSeenAt, Math::max);
             return record;
         } catch (IOException | RuntimeException failure) {
             plugin.getLogger().log(Level.WARNING,
@@ -371,53 +433,56 @@ public final class HistoryStore implements Service {
         }
     }
 
+    /** Queues a single record for the worker. Kept public because history
+     *  mutations outside this class (none today) must not write on the caller. */
     public void flush(UUID uuid) {
-        Record record = records.get(uuid);
-        if (record == null || !record.dirty) {
-            return;
-        }
-        write(uuid, record);
+        plugin.worker().execute(() -> {
+            Record record = records.get(uuid);
+            if (record != null) {
+                writeIfDirty(uuid, record);
+            }
+        });
     }
 
-    public void flushAll() {
+    private void flushAll() {
         for (Map.Entry<UUID, Record> entry : records.entrySet()) {
-            if (entry.getValue().dirty) {
-                write(entry.getKey(), entry.getValue());
-            }
+            writeIfDirty(entry.getKey(), entry.getValue());
         }
         writeIndex();
+        pruneMemory();
     }
 
-    private void write(UUID uuid, Record record) {
+    private void writeIfDirty(UUID uuid, Record record) {
+        Snapshot snapshot = record.snapshot();
+        if (!record.dirty) {
+            return;
+        }
         JsonObject root = new JsonObject();
         JsonArray readings = new JsonArray();
         JsonArray events = new JsonArray();
-        synchronized (record) {
-            root.addProperty("name", record.name == null ? uuid.toString() : record.name);
-            root.addProperty("first_seen_at", record.firstSeenAt);
-            root.addProperty("last_seen_at", record.lastSeenAt);
-            root.addProperty("peak_buffer", record.peakBuffer);
-            root.addProperty("peak_probability", record.peakProbability);
-            root.addProperty("windows", record.windowsAnalysed);
-            root.addProperty("alerts", record.alerts);
-            root.addProperty("punishments", record.punishments);
-            root.addProperty("quits", record.quits);
-            root.addProperty("last_alert_at", record.lastAlertAt);
-            for (PlayerData.Reading reading : record.readings) {
-                JsonObject item = new JsonObject();
-                item.addProperty("t", reading.capturedAt());
-                item.addProperty("p", reading.probability());
-                item.addProperty("b", reading.buffer());
-                readings.add(item);
-            }
-            for (Event event : record.events) {
-                JsonObject item = new JsonObject();
-                item.addProperty("t", event.at());
-                item.addProperty("type", event.type());
-                item.addProperty("detail", event.detail());
-                events.add(item);
-            }
-            record.dirty = false;
+        root.addProperty("name", snapshot.name() == null ? uuid.toString() : snapshot.name());
+        root.addProperty("first_seen_at", snapshot.firstSeenAt());
+        root.addProperty("last_seen_at", snapshot.lastSeenAt());
+        root.addProperty("peak_buffer", snapshot.peakBuffer());
+        root.addProperty("peak_probability", snapshot.peakProbability());
+        root.addProperty("windows", snapshot.windowsAnalysed());
+        root.addProperty("alerts", snapshot.alerts());
+        root.addProperty("punishments", snapshot.punishments());
+        root.addProperty("quits", snapshot.quits());
+        root.addProperty("last_alert_at", snapshot.lastAlertAt());
+        for (PlayerData.Reading reading : snapshot.readings()) {
+            JsonObject item = new JsonObject();
+            item.addProperty("t", reading.capturedAt());
+            item.addProperty("p", reading.probability());
+            item.addProperty("b", reading.buffer());
+            readings.add(item);
+        }
+        for (Event event : snapshot.events()) {
+            JsonObject item = new JsonObject();
+            item.addProperty("t", event.at());
+            item.addProperty("type", event.type());
+            item.addProperty("detail", event.detail());
+            events.add(item);
         }
         root.add("readings", readings);
         root.add("events", events);
@@ -429,10 +494,66 @@ public final class HistoryStore implements Service {
             try (Writer writer = Files.newBufferedWriter(temporary, StandardCharsets.UTF_8)) {
                 writer.write(root.toString());
             }
-            Files.move(temporary, path, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
+            record.written(snapshot.version());
         } catch (IOException failure) {
-            record.dirty = true;
             plugin.getLogger().log(Level.WARNING, "Could not write the history of " + uuid, failure);
+        }
+    }
+
+    /** Keeps the in-memory cache bounded. Only clean records are dropped: a
+     *  dirty one is due to be written by the same pass, so dropping it here
+     *  would lose data. A dropped record is re-read from disk next time. */
+    private void pruneMemory() {
+        int max = plugin.config().historyMaxPlayers();
+        if (max <= 0 || records.size() <= max) {
+            return;
+        }
+        List<Map.Entry<UUID, Record>> ordered = new ArrayList<>(records.entrySet());
+        ordered.sort(Comparator.comparingLong(entry -> entry.getValue().lastSeenAt));
+        for (Map.Entry<UUID, Record> entry : ordered) {
+            if (records.size() <= max) {
+                break;
+            }
+            if (!entry.getValue().dirty) {
+                records.remove(entry.getKey());
+            }
+        }
+    }
+
+    /** Deletes history files older than the configured retention. Runs on the
+     *  worker; records still loaded are left alone so an online player's
+     *  in-memory data cannot be deleted from under them. */
+    private void purgeOldFiles() {
+        int days = plugin.config().historyRetentionDays();
+        if (days <= 0) {
+            return;
+        }
+        long cutoff = System.currentTimeMillis() - days * 24L * 60L * 60L * 1000L;
+        try (Stream<Path> files = Files.list(directory())) {
+            files.filter(path -> path.getFileName().toString().endsWith(".json"))
+                    .filter(path -> !path.getFileName().toString().equals("index.json"))
+                    .forEach(path -> {
+                        try {
+                            if (Files.getLastModifiedTime(path).toMillis() >= cutoff) {
+                                return;
+                            }
+                            String stem = path.getFileName().toString().replace(".json", "");
+                            UUID uuid = UUID.fromString(stem);
+                            if (records.containsKey(uuid)) {
+                                return;
+                            }
+                            byName.entrySet().removeIf(entry -> entry.getValue().equals(uuid));
+                            names.remove(uuid);
+                            lastSeen.remove(uuid);
+                            Files.deleteIfExists(path);
+                        } catch (IOException | IllegalArgumentException ignored) {
+                            // One unreadable name must not stop the sweep.
+                        }
+                    });
+            writeIndex();
+        } catch (IOException failure) {
+            plugin.getLogger().log(Level.WARNING, "Could not prune old history files", failure);
         }
     }
 
@@ -442,10 +563,21 @@ public final class HistoryStore implements Service {
 
     private void writeIndex() {
         JsonObject root = new JsonObject();
-        byName.forEach((name, uuid) -> root.addProperty(name, uuid.toString()));
+        byName.forEach((name, uuid) -> {
+            JsonObject row = new JsonObject();
+            row.addProperty("uuid", uuid.toString());
+            row.addProperty("name", names.getOrDefault(uuid, name));
+            row.addProperty("last_seen_at", lastSeen.getOrDefault(uuid, 0L));
+            root.add(name, row);
+        });
+        Path path = indexFile();
+        Path temporary = path.resolveSibling(path.getFileName() + ".tmp");
         try {
             Files.createDirectories(directory());
-            Files.writeString(indexFile(), root.toString(), StandardCharsets.UTF_8);
+            try (Writer writer = Files.newBufferedWriter(temporary, StandardCharsets.UTF_8)) {
+                writer.write(root.toString());
+            }
+            Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException failure) {
             plugin.getLogger().log(Level.WARNING, "Could not write the history index", failure);
         }
@@ -458,7 +590,26 @@ public final class HistoryStore implements Service {
                 JsonObject root =
                 new JsonParser().parse(reader).getAsJsonObject();
                 for (Map.Entry<String, com.google.gson.JsonElement> entry : root.entrySet()) {
-                    byName.put(entry.getKey(), UUID.fromString(entry.getValue().getAsString()));
+                    String key = entry.getKey();
+                    com.google.gson.JsonElement value = entry.getValue();
+                    if (value.isJsonPrimitive()) {
+                        UUID uuid = UUID.fromString(value.getAsString());
+                        byName.put(key, uuid);
+                        names.putIfAbsent(uuid, key);
+                        continue;
+                    }
+                    if (!value.isJsonObject()) {
+                        continue;
+                    }
+                    JsonObject row = value.getAsJsonObject();
+                    UUID uuid = UUID.fromString(row.get("uuid").getAsString());
+                    byName.put(key, uuid);
+                    if (row.has("name")) {
+                        names.put(uuid, row.get("name").getAsString());
+                    }
+                    if (row.has("last_seen_at")) {
+                        lastSeen.merge(uuid, row.get("last_seen_at").getAsLong(), Math::max);
+                    }
                 }
                 return;
             } catch (IOException | RuntimeException failure) {
@@ -480,6 +631,8 @@ public final class HistoryStore implements Service {
                             Record record = read(uuid);
                             if (record != null && record.name != null) {
                                 byName.put(record.name.toLowerCase(Locale.ROOT), uuid);
+                                names.put(uuid, record.name);
+                                lastSeen.merge(uuid, record.lastSeenAt, Math::max);
                             }
                         } catch (IllegalArgumentException ignored) {
                         }

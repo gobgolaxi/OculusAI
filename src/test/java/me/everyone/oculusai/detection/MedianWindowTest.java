@@ -24,7 +24,7 @@ class MedianWindowTest {
         // The case this exists for: a window held a single swing, several
         // columns went degenerate, and the reading fell to near zero while the
         // player carried on cheating. A mean would pull the answer under the
-        // 0.5 suspicion line and hand back the evidence; the median should not
+        // 0.5 suspicion line and hand back the reading; the median should not
         // notice at all.
         MedianWindow window = new MedianWindow(3);
         window.add(0.90D);

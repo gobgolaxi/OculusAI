@@ -12,7 +12,7 @@ import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.ui.menu.DashboardMenu;
 import me.everyone.oculusai.ui.menu.HistoryMenu;
 import me.everyone.oculusai.ui.menu.JournalMenu;
-import me.everyone.oculusai.ui.menu.Menu;
+import me.everyone.oculusai.ui.gui.Menu;
 import me.everyone.oculusai.ui.menu.SessionsMenu;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -109,7 +109,7 @@ public final class Menus implements Service, Listener {
         if (event.getClickedInventory() != event.getInventory()) {
             return;
         }
-        menu.onClick(event);
+        menu.handleClick(event);
     }
 
     @EventHandler

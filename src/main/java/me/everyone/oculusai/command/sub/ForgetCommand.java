@@ -28,7 +28,6 @@ public final class ForgetCommand extends SubCommand {
             return;
         }
 
-        boolean hadCase = plugin.punishments().pending(data.uuid());
         double buffer = data.buffer();
         int discarded = data.recordedCount();
 
@@ -46,7 +45,6 @@ public final class ForgetCommand extends SubCommand {
         replyKey(sender, "forget.done", Map.of(
                 "player", data.name(),
                 "buffer", Msg.round(buffer, 1),
-                "case", hadCase ? plugin.lang().text("forget.case-cancelled") : "",
                 "dropped", discarded > 0
                         ? plugin.lang().text("forget.dropped", Map.of("value", Integer.toString(discarded)))
                         : ""));

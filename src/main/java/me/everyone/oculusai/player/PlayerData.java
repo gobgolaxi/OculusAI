@@ -49,7 +49,6 @@ public final class PlayerData {
 
     private volatile boolean recording;
     private volatile String recordingLabel;
-    private volatile double recordingFloor = Double.NaN;
     private final List<double[]> recorded = new ArrayList<>();
     private final List<String> recordedNames = new ArrayList<>();
 
@@ -289,31 +288,26 @@ public final class PlayerData {
         }
     }
 
-    public void recording(boolean value, String label) {
-        recording(value, label, Double.NaN);
+    /** The newest reading without copying the whole window. History uses this
+     *  on every prediction; copying two hundred readings to read one was pure
+     *  allocation on the server thread. */
+    public Reading latestReading() {
+        synchronized (readings) {
+            return readings.peekLast();
+        }
     }
 
-    public void recording(boolean value, String label, double floor) {
+    public void recording(boolean value, String label) {
         recording = value;
         recordingLabel = value ? label : null;
-        recordingFloor = value ? floor : Double.NaN;
         if (!value) {
             return;
         }
-        recordingPeak = 0.0;
         synchronized (recorded) {
             recorded.clear();
             recordedContext.clear();
             recordedNames.clear();
         }
-    }
-
-    public boolean filtering() {
-        return recording && !Double.isNaN(recordingFloor);
-    }
-
-    public double recordingFloor() {
-        return recordingFloor;
     }
 
     public boolean recording() {
@@ -324,19 +318,7 @@ public final class PlayerData {
         return recordingLabel;
     }
 
-    private volatile int discarded;
-
-    public void discard() {
-        discarded++;
-    }
-
-    public int discardedCount() {
-        return discarded;
-    }
-
     private final List<double[]> recordedContext = new ArrayList<>();
-
-    private volatile double recordingPeak;
 
     public void record(List<String> names, double[] values) {
         record(names, values, Double.NaN, Double.NaN);
@@ -349,9 +331,6 @@ public final class PlayerData {
             }
             recorded.add(values);
             recordedContext.add(new double[]{probability, buffer});
-            if (!Double.isNaN(buffer) && buffer > recordingPeak) {
-                recordingPeak = buffer;
-            }
         }
     }
 
@@ -359,10 +338,6 @@ public final class PlayerData {
         synchronized (recorded) {
             return List.copyOf(recordedContext);
         }
-    }
-
-    public double recordingPeak() {
-        return recordingPeak;
     }
 
     public List<double[]> recordedSamples() {
@@ -384,8 +359,6 @@ public final class PlayerData {
     }
 
     public void clearRecorded() {
-        discarded = 0;
-        recordingPeak = 0.0;
         synchronized (recorded) {
             recorded.clear();
             recordedContext.clear();

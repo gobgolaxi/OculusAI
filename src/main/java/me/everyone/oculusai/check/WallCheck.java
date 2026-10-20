@@ -23,12 +23,15 @@ public final class WallCheck implements CombatCheck {
     private static final double MIN_DISTANCE = 0.1D;
     private static final double HIT_MARGIN = 0.03D;
     private static final double RAY_EPSILON = 0.005D;
-    private static final int MAX_TRANSPARENT_PASSES = 24;
+    private static final int MAX_TRANSPARENT_PASSES = 16;
     private static final long HISTORY_MS = 500L;
-    private static final int MAX_HISTORY_POSITIONS = 8;
-    private static final int MAX_GRID_POSITIONS = 3;
+    private static final int MAX_HISTORY_POSITIONS = 6;
+    private static final int MAX_GRID_POSITIONS = 2;
     private static final int MAX_EYE_POSITIONS = 4;
-    private static final double[] GRID = {0.04D, 0.25D, 0.5D, 0.75D, 0.96D};
+    // Four points per axis instead of five: the direct bounding-box ray below
+    // catches the normal case, so the grid is only a fallback for edges, and
+    // 64 samples per box is already generous for a 0.6-block target.
+    private static final double[] GRID = {0.05D, 0.35D, 0.65D, 0.95D};
     private static final double[] COARSE = {0.15D, 0.5D, 0.85D};
 
     private final OculusAI plugin;
@@ -117,12 +120,7 @@ public final class WallCheck implements CombatCheck {
     }
 
     private Player findPlayer(int entityId) {
-        for (Player online : plugin.getServer().getOnlinePlayers()) {
-            if (online.getEntityId() == entityId) {
-                return online;
-            }
-        }
-        return null;
+        return plugin.tracker().player(entityId);
     }
 
     private List<BoundingBox> targetBoxes(Player online, int entityId, World world,
@@ -231,34 +229,11 @@ public final class WallCheck implements CombatCheck {
                             List<BoundingBox> targets, double maxDistance) {
         double reach = maxDistance + 2.0D;
         double limit = reach * reach;
-        Vector currentEye = eyes.get(0);
-        BoundingBox current = targets.get(0);
 
-        RayTraceResult closestHit = null;
-        double closestDistance = Double.MAX_VALUE;
-        for (BoundingBox box : targets) {
-            if (currentEye.distanceSquared(box.getCenter()) > limit) {
-                continue;
-            }
-            RayTraceResult hit = box.rayTrace(currentEye, look, reach);
-            if (hit == null) {
-                continue;
-            }
-            double distance = currentEye.distanceSquared(hit.getHitPosition());
-            if (distance < closestDistance) {
-                closestDistance = distance;
-                closestHit = hit;
-            }
-        }
-        if (closestHit != null
-                && closedDoorInPath(world, currentEye, closestHit.getHitPosition())) {
-            return false;
-        }
-        if (!visibleFrom(world, currentEye, look, current, reach)
-                && closedDoorInPath(world, currentEye, current.getCenter())) {
-            return false;
-        }
-
+        // First the exact ray the attacker used. This is the common case and
+        // costs one block trace per target instead of the old duplicate pass
+        // followed by a full sample grid. A closed door is an occluder here,
+        // so no separate door walk is needed.
         for (Vector eye : eyes) {
             for (BoundingBox box : targets) {
                 if (eye.distanceSquared(box.getCenter()) > limit) {
@@ -271,45 +246,25 @@ public final class WallCheck implements CombatCheck {
             }
         }
 
+        // Edge hits (target moving between ticks, or the ray passing beside
+        // the sampled box) get a smaller grid. The old 5x5x5 grid ran for
+        // every eye and every history position, which is what made a busy
+        // fight expensive.
         List<BoundingBox> gridTargets = gridTargets(targets);
-        for (BoundingBox box : gridTargets) {
-            for (Vector point : samples(box, true)) {
-                if (clear(world, eyes.get(0), point)) {
-                    return true;
-                }
-            }
-        }
-        for (int i = 1; i < eyes.size(); i++) {
+        for (Vector eye : eyes) {
+            boolean fine = eye == eyes.get(0);
             for (BoundingBox box : gridTargets) {
-                for (Vector point : samples(box, false)) {
-                    if (clear(world, eyes.get(i), point)) {
+                for (Vector point : samples(box, fine)) {
+                    if (eye.distanceSquared(point) > limit) {
+                        continue;
+                    }
+                    if (clear(world, eye, point)) {
                         return true;
                     }
                 }
             }
         }
         return false;
-    }
-
-    private boolean visibleFrom(World world, Vector eye, Vector look,
-                                BoundingBox box, double reach) {
-        RayTraceResult hit = box.rayTrace(eye, look, reach);
-        if (hit != null && clear(world, eye, hit.getHitPosition())) {
-            return true;
-        }
-        for (Vector point : samples(box, true)) {
-            if (clear(world, eye, point)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean closedDoorInPath(World world, Vector eye, Vector point) {
-        Block block = firstOccluder(world, eye, point);
-        return block != null
-                && block.getBlockData() instanceof Openable openable
-                && !openable.isOpen();
     }
 
     private List<BoundingBox> gridTargets(List<BoundingBox> targets) {

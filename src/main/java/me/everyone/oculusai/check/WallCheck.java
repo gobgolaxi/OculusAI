@@ -2,6 +2,9 @@ package me.everyone.oculusai.check;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.player.EntityTracker;
 import me.everyone.oculusai.player.PlayerData;
@@ -21,6 +24,7 @@ public final class WallCheck implements CombatCheck {
 
     private static final double BOX_MARGIN = 0.02D;
     private static final double MIN_DISTANCE = 0.1D;
+    private static final double MIN_DISTANCE_SQUARED = MIN_DISTANCE * MIN_DISTANCE;
     private static final double HIT_MARGIN = 0.03D;
     private static final double RAY_EPSILON = 0.005D;
     private static final int MAX_TRANSPARENT_PASSES = 16;
@@ -33,6 +37,11 @@ public final class WallCheck implements CombatCheck {
     // 64 samples per box is already generous for a 0.6-block target.
     private static final double[] GRID = {0.05D, 0.35D, 0.65D, 0.95D};
     private static final double[] COARSE = {0.15D, 0.5D, 0.85D};
+
+    /** Material occlusion is state-independent for everything except doors,
+     *  trapdoors and fence gates, which are checked through {@link Openable}
+     *  before this cache is consulted. */
+    private static final Map<Material, Boolean> OCCLUDING = new ConcurrentHashMap<>();
 
     private final OculusAI plugin;
 
@@ -90,23 +99,20 @@ public final class WallCheck implements CombatCheck {
                 || !world.isChunkLoaded(eye.getBlockX() >> 4, eye.getBlockZ() >> 4)) {
             return CheckResult.pass();
         }
-        Block eyeBlock = world.getBlockAt(eye);
-        if (!eyeBlock.isPassable()
-                && eyeBlock.getBoundingBox().contains(eye.getX(), eye.getY(), eye.getZ())) {
-            return CheckResult.pass();
-        }
 
         double maxDistance = plugin.config().wallCheckMaxDistance();
-        List<BoundingBox> targets = targetBoxes(online, targetEntityId, world, eye.toVector(), maxDistance);
+        Vector eyeVector = eye.toVector();
+        List<BoundingBox> targets = targetBoxes(online, targetEntityId, world,
+                eyeVector, maxDistance);
         if (targets.isEmpty()) {
             return CheckResult.pass();
         }
 
         double nearest = Double.MAX_VALUE;
         for (BoundingBox box : targets) {
-            nearest = Math.min(nearest, eye.toVector().distance(box.getCenter()));
+            nearest = Math.min(nearest, eyeVector.distanceSquared(box.getCenter()));
         }
-        if (nearest < MIN_DISTANCE) {
+        if (nearest < MIN_DISTANCE_SQUARED) {
             return CheckResult.pass();
         }
 
@@ -125,16 +131,17 @@ public final class WallCheck implements CombatCheck {
 
     private List<BoundingBox> targetBoxes(Player online, int entityId, World world,
                                           Vector eye, double maxDistance) {
-        List<BoundingBox> boxes = new ArrayList<>();
+        List<BoundingBox> boxes = new ArrayList<>(8);
         if (online != null && online.getBoundingBox().getHeight() > 0.05D) {
             addBox(boxes, online.getBoundingBox());
         }
 
         List<EntityTracker.Tracked> recent = plugin.tracker().recent(entityId);
         long now = System.currentTimeMillis();
+        UUID worldId = world.getUID();
         if (online == null) {
             for (int i = recent.size() - 1; i >= 0; i--) {
-                BoundingBox current = trackedBox(recent.get(i), world, now);
+                BoundingBox current = trackedBox(recent.get(i), worldId, now);
                 if (current != null) {
                     addBox(boxes, current);
                     break;
@@ -143,7 +150,7 @@ public final class WallCheck implements CombatCheck {
         }
         int start = Math.max(0, recent.size() - MAX_HISTORY_POSITIONS);
         for (int i = start; i < recent.size(); i++) {
-            BoundingBox box = trackedBox(recent.get(i), world, now);
+            BoundingBox box = trackedBox(recent.get(i), worldId, now);
             if (box != null) {
                 addBox(boxes, box);
             }
@@ -164,9 +171,9 @@ public final class WallCheck implements CombatCheck {
         return within;
     }
 
-    private BoundingBox trackedBox(EntityTracker.Tracked tracked, World world, long now) {
+    private BoundingBox trackedBox(EntityTracker.Tracked tracked, UUID worldId, long now) {
         if (now - tracked.at() > HISTORY_MS || tracked.worldId() == null
-                || !tracked.worldId().equals(world.getUID())
+                || !tracked.worldId().equals(worldId)
                 || !Double.isFinite(tracked.width()) || tracked.width() <= 0.01D
                 || !Double.isFinite(tracked.height()) || tracked.height() <= 0.05D) {
             return null;
@@ -179,7 +186,10 @@ public final class WallCheck implements CombatCheck {
     }
 
     private void addBox(List<BoundingBox> boxes, BoundingBox box) {
-        BoundingBox expanded = box.clone().expand(BOX_MARGIN);
+        BoundingBox expanded = new BoundingBox(
+                box.getMinX() - BOX_MARGIN, box.getMinY() - BOX_MARGIN,
+                box.getMinZ() - BOX_MARGIN, box.getMaxX() + BOX_MARGIN,
+                box.getMaxY() + BOX_MARGIN, box.getMaxZ() + BOX_MARGIN);
         for (BoundingBox existing : boxes) {
             if (existing.getMinX() == expanded.getMinX()
                     && existing.getMinY() == expanded.getMinY()
@@ -194,23 +204,23 @@ public final class WallCheck implements CombatCheck {
     }
 
     private List<Vector> eyePositions(Player attacker, PlayerData data, World world) {
-        List<Vector> eyes = new ArrayList<>();
+        List<Vector> eyes = new ArrayList<>(MAX_EYE_POSITIONS + 1);
         Vector current = attacker.getEyeLocation().toVector();
         eyes.add(current);
 
         double eyeHeight = attacker.getEyeHeight();
         List<EntityTracker.Tracked> recent = plugin.tracker().recent(data.entityId());
         long now = System.currentTimeMillis();
+        UUID worldId = world.getUID();
         int start = Math.max(0, recent.size() - MAX_EYE_POSITIONS);
         for (int i = start; i < recent.size(); i++) {
             EntityTracker.Tracked tracked = recent.get(i);
             if (now - tracked.at() > HISTORY_MS || tracked.worldId() == null
-                    || !tracked.worldId().equals(world.getUID())) {
+                    || !tracked.worldId().equals(worldId)) {
                 continue;
             }
             Vector eye = new Vector(tracked.x(), tracked.y() + eyeHeight, tracked.z());
-            if (eye.distanceSquared(current) < 1.0E-4D
-                    || !world.getBlockAt(eye.getBlockX(), eye.getBlockY(), eye.getBlockZ()).isPassable()) {
+            if (eye.distanceSquared(current) < 1.0E-4D) {
                 continue;
             }
             eyes.add(eye);
@@ -230,11 +240,31 @@ public final class WallCheck implements CombatCheck {
         double reach = maxDistance + 2.0D;
         double limit = reach * reach;
 
+        // A closed door over the attacker's eye used to make the whole check
+        // return "pass". It is an occluder like any other block now, so being
+        // inside a door no longer turns Wall off for that hit.
+        boolean[] blocked = new boolean[eyes.size()];
+        boolean anyClearEye = false;
+        for (int i = 0; i < eyes.size(); i++) {
+            blocked[i] = eyeOccluded(world, eyes.get(i));
+            anyClearEye |= !blocked[i];
+        }
+        if (!anyClearEye) {
+            // Every eye position is inside an occluder (the old code returned
+            // "pass" for this case, which is why attackers inside a closed
+            // door were never wall-checked).
+            return false;
+        }
+
         // First the exact ray the attacker used. This is the common case and
         // costs one block trace per target instead of the old duplicate pass
         // followed by a full sample grid. A closed door is an occluder here,
         // so no separate door walk is needed.
-        for (Vector eye : eyes) {
+        for (int i = 0; i < eyes.size(); i++) {
+            if (blocked[i]) {
+                continue;
+            }
+            Vector eye = eyes.get(i);
             for (BoundingBox box : targets) {
                 if (eye.distanceSquared(box.getCenter()) > limit) {
                     continue;
@@ -250,11 +280,16 @@ public final class WallCheck implements CombatCheck {
         // the sampled box) get a smaller grid. The old 5x5x5 grid ran for
         // every eye and every history position, which is what made a busy
         // fight expensive.
-        List<BoundingBox> gridTargets = gridTargets(targets);
-        for (Vector eye : eyes) {
-            boolean fine = eye == eyes.get(0);
-            for (BoundingBox box : gridTargets) {
-                for (Vector point : samples(box, fine)) {
+        List<SampleBox> grid = sampleBoxes(targets);
+        for (int i = 0; i < eyes.size(); i++) {
+            if (blocked[i]) {
+                continue;
+            }
+            Vector eye = eyes.get(i);
+            boolean fine = i == 0;
+            for (SampleBox target : grid) {
+                List<Vector> points = fine ? target.fine() : target.coarse();
+                for (Vector point : points) {
                     if (eye.distanceSquared(point) > limit) {
                         continue;
                     }
@@ -267,14 +302,29 @@ public final class WallCheck implements CombatCheck {
         return false;
     }
 
-    private List<BoundingBox> gridTargets(List<BoundingBox> targets) {
+    private boolean eyeOccluded(World world, Vector eye) {
+        Block block = world.getBlockAt(
+                (int) Math.floor(eye.getX()),
+                (int) Math.floor(eye.getY()),
+                (int) Math.floor(eye.getZ()));
+        return occludes(block);
+    }
+
+    private List<SampleBox> sampleBoxes(List<BoundingBox> targets) {
+        List<BoundingBox> selected;
         if (targets.size() <= MAX_GRID_POSITIONS + 1) {
-            return targets;
+            selected = targets;
+        } else {
+            selected = new ArrayList<>(MAX_GRID_POSITIONS + 1);
+            selected.add(targets.get(0));
+            selected.addAll(targets.subList(targets.size() - MAX_GRID_POSITIONS, targets.size()));
         }
-        List<BoundingBox> grid = new ArrayList<>(MAX_GRID_POSITIONS + 1);
-        grid.add(targets.get(0));
-        grid.addAll(targets.subList(targets.size() - MAX_GRID_POSITIONS, targets.size()));
-        return grid;
+
+        List<SampleBox> boxes = new ArrayList<>(selected.size());
+        for (BoundingBox box : selected) {
+            boxes.add(new SampleBox(box, samples(box, true), samples(box, false)));
+        }
+        return boxes;
     }
 
     private List<Vector> samples(BoundingBox box, boolean fine) {
@@ -310,10 +360,13 @@ public final class WallCheck implements CombatCheck {
         direction.multiply(1.0D / distance);
         double remaining = distance - HIT_MARGIN;
         Vector start = eye.clone();
+        Location origin = new Location(world, start.getX(), start.getY(), start.getZ());
         for (int i = 0; i < MAX_TRANSPARENT_PASSES; i++) {
+            origin.setX(start.getX());
+            origin.setY(start.getY());
+            origin.setZ(start.getZ());
             RayTraceResult hit = world.rayTraceBlocks(
-                    new Location(world, start.getX(), start.getY(), start.getZ()),
-                    direction, remaining, FluidCollisionMode.NEVER, false);
+                    origin, direction, remaining, FluidCollisionMode.NEVER, false);
             if (hit == null || hit.getHitBlock() == null) {
                 return null;
             }
@@ -340,13 +393,24 @@ public final class WallCheck implements CombatCheck {
         if (block.getBlockData() instanceof Openable openable) {
             return !openable.isOpen();
         }
+
+        Material material = block.getType();
+        Boolean cached = OCCLUDING.get(material);
+        if (cached != null) {
+            return cached;
+        }
+        boolean occludes = occludesMaterial(block);
+        OCCLUDING.put(material, occludes);
+        return occludes;
+    }
+
+    private static boolean occludesMaterial(Block block) {
         if (block.isPassable()) {
             return false;
         }
-        Material material = block.getType();
-        String name = material.name();
+        String name = block.getType().name();
         return !(name.equals("GLASS")
-                || name.endsWith("_STAINED_GLASS")
+                || name.endsWith("_GLASS")
                 || name.endsWith("GLASS_PANE"))
                 && !name.endsWith("_LEAVES")
                 && !name.endsWith("_BARS")
@@ -369,5 +433,8 @@ public final class WallCheck implements CombatCheck {
                 && !name.equals("NETHER_PORTAL")
                 && !name.equals("POWDER_SNOW")
                 && !name.equals("BUBBLE_COLUMN");
+    }
+
+    private record SampleBox(BoundingBox box, List<Vector> fine, List<Vector> coarse) {
     }
 }

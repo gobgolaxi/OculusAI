@@ -122,6 +122,9 @@ public final class Alerts implements Service {
                         "metrics", metrics
                                 ? Values.inline(plugin.config(), data.probability(), data.buffer())
                                 : ""));
+        // A custom or not-yet-migrated language line can still mention a
+        // placeholder this check does not supply. Never print it raw.
+        message = message.replaceAll("%[A-Za-z0-9_-]+%", "");
         if (!metrics) {
             message = withoutTrailingSeparator(message);
         }

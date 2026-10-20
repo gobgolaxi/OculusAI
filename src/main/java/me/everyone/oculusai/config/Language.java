@@ -24,6 +24,17 @@ public final class Language implements Service {
      *  files keep custom translations, but this known bundled value is safe
      *  to replace with the current line. */
     private static final String LEGACY_AIM_REASON = "prob %probability%, buffer %buffer%";
+    /** The old HitBox reason described the target's dimensions. The check no
+     *  longer produces those values, so an unchanged language file would show
+     *  the placeholders literally. */
+    private static final String LEGACY_HITBOX_REASON_EN =
+            "target hitbox %width%x%height% exceeds %max-width%x%max-height%";
+    private static final String LEGACY_HITBOX_REASON_RU =
+            "хитбокс цели %width%x%height% больше %max-width%x%max-height%";
+    private static final String LEGACY_HITBOX_DESC_EN =
+            "<gray>Hits a target whose hitbox is larger than allowed.";
+    private static final String LEGACY_HITBOX_DESC_RU =
+            "<gray>Удар по цели с увеличенным хитбоксом.";
     private static final String LEGACY_STATUS_EN =
             "<gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| "
                     + "<gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| "
@@ -44,6 +55,8 @@ public final class Language implements Service {
                     + "<gray>Наказание %punish%";
     private static final List<String> REMOVED_KEYS = List.of(
             "check-settings.nolookhit",
+            "check-settings.hitbox.max-width",
+            "check-settings.hitbox.max-height",
             "check.name.nolookhit",
             "check.desc.nolookhit",
             "check.reason.nolookhit",
@@ -202,6 +215,25 @@ public final class Language implements Service {
             migrated++;
         }
 
+        String currentHitboxReason = lang.getString("check.reason.hitbox");
+        String bundledHitboxReason = defaults.getString("check.reason.hitbox");
+        if (bundledHitboxReason != null && !bundledHitboxReason.equals(currentHitboxReason)
+                && (LEGACY_HITBOX_REASON_EN.equals(currentHitboxReason)
+                || LEGACY_HITBOX_REASON_RU.equals(currentHitboxReason)
+                || containsOldHitboxPlaceholders(currentHitboxReason))) {
+            lang.set("check.reason.hitbox", bundledHitboxReason);
+            migrated++;
+        }
+
+        String currentHitboxDesc = lang.getString("check.desc.hitbox");
+        String bundledHitboxDesc = defaults.getString("check.desc.hitbox");
+        if (bundledHitboxDesc != null && !bundledHitboxDesc.equals(currentHitboxDesc)
+                && (LEGACY_HITBOX_DESC_EN.equals(currentHitboxDesc)
+                || LEGACY_HITBOX_DESC_RU.equals(currentHitboxDesc))) {
+            lang.set("check.desc.hitbox", bundledHitboxDesc);
+            migrated++;
+        }
+
         String currentStatus = lang.getString("checks.status");
         String bundledStatus = defaults.getString("checks.status");
         if (bundledStatus != null && !bundledStatus.equals(currentStatus)
@@ -232,6 +264,13 @@ public final class Language implements Service {
                     "Could not save new language keys into " + file.getAbsolutePath()
                             + "; they still resolve from the bundled defaults", exception);
         }
+    }
+
+    private boolean containsOldHitboxPlaceholders(String value) {
+        return value != null && (value.contains("%width%")
+                || value.contains("%height%")
+                || value.contains("%max-width%")
+                || value.contains("%max-height%"));
     }
 
     private int ensureMetrics(String key) {

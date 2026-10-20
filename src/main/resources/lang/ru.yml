@@ -309,7 +309,6 @@ monitor-cmd:
   more: "<dark_gray>+%value% ещё"
   global-on: "<green>Слежу за всеми в пвп. <gray>Повтори команду - выключить."
   global-off: "<gray>Слежение за пвп выключено."
-  pvp-header: "<gray>Сейчас в пвп: <white>%count%<gray>."
   pvp-none: "<dark_gray>Сейчас никто не дерётся."
 forget:
   usage: "<red>Использование: <white>%value%"

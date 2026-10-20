@@ -304,7 +304,6 @@ monitor-cmd:
   more: "<dark_gray>+%value% more"
   global-on: "<green>Watching everybody in PvP. <gray>Say it again to stop."
   global-off: "<gray>PvP watch is off."
-  pvp-header: "<gray>In PvP right now: <white>%count%<gray>."
   pvp-none: "<dark_gray>Nobody is fighting right now."
 prob:
   stopped: "<gray>Stopped watching."

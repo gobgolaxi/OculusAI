@@ -150,12 +150,13 @@ public final class MonitorManager implements Manager {
             }
             frame = Msg.parse(plugin.config().prefix() + plugin.lang().text("monitor-cmd.pvp-none"));
         } else {
+            // Без заголовка: в чате нужны сами строки, а не счётчик над ними.
             StringBuilder out = new StringBuilder();
-            out.append(Msg.parse(plugin.config().prefix()
-                    + plugin.lang().text("monitor-cmd.pvp-header",
-                    Map.of("count", Integer.toString(rows.size())))));
-            for (PlayerData data : rows) {
-                out.append('\n').append(pvpRow(data));
+            for (int i = 0; i < rows.size(); i++) {
+                if (i > 0) {
+                    out.append('\n');
+                }
+                out.append(pvpRow(rows.get(i)));
             }
             frame = Msg.parse(out.toString());
         }

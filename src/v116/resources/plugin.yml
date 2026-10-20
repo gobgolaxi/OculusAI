@@ -1,0 +1,46 @@
+name: OculusAI
+version: '${version}'
+
+main: me.everyone.oculusai.OculusAI
+api-version: '1.16'
+load: POSTWORLD
+author: everyone
+description: Aim analysis for Paper, backed by a neural network served over HTTP.
+
+depend: [ProtocolLib]
+softdepend: [WorldGuard, WorldEdit]
+
+commands:
+  oculusai:
+    description: Main OculusAI command.
+    usage: /oai help
+    aliases: [oai, ai]
+
+permissions:
+  oculusai.command:
+    description: Access to /oai.
+    default: false
+  oculusai.alerts:
+    description: Receive detection alerts.
+    default: false
+  oculusai.journal:
+    description: Open the live suspicion journal.
+    default: false
+  oculusai.data:
+    description: Record and label training data.
+    default: false
+  oculusai.bypass:
+    description: Never analysed.
+    default: false
+  oculusai.npc:
+    description: Spawn a sparring dummy that attacks you.
+    default: false
+  oculusai.connect:
+    description: Bind this server to a OculusAI account.
+    default: op
+  oculusai.report:
+    description: Report a player to the panel.
+    default: true
+  oculusai.diag:
+    description: Inspect why a player's windows are or are not analysed.
+    default: op

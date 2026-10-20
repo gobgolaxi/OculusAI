@@ -81,6 +81,13 @@ tasks {
 
     processResources {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        // The stamp says which flavour this jar is, and the update check asks
+        // the service for a build of that exact flavour. Both are project
+        // properties, so Gradle has to be told they are inputs: without this
+        // the task is "up to date" after the first build and every later jar
+        // carries the stamp of the jar built before it.
+        inputs.property("flavour", mcVersion)
+        inputs.property("buildVersion", project.version.toString())
         // `flavour` is which of the two jars this is. The update check has to
         // ask for its own flavour by name - handing a 1.21 build to a 1.16
         // server would be worse than not updating at all - and the build is

@@ -2,6 +2,7 @@ build/
 .gradle/
 run/
 *.log
+*.rar
 bin/
 libs/
 

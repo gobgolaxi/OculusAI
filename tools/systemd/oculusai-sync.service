@@ -1,0 +1,7 @@
+[Unit]
+Description=OculusAI: обновление исходников из GitHub
+Documentation=file://%h/projects/OculusAI/tools/git-autosync.sh
+
+[Service]
+Type=oneshot
+ExecStart=%h/projects/OculusAI/tools/git-autosync.sh

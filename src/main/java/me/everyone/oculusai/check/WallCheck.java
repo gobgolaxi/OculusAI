@@ -30,8 +30,9 @@ public final class WallCheck implements CombatCheck {
     private static final int MAX_TRANSPARENT_PASSES = 16;
     private static final long HISTORY_MS = 500L;
     private static final int MAX_HISTORY_POSITIONS = 6;
-    private static final int MAX_GRID_POSITIONS = 2;
+    private static final int MAX_GRID_POSITIONS = 1;
     private static final int MAX_EYE_POSITIONS = 4;
+    private static final int MAX_GRID_EYES = 2;
     // Four points per axis instead of five: the direct bounding-box ray below
     // catches the normal case, so the grid is only a fallback for edges, and
     // 64 samples per box is already generous for a 0.6-block target.
@@ -277,11 +278,14 @@ public final class WallCheck implements CombatCheck {
         }
 
         // Edge hits (target moving between ticks, or the ray passing beside
-        // the sampled box) get a smaller grid. The old 5x5x5 grid ran for
-        // every eye and every history position, which is what made a busy
-        // fight expensive.
+        // the sampled box) get a smaller grid. The old grid ran for every
+        // history eye and every target box, which is what made a busy fight
+        // expensive. The direct rays above already cover all history eyes;
+        // this fallback only needs the current eye and the most recent one,
+        // and only the current and latest target boxes.
         List<SampleBox> grid = sampleBoxes(targets);
-        for (int i = 0; i < eyes.size(); i++) {
+        int gridEyes = Math.min(eyes.size(), MAX_GRID_EYES);
+        for (int i = 0; i < gridEyes; i++) {
             if (blocked[i]) {
                 continue;
             }

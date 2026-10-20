@@ -11,24 +11,24 @@ import org.bukkit.command.CommandSender;
 
 public final class MonitorCommand extends SubCommand {
 
+    /** The word that brings back the old list: everyone who looks suspicious. */
+    private static final String LIST = "list";
+
     public MonitorCommand(OculusAI plugin) {
         super(plugin, "monitor", List.of("mon", "watch"), "oculusai.alerts",
-                "/oai monitor [player...]",
-                "Live list of who looks suspicious.", false);
+                "/oai monitor [list|player...]",
+                "Watch everybody in PvP, or a list of who looks suspicious.", false);
     }
 
     @Override
     public void execute(CommandSender sender, String[] args) {
         MonitorManager monitors = plugin.monitors();
 
+        // Without a name this is the watch over everybody: on, and off again
+        // by the same command.
         if (args.length == 0) {
-            if (monitors.watching(sender)) {
-                monitors.stop(sender);
-                replyKey(sender, "monitor-cmd.stopped");
-                return;
-            }
-            monitors.start(sender, List.of());
-            replyKey(sender, "monitor-cmd.started-all");
+            boolean on = monitors.toggleGlobal();
+            replyKey(sender, on ? "monitor-cmd.global-on" : "monitor-cmd.global-off");
             return;
         }
 
@@ -36,6 +36,12 @@ public final class MonitorCommand extends SubCommand {
         if (first.equals("stop") || first.equals("off") || first.equals("clear")) {
             boolean was = monitors.stop(sender);
             replyKey(sender, was ? "monitor-cmd.stopped" : "monitor-cmd.not-watching");
+            return;
+        }
+
+        if (first.equals(LIST)) {
+            monitors.start(sender, List.of());
+            replyKey(sender, "monitor-cmd.started-all");
             return;
         }
 
@@ -48,9 +54,9 @@ public final class MonitorCommand extends SubCommand {
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 1) {
             List<String> options = new ArrayList<>(plugin.monitors().onlineNames(args[0]));
-            for (String stop : List.of("stop", "off")) {
-                if (stop.startsWith(args[0].toLowerCase(Locale.ROOT))) {
-                    options.add(stop);
+            for (String option : List.of(LIST, "stop", "off")) {
+                if (option.startsWith(args[0].toLowerCase(Locale.ROOT))) {
+                    options.add(option);
                 }
             }
             return options;

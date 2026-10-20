@@ -41,6 +41,10 @@ public final class MonitorManager implements Manager {
     private final OculusAI plugin;
     private final Map<String, Session> sessions = new ConcurrentHashMap<>();
     private BukkitTask task;
+    /** The watch over everybody, switched on by /oai monitor. */
+    private volatile boolean global;
+    /** Ticks since the watch was switched on - used to say "nobody" now and then. */
+    private int globalTicks;
 
     public MonitorManager(OculusAI plugin) {
         this.plugin = plugin;
@@ -59,6 +63,19 @@ public final class MonitorManager implements Manager {
             task = null;
         }
         sessions.clear();
+        global = false;
+    }
+
+    /** Whether the watch over everybody is on. */
+    public boolean globalWatching() {
+        return global;
+    }
+
+    /** Switches the watch over everybody on or off. Returns the new state. */
+    public boolean toggleGlobal() {
+        global = !global;
+        globalTicks = 0;
+        return global;
     }
 
     public static String idOf(CommandSender sender) {
@@ -91,6 +108,9 @@ public final class MonitorManager implements Manager {
     }
 
     private void tick() {
+        if (global) {
+            broadcastPvp();
+        }
         for (Session session : new ArrayList<>(sessions.values())) {
             if (session.sender instanceof Player player && !player.isOnline()) {
                 sessions.remove(session.id);
@@ -102,6 +122,67 @@ public final class MonitorManager implements Manager {
                 session.lines++;
             }
         }
+    }
+
+    /** The watch over everybody: who is fighting right now, and how they read.
+     *
+     * <p>Only hits on other players count - the plugin does not record a swing
+     * at a mob as combat at all - so this is the list of people actually in a
+     * fight, not the list of people swinging at things. */
+    private void broadcastPvp() {
+        List<PlayerData> rows = new ArrayList<>();
+        long window = plugin.config().monitorPvpMs();
+        for (PlayerData data : plugin.data().all()) {
+            if (data.inCombat(window)) {
+                rows.add(data);
+            }
+        }
+        rows.sort(Comparator.comparingDouble(PlayerData::buffer).reversed());
+
+        String frame;
+        if (rows.isEmpty()) {
+            // Nothing happens most of the time. Saying so every second would
+            // bury the chat, so it is said once in a while - enough to show
+            // that the watch is alive.
+            if (globalTicks % 5 != 0) {
+                globalTicks++;
+                return;
+            }
+            frame = Msg.parse(plugin.config().prefix() + plugin.lang().text("monitor-cmd.pvp-none"));
+        } else {
+            StringBuilder out = new StringBuilder();
+            out.append(Msg.parse(plugin.config().prefix()
+                    + plugin.lang().text("monitor-cmd.pvp-header",
+                    Map.of("count", Integer.toString(rows.size())))));
+            for (PlayerData data : rows) {
+                out.append('\n').append(pvpRow(data));
+            }
+            frame = Msg.parse(out.toString());
+        }
+        globalTicks++;
+
+        plugin.getServer().getConsoleSender().sendMessage(frame);
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (online.hasPermission("oculusai.alerts")) {
+                online.sendMessage(frame);
+            }
+        }
+    }
+
+    private String pvpRow(PlayerData data) {
+        double max = plugin.config().bufferMax();
+        double fraction = max > 0.0D ? data.buffer() / max : 0.0D;
+
+        String dot = data.buffer() >= plugin.config().punishAt() ? "<red>\u25cf"
+                : (data.buffer() >= plugin.config().alertAt() ? "<gold>\u25cf" : "<dark_gray>\u25cf");
+
+        double probability = data.probability();
+        String shown = Double.isNaN(probability) ? "-" : Msg.percent(probability);
+
+        return " " + dot + " <white>" + data.name()
+                + " <gray>p " + shown
+                + " <gray>buf " + Msg.round(data.buffer(), 1) + "/" + Msg.round(max, 1)
+                + " " + Msg.bar(fraction, 8);
     }
 
     private String frame(Session session) {

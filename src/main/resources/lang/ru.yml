@@ -307,6 +307,10 @@ monitor-cmd:
   not-watching: "<gray>Монитор выключен."
   empty: "<dark_gray>Пока пусто."
   more: "<dark_gray>+%value% ещё"
+  global-on: "<green>Слежу за всеми в пвп. <gray>Повтори команду - выключить."
+  global-off: "<gray>Слежение за пвп выключено."
+  pvp-header: "<gray>Сейчас в пвп: <white>%count%<gray>."
+  pvp-none: "<dark_gray>Сейчас никто не дерётся."
 forget:
   usage: "<red>Использование: <white>%value%"
   done: "<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> <white>0%case%%dropped%<gray>. Подозрение начинается заново."

@@ -54,6 +54,7 @@ public final class ConfigManager implements Manager {
     private double cancelBelow = 4.0D;
 
     private int progressSeconds = 15;
+    private int monitorPvpSeconds = 5;
     private String actionBarFormat = "";
     private int hologramLines = 6;
     private int hologramSeconds = 30;
@@ -136,6 +137,7 @@ public final class ConfigManager implements Manager {
         cancelBelow = config.getDouble("punishment.evidence.cancel-below", 4.0D);
 
         progressSeconds = config.getInt("recording.progress-seconds", 15);
+        monitorPvpSeconds = Math.max(1, config.getInt("monitor.pvp-seconds", 5));
         actionBarFormat = config.getString("display.actionbar", "");
         hologramLines = config.getInt("display.hologram-lines", 6);
         hologramSeconds = config.getInt("display.hologram-seconds", 30);
@@ -340,6 +342,11 @@ public final class ConfigManager implements Manager {
 
     public int progressSeconds() {
         return progressSeconds;
+    }
+
+    /** How long a player counts as "in PvP" after the last hit on a player. */
+    public long monitorPvpMs() {
+        return monitorPvpSeconds * 1000L;
     }
 
     public int historyKeep() {

@@ -1,6 +1,7 @@
 package me.everyone.oculusai.ui.menu;
 
 import java.util.List;
+import java.util.Map;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.ui.gui.Menu;
 import org.bukkit.Material;
@@ -11,11 +12,9 @@ import org.bukkit.inventory.ItemStack;
 public final class SettingsMenu extends Menu {
 
     private static final int SLOT_ANALYSIS = 10;
-    private static final int SLOT_CHECKS = 11;
-    private static final int SLOT_TEST = 12;
-    private static final int SLOT_WALL = 13;
-    private static final int SLOT_AIM = 14;
-    private static final int SLOT_PUNISH = 15;
+    private static final int SLOT_CHECKS = 12;
+    private static final int SLOT_TEST = 14;
+    private static final int SLOT_PUNISH = 16;
     private static final int SLOT_BACK = 22;
 
     public SettingsMenu(OculusAI plugin, Player viewer) {
@@ -40,18 +39,18 @@ public final class SettingsMenu extends Menu {
         toggleButton(SLOT_ANALYSIS, toggleItem(Material.COMPARATOR, "analysis",
                         plugin.config().analysisEnabled()),
                 "analysis.enabled", true);
-        toggleButton(SLOT_CHECKS, toggleItem(Material.SHIELD, "checks",
-                        plugin.config().checksEnabled()),
-                "checks.enabled", true);
+        button(SLOT_CHECKS, item(Material.SHIELD,
+                        plugin.lang().text("settings.checks.name"),
+                        List.of(
+                                plugin.lang().text("settings.checks.count",
+                                        Map.of("value", Integer.toString(
+                                                plugin.checks().all().size()))),
+                                plugin.lang().text("settings.checks.click"))),
+                () -> new ChecksMenu(plugin, viewer).open());
+
         toggleButton(SLOT_TEST, toggleItem(Material.LEVER, "test",
                         plugin.config().checkTestMode()),
                 "checks.test-mode", true);
-        toggleButton(SLOT_WALL, toggleItem(Material.IRON_DOOR, "wall",
-                        plugin.config().wallCheckEnabled()),
-                "checks.wall.enabled", true);
-        toggleButton(SLOT_AIM, toggleItem(Material.ENDER_EYE, "aim",
-                        plugin.config().checkAimEnabled()),
-                "checks.aim.enabled", true);
         toggleButton(SLOT_PUNISH, toggleItem(Material.IRON_SWORD, "punish",
                         plugin.config().punishmentEnabled()),
                 "punishment.enabled", false);

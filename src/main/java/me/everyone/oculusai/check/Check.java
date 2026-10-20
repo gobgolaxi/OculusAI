@@ -10,6 +10,11 @@ public interface Check {
 
     String id();
 
+    /** Config key that turns this check on and off. */
+    default String enabledPath() {
+        return "checks." + id() + ".enabled";
+    }
+
     /** Report as a test: the alert is marked, but the rule still applies. */
     default boolean testOnly() {
         return false;

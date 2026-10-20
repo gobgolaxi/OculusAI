@@ -38,7 +38,7 @@ public final class PlayerRegistry implements Service {
         return players.compute(player.getUniqueId(), (uuid, existing) -> {
             if (existing == null) {
                 return new PlayerData(player, plugin.config().runningHorizon(),
-                        plugin.config().smoothWindows());
+                        plugin.config().checkAimSmoothWindows());
             }
             existing.bind(player);
             return existing;
@@ -47,6 +47,14 @@ public final class PlayerRegistry implements Service {
 
     public void remove(UUID uuid) {
         players.remove(uuid);
+    }
+
+    /** Re-applies settings that were captured when a player joined. */
+    public void reconfigure() {
+        int smoothWindows = plugin.config().checkAimSmoothWindows();
+        for (PlayerData data : players.values()) {
+            data.smoothWindows(smoothWindows);
+        }
     }
 
     public PlayerData get(UUID uuid) {

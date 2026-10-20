@@ -18,6 +18,12 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 public final class Language implements Service {
 
+    /** The old aim reason printed both placeholders literally because the
+     *  check used to return it without a placeholder map. Existing language
+     *  files keep custom translations, but this known bundled value is safe
+     *  to replace with the current line. */
+    private static final String LEGACY_AIM_REASON = "prob %probability%, buffer %buffer%";
+
     private final OculusAI plugin;
     private YamlConfiguration lang;
     private YamlConfiguration defaults;
@@ -140,7 +146,7 @@ public final class Language implements Service {
             return;
         }
 
-        boolean changed = false;
+        int added = 0;
         for (String key : defaults.getKeys(true)) {
             if (defaults.isConfigurationSection(key) || lang.contains(key)) {
                 continue;
@@ -150,19 +156,48 @@ public final class Language implements Service {
                 continue;
             }
             lang.set(key, defaults.get(key));
-            changed = true;
+            added++;
         }
 
-        if (!changed) {
+        int migrated = 0;
+        String currentAimReason = lang.getString("check.reason.aim");
+        String bundledAimReason = defaults.getString("check.reason.aim");
+        if (LEGACY_AIM_REASON.equals(currentAimReason)
+                && bundledAimReason != null && !bundledAimReason.equals(currentAimReason)) {
+            lang.set("check.reason.aim", bundledAimReason);
+            migrated++;
+        }
+
+        // Old alert lines only printed %detail%. Keep a custom translation,
+        // but append the coloured probability/buffer block when it has no
+        // metrics at all. New bundled lines already contain %metrics%.
+        migrated += ensureMetrics("check.test-line");
+        migrated += ensureMetrics("check.alert-line");
+
+        if (added == 0 && migrated == 0) {
             return;
         }
         try {
             lang.save(file);
+            plugin.getLogger().info("Language " + file.getName() + " updated: "
+                    + added + " new keys, " + migrated + " migrated values");
         } catch (IOException exception) {
-            plugin.getLogger().log(java.util.logging.Level.WARNING,
+            plugin.getLogger().log(Level.WARNING,
                     "Could not save new language keys into " + file.getAbsolutePath()
                             + "; they still resolve from the bundled defaults", exception);
         }
+    }
+
+    private int ensureMetrics(String key) {
+        String value = lang.getString(key);
+        if (value == null || value.isBlank()
+                || value.contains("%metrics%")
+                || value.contains("%probability%")
+                || value.contains("%buffer%")) {
+            return 0;
+        }
+        lang.set(key, value + " <dark_gray>· %metrics%");
+        return 1;
     }
 
     public String text(String key) {

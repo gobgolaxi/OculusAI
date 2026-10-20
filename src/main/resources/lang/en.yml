@@ -36,6 +36,12 @@ theme:
   mint: "Mint"
   midnight: "Midnight"
 dashboard:
+  checks:
+    name: "<aqua>Checks"
+    state-on: "<gray>State: <green>enabled"
+    state-off: "<gray>State: <red>disabled"
+    count: "<gray>Registered: <white>%value%"
+    click: "<yellow>Click to open the check list"
   dummy:
     click: "<yellow>Click to spawn one"
     count: "<gray>Spawned: <white>%value%"
@@ -180,6 +186,8 @@ settings:
     on: "<gray>State: <green>on"
     off: "<gray>State: <red>off"
     hint: "<gray>Wall and other packet checks."
+    count: "<gray>Registered: <white>%value%"
+    click: "<yellow>Click to open the check list"
   test:
     name: "<yellow>Test mode"
     on: "<gray>State: <green>on"
@@ -355,6 +363,72 @@ kickanim:
   lightning: "Lightning"
   firework: "Firework"
   wither: "Wither"
+checks-menu:
+  title: "Checks"
+  header: "<aqua>Checks"
+  registered: "<gray>Registered: <white>%value%"
+  analysis-on: "<gray>Analysis: <green>enabled"
+  analysis-off: "<gray>Analysis: <red>disabled"
+  hint: "<dark_gray>Left click - toggle, right click - settings."
+  state-on: "<gray>State: <green>enabled"
+  state-off: "<gray>State: <red>disabled"
+  no-description: "<dark_gray>No description."
+  left: "<yellow>Left click <gray>- enable or disable"
+  right: "<yellow>Right click <gray>- open settings"
+  empty: "<red>No registered checks"
+  empty-hint: "<gray>Checks are registered in Checks.java."
+  back: "<yellow>Back to Dashboard"
+  back-hint: "<dark_gray>Return to the overview."
+check-settings:
+  title: "Settings: %check%"
+  state-on: "<gray>State: <green>enabled"
+  state-off: "<gray>State: <red>disabled"
+  no-description: "<dark_gray>No description."
+  header-hint: "<dark_gray>Values are saved to config.yml."
+  value: "<gray>Current: <white>%value%"
+  on: "<green>enabled"
+  off: "<red>disabled"
+  seconds: "s"
+  toggle-hint: "<yellow>Left click <gray>- toggle"
+  number-hint: "<yellow>Left click <gray>+ <yellow>right click <gray>- <dark_gray>(Shift = x5)"
+  back: "<yellow>Back to checks"
+  back-hint: "<dark_gray>Return to the check list."
+  shared:
+    enabled:
+      name: "<aqua>Enabled"
+      hint: "<gray>Run this check."
+    test-only:
+      name: "<yellow>Test only"
+      hint: "<gray>Show alerts but do not punish."
+    confirmations:
+      name: "<aqua>Confirmations"
+      hint: "<gray>Failures in a row needed before an alert."
+    cooldown-ms:
+      name: "<aqua>Cooldown"
+      hint: "<gray>Quiet time between alerts for this check."
+  aim:
+    smooth:
+      name: "<aqua>Smoothness"
+      hint: "<gray>How many recent windows to average. 1 disables smoothing."
+    alert-at:
+      name: "<gold>Alert threshold"
+      hint: "<gray>Buffer at which Aim starts alerting."
+    punish-at:
+      name: "<red>Punish threshold"
+      hint: "<gray>Buffer at which punishment runs."
+    buffer-max:
+      name: "<aqua>Buffer maximum"
+      hint: "<gray>Upper bound for buffer growth."
+    gain:
+      name: "<aqua>Growth rate"
+      hint: "<gray>How fast the buffer rises above the threshold."
+    decay:
+      name: "<aqua>Decay rate"
+      hint: "<gray>How fast the buffer falls below the threshold."
+  wall:
+    max-distance:
+      name: "<aqua>Maximum distance"
+      hint: "<gray>Wall does not check farther than this."
 checks:
   usage: "<red>Usage: <white>%value%"
   status: "<gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Punishment %punish%"
@@ -403,6 +477,9 @@ spawn:
   teleported: "<gray>Teleported to the test arena spawn."
   disabled: "<red>The test server is not enabled."
 check:
+  desc:
+    wall: "<gray>Hits through walls and closed doors."
+    aim: "<gray>Neural aim check."
   test-line: "<dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   reason:

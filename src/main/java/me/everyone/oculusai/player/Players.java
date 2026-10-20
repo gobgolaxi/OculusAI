@@ -31,6 +31,7 @@ public final class Players implements Service {
 
     @Override
     public void reload() {
+        registry.reconfigure();
         setup.disable();
         setup.enable();
     }

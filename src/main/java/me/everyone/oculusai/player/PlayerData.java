@@ -34,7 +34,7 @@ public final class PlayerData {
 
     private final Deque<RotationSample> window = new ArrayDeque<>();
     private final Deque<Double> bufferHistory = new ArrayDeque<>();
-    private final MedianWindow probabilitySmoothing;
+    private volatile MedianWindow probabilitySmoothing;
     private final Deque<Reading> readings = new ArrayDeque<>();
 
     private final Deque<Double> scaleHistory = new ArrayDeque<>();
@@ -84,6 +84,14 @@ public final class PlayerData {
 
     public int entityId() {
         return entityId;
+    }
+
+    /** Applies a smoothness change to an already online player. */
+    public void smoothWindows(int smoothWindows) {
+        int size = Math.max(1, smoothWindows);
+        if (probabilitySmoothing.size() != size) {
+            probabilitySmoothing = new MedianWindow(size);
+        }
     }
 
     public float lastYaw() {

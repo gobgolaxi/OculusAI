@@ -21,6 +21,7 @@ public final class DashboardMenu extends Menu {
     private static final int SLOT_DUMMY = 16;
 
     private static final int SLOT_PUNISH = 28;
+    private static final int SLOT_CHECKS = 30;
     private static final int SLOT_ALERT_SOUND = 32;
     private static final int SLOT_ALWAYS_PROB = 34;
 
@@ -113,6 +114,17 @@ public final class DashboardMenu extends Menu {
                         "",
                         plugin.lang().text("shared.click-toggle"))));
 
+        boolean checks = plugin.config().analysisEnabled();
+        set(SLOT_CHECKS, item(checks ? Material.SHIELD : Material.GRAY_DYE,
+                plugin.lang().text("dashboard.checks.name"),
+                List.of(
+                        plugin.lang().text(checks
+                                ? "dashboard.checks.state-on" : "dashboard.checks.state-off"),
+                        plugin.lang().text("dashboard.checks.count",
+                                Map.of("value", Integer.toString(plugin.checks().all().size()))),
+                        "",
+                        plugin.lang().text("dashboard.checks.click"))));
+
         set(SLOT_ALERT_SOUND, item(Material.BELL, plugin.lang().text("dashboard.alertsound.name"),
                 List.of(
                         plugin.lang().text("dashboard.alertsound.current",
@@ -179,6 +191,7 @@ public final class DashboardMenu extends Menu {
     public void onClick(InventoryClickEvent event) {
         switch (event.getSlot()) {
             case SLOT_PUNISH -> toggle("punishment.enabled", false);
+            case SLOT_CHECKS -> new ChecksMenu(plugin, viewer).open();
             case SLOT_ALERT_SOUND -> cycleAlertSound();
             case SLOT_JOURNAL -> new JournalMenu(plugin, viewer).open();
             case SLOT_PLAYERS -> new PlayersMenu(plugin, viewer).open();

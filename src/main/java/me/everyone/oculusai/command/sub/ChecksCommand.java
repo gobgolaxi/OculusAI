@@ -25,7 +25,7 @@ public final class ChecksCommand extends SubCommand {
     public void execute(CommandSender sender, String[] args) {
         if (args.length == 0) {
             if (sender instanceof Player player) {
-                plugin.menus().openSettings(player);
+                plugin.menus().openChecks(player);
             } else {
                 status(sender);
             }

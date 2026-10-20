@@ -109,6 +109,13 @@ public final class Alerts implements Service {
                         "detail", detail,
                         "accent", plugin.theme().current().accent(),
                         "symbol", symbol == null ? "" : symbol,
+                        // Old language files used these two placeholders
+                        // directly in the alert line. Keep filling them so an
+                        // upgraded server never prints raw %probability% or
+                        // %buffer% while its custom translation is retained.
+                        "probability", Values.probability(plugin.config(), data.probability()),
+                        "buffer", Values.buffer(plugin.config(), data.buffer()),
+                        "max", Msg.round(plugin.config().bufferMax(), 1),
                         "metrics", Values.inline(plugin.config(),
                                 data.probability(), data.buffer())));
 

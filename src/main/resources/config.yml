@@ -122,6 +122,10 @@ checks:
     test-only: false
   aim:
     enabled: true
+    # Smoothness: сколько последних окон усреднять перед подачей в буфер.
+    # 1 - без сглаживания. Старый ключ buffer.smooth-windows читается как
+    # запасной вариант, если этого ключа ещё нет.
+    smooth-windows: 3
     confirmations: 1
     cooldown-ms: 10000
     test-only: false

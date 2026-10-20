@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.storage.HistorySort;
 import me.everyone.oculusai.player.PlayerData;
+import me.everyone.oculusai.ui.menu.ChecksMenu;
 import me.everyone.oculusai.ui.menu.DashboardMenu;
 import me.everyone.oculusai.ui.menu.HistoryMenu;
 import me.everyone.oculusai.ui.menu.JournalMenu;
@@ -51,6 +52,12 @@ public final class Menus implements Service, Listener {
     public void openSettings(Player player) {
         plugin.mainThread().run(
                 () -> new SettingsMenu(plugin, player).open());
+    }
+
+    /** The registered-check list opened by /oai checks and the dashboard. */
+    public void openChecks(Player player) {
+        plugin.mainThread().run(
+                () -> new ChecksMenu(plugin, player).open());
     }
 
     public void refreshStatus(Player player, Menu menu) {

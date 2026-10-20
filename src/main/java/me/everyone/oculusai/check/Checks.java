@@ -43,6 +43,24 @@ public final class Checks implements Service {
         playerChecks.add(new AimCheck(plugin));
     }
 
+    /** Every registered check, in display order. Menus use this instead of
+     *  keeping a second hard-coded list of ids. */
+    public List<Check> all() {
+        List<Check> result = new ArrayList<>(combatChecks);
+        result.addAll(playerChecks);
+        return List.copyOf(result);
+    }
+
+    /** Looks a check up by id, or returns null when it is not registered. */
+    public Check find(String id) {
+        for (Check check : all()) {
+            if (check.id().equalsIgnoreCase(id)) {
+                return check;
+            }
+        }
+        return null;
+    }
+
     /** Tests every packet check for an attack. Returns whether the hit should
      *  be cancelled. */
     public boolean onAttack(Player attacker, PlayerData data, int targetEntityId) {

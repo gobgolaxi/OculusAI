@@ -74,6 +74,7 @@ public final class Config implements Service {
     private long checkWallCooldownMs = 5000L;
     private boolean checkWallTestOnly = false;
     private boolean checkAimEnabled = true;
+    private int checkAimSmoothWindows = 3;
     private int checkAimConfirmations = 1;
     private long checkAimCooldownMs = 10000L;
     private boolean checkAimTestOnly = false;
@@ -167,6 +168,10 @@ public final class Config implements Service {
                 "checks.wall.cooldown-ms", checkAlertCooldownMs));
         checkWallTestOnly = config.getBoolean("checks.wall.test-only", false);
         checkAimEnabled = config.getBoolean("checks.aim.enabled", true);
+        // The old key was global even though only the aim check used it. Keep
+        // reading it as a fallback so an existing config.yml keeps working.
+        checkAimSmoothWindows = Math.max(1,
+                config.getInt("checks.aim.smooth-windows", smoothWindows));
         checkAimConfirmations = Math.max(1, config.getInt("checks.aim.confirmations", 1));
         checkAimCooldownMs = Math.max(0L, config.getLong(
                 "checks.aim.cooldown-ms", alertCooldownMs));
@@ -432,6 +437,10 @@ public final class Config implements Service {
 
     public boolean checkAimEnabled() {
         return checkAimEnabled;
+    }
+
+    public int checkAimSmoothWindows() {
+        return checkAimSmoothWindows;
     }
 
     public int checkAimConfirmations() {

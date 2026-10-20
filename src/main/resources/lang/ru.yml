@@ -36,6 +36,12 @@ theme:
   mint: "Mint"
   midnight: "Midnight"
 dashboard:
+  checks:
+    name: "<aqua>Проверки"
+    state-on: "<gray>Состояние: <green>включены"
+    state-off: "<gray>Состояние: <red>выключены"
+    count: "<gray>Зарегистрировано: <white>%value%"
+    click: "<yellow>Нажми, чтобы открыть список проверок"
   dummy:
     click: "<yellow>Нажми, чтобы заспавнить"
     count: "<gray>Заспавнено: <white>%value%"
@@ -178,6 +184,8 @@ settings:
     on: "<gray>Состояние: <green>включены"
     off: "<gray>Состояние: <red>выключены"
     hint: "<gray>Wall и другие проверки на пакет удара."
+    count: "<gray>Зарегистрировано: <white>%value%"
+    click: "<yellow>Нажми, чтобы открыть список проверок"
   test:
     name: "<yellow>Тестовый режим"
     on: "<gray>Состояние: <green>включён"
@@ -353,6 +361,72 @@ kickanim:
   lightning: "Молния"
   firework: "Фейерверк"
   wither: "Визер"
+checks-menu:
+  title: "Проверки"
+  header: "<aqua>Проверки"
+  registered: "<gray>Зарегистрировано: <white>%value%"
+  analysis-on: "<gray>Анализ: <green>включён"
+  analysis-off: "<gray>Анализ: <red>выключен"
+  hint: "<dark_gray>ЛКМ - включить/выключить, ПКМ - настройки."
+  state-on: "<gray>Состояние: <green>включена"
+  state-off: "<gray>Состояние: <red>выключена"
+  no-description: "<dark_gray>Описание не задано."
+  left: "<yellow>ЛКМ <gray>- включить или выключить"
+  right: "<yellow>ПКМ <gray>- открыть настройки"
+  empty: "<red>Нет зарегистрированных проверок"
+  empty-hint: "<gray>Проверки добавляются в Checks.java."
+  back: "<yellow>Назад в Dashboard"
+  back-hint: "<dark_gray>Вернуться к общему экрану."
+check-settings:
+  title: "Настройки: %check%"
+  state-on: "<gray>Состояние: <green>включена"
+  state-off: "<gray>Состояние: <red>выключена"
+  no-description: "<dark_gray>Описание не задано."
+  header-hint: "<dark_gray>Значения сохраняются в config.yml."
+  value: "<gray>Сейчас: <white>%value%"
+  on: "<green>включено"
+  off: "<red>выключено"
+  seconds: "с"
+  toggle-hint: "<yellow>ЛКМ <gray>- переключить"
+  number-hint: "<yellow>ЛКМ <gray>+ <yellow>ПКМ <gray>- <dark_gray>(Shift = x5)"
+  back: "<yellow>Назад к проверкам"
+  back-hint: "<dark_gray>Вернуться к списку проверок."
+  shared:
+    enabled:
+      name: "<aqua>Включена"
+      hint: "<gray>Выполнять эту проверку."
+    test-only:
+      name: "<yellow>Только тест"
+      hint: "<gray>Показывать алерты, но не наказывать."
+    confirmations:
+      name: "<aqua>Подтверждения"
+      hint: "<gray>Сколько срабатываний подряд нужно до алерта."
+    cooldown-ms:
+      name: "<aqua>Кулдаун"
+      hint: "<gray>Пауза между алертами одной проверки."
+  aim:
+    smooth:
+      name: "<aqua>Smoothness"
+      hint: "<gray>Сколько последних окон усреднять. 1 - без сглаживания."
+    alert-at:
+      name: "<gold>Порог алерта"
+      hint: "<gray>Буфер, после которого Aim считается сработавшим."
+    punish-at:
+      name: "<red>Порог наказания"
+      hint: "<gray>Буфер, после которого срабатывает наказание."
+    buffer-max:
+      name: "<aqua>Максимум буфера"
+      hint: "<gray>Верхняя граница накопления."
+    gain:
+      name: "<aqua>Скорость роста"
+      hint: "<gray>Насколько быстро буфер растёт выше порога."
+    decay:
+      name: "<aqua>Скорость спада"
+      hint: "<gray>Насколько быстро буфер падает ниже порога."
+  wall:
+    max-distance:
+      name: "<aqua>Максимальная дистанция"
+      hint: "<gray>Дальше этой дистанции Wall не проверяет."
 checks:
   usage: "<red>Использование: <white>%value%"
   status: "<gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Наказание %punish%"
@@ -401,6 +475,9 @@ spawn:
   teleported: "<gray>Телепортирован на спавн тестовой арены."
   disabled: "<red>Тестовый сервер не включён."
 check:
+  desc:
+    wall: "<gray>Удары через стены и закрытые двери."
+    aim: "<gray>Нейросетевая проверка прицела."
   test-line: "<dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   reason:

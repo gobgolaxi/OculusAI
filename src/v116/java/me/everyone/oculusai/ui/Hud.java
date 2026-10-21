@@ -252,7 +252,7 @@ public final class Hud implements Service {
 
     private Location packetLocation(PlayerData target, int index, int lineCount) {
         Location base = target.player().getLocation();
-        double top = Math.max(2.25D, plugin.hudConfig().hologramOffset() + 1.15D);
+        double top = plugin.hudConfig().hologramHeight();
         double step = 0.28D;
         double y = base.getY() + top + (lineCount - index - 1) * step;
         return new Location(base.getWorld(), base.getX(), y, base.getZ(), 0.0F, 0.0F);

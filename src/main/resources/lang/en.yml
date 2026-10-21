@@ -117,6 +117,14 @@ dashboard:
     state-off: "<gray>State: <red>analysis off"
     left: "<yellow>Left click <gray>- toggle analysis"
     right: "<yellow>Right click <gray>- open settings"
+  probheight:
+    name: "<aqua>Prob hologram height"
+    value: "<gray>Current: <white>%value%<gray> blocks"
+    range: "<dark_gray>Range: %min%-%max% blocks"
+    left: "<yellow>Left click <gray>- raise by 0.1"
+    right: "<yellow>Right click <gray>- lower by 0.1"
+    shift: "<dark_gray>Shift - step 0.5"
+    save-failed: "<red>Could not save the height to probcfg.yml."
   alertsound:
     name: "<light_purple>Alert Sound"
     current: "<gray>Current: <white>%value%"

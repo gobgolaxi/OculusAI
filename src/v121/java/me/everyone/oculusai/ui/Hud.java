@@ -436,7 +436,7 @@ public final class Hud implements Service {
     }
 
     private float lineTranslationY(int index, int lineCount) {
-        double top = Math.max(2.25D, plugin.hudConfig().hologramOffset() + 1.15D);
+        double top = plugin.hudConfig().hologramHeight();
         double step = 0.28D;
         double y = top - PASSENGER_ATTACH_HEIGHT + (lineCount - index - 1) * step;
         return (float) y;

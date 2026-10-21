@@ -24,6 +24,7 @@ public final class DashboardMenu extends Menu {
     private static final int SLOT_CHECKS = 30;
     private static final int SLOT_ALERT_SOUND = 32;
     private static final int SLOT_ALWAYS_PROB = 34;
+    private static final int SLOT_PROB_HEIGHT = 40;
 
     private static final int SLOT_THEME = 48;
     private static final int SLOT_REFRESH = 49;
@@ -143,6 +144,29 @@ public final class DashboardMenu extends Menu {
                                 : plugin.lang().text("shared.no-permission"),
                         "",
                         allowed ? plugin.lang().text("shared.click-toggle") : "")));
+
+        double hologramHeight = plugin.hudConfig().hologramHeight();
+        button(SLOT_PROB_HEIGHT, item(Material.END_ROD,
+                plugin.lang().text("dashboard.probheight.name"),
+                List.of(
+                        plugin.lang().text("dashboard.probheight.value",
+                                Map.of("value", Msg.round(hologramHeight, 2))),
+                        plugin.lang().text("dashboard.probheight.range",
+                                Map.of(
+                                        "min", Msg.round(plugin.hudConfig().minHologramHeight(), 2),
+                                        "max", Msg.round(plugin.hudConfig().maxHologramHeight(), 2))),
+                        "",
+                        plugin.lang().text("dashboard.probheight.left"),
+                        plugin.lang().text("dashboard.probheight.right"),
+                        plugin.lang().text("dashboard.probheight.shift"))),
+                click -> {
+                    double step = click.shift() ? 0.5D : 0.1D;
+                    if (!plugin.hudConfig().adjustHologramHeight(click.right() ? -step : step)) {
+                        viewer.sendMessage(plugin.config().prefix()
+                                + plugin.lang().text("dashboard.probheight.save-failed"));
+                    }
+                    refresh();
+                });
 
         var theme = plugin.theme().current();
         set(SLOT_THEME, item(Material.NETHER_STAR, plugin.lang().text("dashboard.theme.name"),

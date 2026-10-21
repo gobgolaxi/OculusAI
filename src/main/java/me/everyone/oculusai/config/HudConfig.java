@@ -3,11 +3,22 @@ package me.everyone.oculusai.config;
 
 import me.everyone.oculusai.core.Service;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.List;
+import java.util.logging.Level;
 import me.everyone.oculusai.OculusAI;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 public final class HudConfig implements Service {
+
+    /** The passenger sits at this height above the player's feet. */
+    private static final double HOLOGRAM_BASE = 1.15D;
+    /** Never put the text inside the player's head. */
+    private static final double MIN_HOLOGRAM_HEIGHT = 2.25D;
+    /** High enough to clear any fight, low enough not to look detached. */
+    private static final double MAX_HOLOGRAM_HEIGHT = 5.15D;
 
     private final OculusAI plugin;
 
@@ -111,5 +122,93 @@ public final class HudConfig implements Service {
 
     public double hologramOffset() {
         return hologramOffset;
+    }
+
+    /** The actual Y of the top hologram line above the target's feet. The
+     *  clamp is what keeps a low offset from putting text in the player. */
+    public double hologramHeight() {
+        return Math.max(MIN_HOLOGRAM_HEIGHT, hologramOffset + HOLOGRAM_BASE);
+    }
+
+    public double minHologramHeight() {
+        return MIN_HOLOGRAM_HEIGHT;
+    }
+
+    public double maxHologramHeight() {
+        return MAX_HOLOGRAM_HEIGHT;
+    }
+
+    /** Moves the hologram up or down and saves the new offset to probcfg.yml.
+     *  Returns false when the file could not be written. */
+    public boolean adjustHologramHeight(double delta) {
+        return setHologramHeight(hologramHeight() + delta);
+    }
+
+    public boolean setHologramHeight(double height) {
+        double clamped = Math.max(MIN_HOLOGRAM_HEIGHT,
+                Math.min(MAX_HOLOGRAM_HEIGHT, round2(height)));
+        double offset = round2(clamped - HOLOGRAM_BASE);
+
+        File file = new File(plugin.getDataFolder(), "probcfg.yml");
+        if (!file.isFile()) {
+            plugin.saveResource("probcfg.yml", false);
+        }
+
+        List<String> lines;
+        try {
+            lines = Files.readAllLines(file.toPath(), StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Could not read " + file.getAbsolutePath() + " to change the hologram height",
+                    exception);
+            return false;
+        }
+
+        String value = Double.toString(offset);
+        int hologramLine = -1;
+        boolean replaced = false;
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            String trimmed = line.strip();
+            if (trimmed.equals("hologram:")) {
+                hologramLine = i;
+                continue;
+            }
+            if (hologramLine < 0) {
+                continue;
+            }
+            if (!line.isEmpty() && !Character.isWhitespace(line.charAt(0))) {
+                break;
+            }
+            if (trimmed.startsWith("offset:")) {
+                int at = line.indexOf("offset:");
+                lines.set(i, line.substring(0, at) + "offset: " + value);
+                replaced = true;
+                break;
+            }
+        }
+
+        if (!replaced) {
+            if (hologramLine < 0) {
+                lines.add("");
+                lines.add("hologram:");
+                hologramLine = lines.size() - 1;
+            }
+            lines.add(hologramLine + 1, "  offset: " + value);
+        }
+
+        try {
+            Files.write(file.toPath(), lines, StandardCharsets.UTF_8);
+        } catch (IOException exception) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Could not save the hologram height in " + file.getAbsolutePath(), exception);
+            return false;
+        }
+        hologramOffset = offset;
+        return true;
+    }
+
+    private static double round2(double value) {
+        return Math.round(value * 100.0D) / 100.0D;
     }
 }

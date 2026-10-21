@@ -117,6 +117,14 @@ dashboard:
     state-off: "<gray>Состояние: <red>анализ выключен"
     left: "<yellow>ЛКМ <gray>- включить или выключить анализ"
     right: "<yellow>ПКМ <gray>- открыть настройки"
+  probheight:
+    name: "<aqua>Высота Prob-голограммы"
+    value: "<gray>Сейчас: <white>%value%<gray> блоков"
+    range: "<dark_gray>Диапазон: %min%-%max% блоков"
+    left: "<yellow>ЛКМ <gray>- поднять на 0.1"
+    right: "<yellow>ПКМ <gray>- опустить на 0.1"
+    shift: "<dark_gray>Shift - шаг 0.5"
+    save-failed: "<red>Не удалось сохранить высоту в probcfg.yml."
   alertsound:
     name: "<light_purple>Звук алерта"
     current: "<gray>Текущий: <white>%value%"

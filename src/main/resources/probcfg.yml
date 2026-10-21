@@ -33,4 +33,6 @@ hologram:
     - "<dark_gray>♠ windows <white>%windows%"
   lines: 5
   seconds: 300
+  # Высота голограммы. Меняется и из Dashboard: ЛКМ/ПКМ по предмету
+  # "Высота Prob-голограммы". Итог не ниже 2.25 блока над ногами.
   offset: 1.1

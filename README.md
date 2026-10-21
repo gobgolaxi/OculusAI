@@ -28,7 +28,7 @@
 |---|---|
 | `/oai connect` | привязать сервер к аккаунту одной ссылкой |
 | `/oai guide` | как пользоваться античитом, в один экран |
-| `/oai monitor` | следить за всеми в пвп (повтор - выключить) |
+| `/oai monitor` | следить за всеми в пвп, строки видит только включивший (повтор - выключить) |
 | `/oai monitor list` | живой список подозрительных |
 | `/oai prob <ник>` | следить за одним игроком |
 | `/oai math` | переключить Prob между сглаженным и чистым показанием модели (буфер не трогает) |
@@ -37,15 +37,19 @@
 | `/oai journal` | журнал сработок |
 | `/oai player <ник>` | буфер и история игрока |
 | `/oai forget <ник>` | сбросить подозрение |
-| `/oai vanish` | скрытое наблюдение |
 | `/oai npc` | манекен-спарринг для проверки |
 | `/oai data` | запись обучающих данных |
 | `/oai diag [ник]` | почему окна игрока анализируются или нет |
 | `/oai dashboard` | меню настроек |
+| `/oai update` | проверить, вышла ли новая версия |
 | `/oai reload` | перечитать конфиг |
 
-Права: `oculusai.command`, `oculusai.alerts`, `oculusai.journal`, `oculusai.vanish`,
-`oculusai.data`, `oculusai.npc`, `oculusai.connect`, `oculusai.diag`, `oculusai.bypass`.
+Права: `oculusai.command`, `oculusai.alerts`, `oculusai.journal`, `oculusai.data`,
+`oculusai.npc`, `oculusai.connect`, `oculusai.diag`, `oculusai.bypass`, `oculusai.report`.
+
+Про новую версию плагин сам пишет в чат тем, у кого есть `oculusai.alerts`, и
+повторяет это каждые 15 секунд, пока сервер сидит на старой сборке
+(`update.remind-seconds` в конфиге — интервал, `0` — сказать один раз).
 
 ## Сборка
 

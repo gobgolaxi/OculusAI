@@ -10,7 +10,11 @@ import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.comphenix.protocol.wrappers.WrappedDataValue;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -34,6 +38,10 @@ public final class Hud implements Service {
     private static final int DISPLAY_UPDATE_TICKS = 2;
     private static final int REMOUNT_TICKS = 20;
     private static final int ALWAYS_PROB_SYNC_TICKS = 10;
+    /** Who had AlwaysProb on, one id per line. A state file rather than
+     *  config.yml: saving Bukkit's config on every toggle rewrites the file
+     *  and drops its comments, and this is per-player state, not a setting. */
+    private static final String ALWAYS_PROB_STATE = "alwaysprob.state";
 
     private record Watch(UUID target, UUID world, long expiresAt, List<Line> holograms,
                          boolean compact, boolean permanent) {
@@ -198,6 +206,7 @@ public final class Hud implements Service {
     public void enable() {
         ticks = 0;
         remountTicks = 0;
+        loadAlwaysProb();
         task = plugin.ticks().every(1L, DISPLAY_UPDATE_TICKS, this::tick);
     }
 
@@ -219,6 +228,58 @@ public final class Hud implements Service {
         alwaysProbViewers.clear();
     }
 
+    /** Reads back who had AlwaysProb on before the last stop.
+     *
+     *  <p>Without this the feature came back off after every restart, and a
+     *  viewer who had turned it on months ago had to remember to turn it on
+     *  again - which reads exactly like "it disappeared". Holograms are not
+     *  spawned here: nobody is online yet at enable time, and the join hook
+     *  and the sync timer put them up. */
+    private void loadAlwaysProb() {
+        alwaysProbViewers.clear();
+        Path state = plugin.getDataFolder().toPath().resolve(ALWAYS_PROB_STATE);
+        if (!Files.isRegularFile(state)) {
+            return;
+        }
+        try {
+            for (String line : Files.readAllLines(state, StandardCharsets.UTF_8)) {
+                String value = line.trim();
+                if (value.isEmpty()) {
+                    continue;
+                }
+                try {
+                    alwaysProbViewers.add(UUID.fromString(value));
+                } catch (IllegalArgumentException notAViewer) {
+                    // A hand-edit, or a line from a future format.
+                }
+            }
+        } catch (IOException failure) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Could not read " + state + "; AlwaysProb starts off", failure);
+        }
+    }
+
+    private void saveAlwaysProb() {
+        Path state = plugin.getDataFolder().toPath().resolve(ALWAYS_PROB_STATE);
+        try {
+            Files.createDirectories(state.getParent());
+            StringBuilder out = new StringBuilder();
+            for (UUID viewer : alwaysProbViewers) {
+                out.append(viewer).append('\n');
+            }
+            Files.writeString(state, out.toString(), StandardCharsets.UTF_8);
+        } catch (IOException failure) {
+            plugin.getLogger().log(Level.WARNING,
+                    "Could not save AlwaysProb to " + state, failure);
+        }
+    }
+
+    /** Whether this server build can draw the holograms at all. False on
+     *  1.16, where there is no Display entity to hang text on. */
+    public boolean supportsAlwaysProb() {
+        return true;
+    }
+
     public void watch(Player watcher, PlayerData target) {
         // One line unless the operator asked for the tall one. Six lines of
         // hologram over a head in a fight hide the thing being watched, and the
@@ -227,16 +288,23 @@ public final class Hud implements Service {
         watch(watcher, target, plugin.hudConfig().hologramCompact(), false);
     }
 
-    public void enableAlwaysProb(Player viewer) {
+    /** Turns AlwaysProb on for one viewer. False when they may not have it,
+     *  so the caller can say so instead of the click doing nothing. */
+    public boolean enableAlwaysProb(Player viewer) {
         if (!viewer.hasPermission("oculusai.alwaysprob")) {
-            return;
+            return false;
         }
         alwaysProbViewers.add(viewer.getUniqueId());
+        saveAlwaysProb();
         syncAlwaysProb(viewer);
+        return true;
     }
 
     public void disableAlwaysProb(Player viewer) {
-        alwaysProbViewers.remove(viewer.getUniqueId());
+        if (!alwaysProbViewers.remove(viewer.getUniqueId())) {
+            return;
+        }
+        saveAlwaysProb();
         Map<UUID, Watch> watches = watching.get(viewer.getUniqueId());
         if (watches == null) {
             return;
@@ -667,12 +735,41 @@ public final class Hud implements Service {
     private void syncAlwaysProb() {
         for (UUID viewerId : alwaysProbViewers) {
             Player viewer = plugin.getServer().getPlayer(viewerId);
-            if (viewer == null || !viewer.isOnline() || !viewer.hasPermission("oculusai.alwaysprob")) {
+            if (viewer == null || !viewer.isOnline()) {
+                // Offline is not off. Dropping the viewer here is what used to
+                // lose AlwaysProb on every disconnect, including the one-second
+                // kind: they came back and it was gone with nothing said.
+                continue;
+            }
+            if (!viewer.hasPermission("oculusai.alwaysprob")) {
+                // The permission is actually gone while they are online, which
+                // is a decision somebody made - that one does turn it off.
                 alwaysProbViewers.remove(viewerId);
+                saveAlwaysProb();
                 continue;
             }
             syncAlwaysProb(viewer);
         }
+    }
+
+    /** Rebuilds one viewer's holograms now, instead of up to half a second
+     *  later. Called the moment the client's entity store is known to have
+     *  been thrown away - a join, a respawn, a world change - because that is
+     *  exactly when a viewer sees the numbers vanish and assumes the feature
+     *  broke. Safe to call for anybody: it does nothing for a player who does
+     *  not have AlwaysProb on. */
+    public void resyncAlwaysProb(Player viewer) {
+        if (viewer == null || !alwaysProbViewers.contains(viewer.getUniqueId())) {
+            return;
+        }
+        syncAlwaysProb(viewer);
+    }
+
+    /** The same for everybody watching. Used when the thing that changed is a
+     *  third player - somebody joined, or walked into another world - which
+     *  changes what every viewer should have over their head. */
+    public void resyncAlwaysProb() {
+        syncAlwaysProb();
     }
 
     private void syncAlwaysProb(Player viewer) {
@@ -809,7 +906,10 @@ public final class Hud implements Service {
                     destroyHolograms(watcher, watch);
                 }
             }
-            return;
+            // Falls through on purpose: this player was watching somebody, and
+            // is probably also being watched by somebody else. Returning here
+            // left those holograms hanging over a player who had just died or
+            // left, until a later sweep happened to notice.
         }
 
         List<UUID> watchers = new ArrayList<>(watching.keySet());

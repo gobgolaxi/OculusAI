@@ -238,12 +238,24 @@ public final class DashboardMenu extends Menu {
             }
             case SLOT_ALWAYS_PROB -> {
                 if (!viewer.hasPermission("oculusai.alwaysprob")) {
+                    viewer.sendMessage(plugin.config().prefix()
+                            + plugin.lang().text("shared.no-permission"));
+                    return;
+                }
+                // On 1.16 there is no entity to hang the text on. A click that
+                // silently does nothing reads as a broken menu, so it says so.
+                if (!plugin.displays().supportsAlwaysProb()) {
+                    viewer.sendMessage(plugin.config().prefix()
+                            + plugin.lang().text("dashboard.alwaysprob.unsupported"));
                     return;
                 }
                 if (plugin.displays().isAlwaysProb(viewer.getUniqueId())) {
                     plugin.displays().disableAlwaysProb(viewer);
-                } else {
-                    plugin.displays().enableAlwaysProb(viewer);
+                    viewer.sendMessage(plugin.config().prefix()
+                            + plugin.lang().text("dashboard.alwaysprob.turned-off"));
+                } else if (plugin.displays().enableAlwaysProb(viewer)) {
+                    viewer.sendMessage(plugin.config().prefix()
+                            + plugin.lang().text("dashboard.alwaysprob.turned-on"));
                 }
                 refresh();
             }

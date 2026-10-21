@@ -139,6 +139,9 @@ dashboard:
     line2: "<gray>cheater gets kicked from the server."
   alwaysprob:
     name: "<aqua>AlwaysProb"
+    turned-on: "<green>AlwaysProb is on.<gray> Readings stay over every player you can see."
+    turned-off: "<gray>AlwaysProb is off."
+    unsupported: "<red>This server version has no text displays, so AlwaysProb cannot draw anything."
     state-on: "<gray>State: <green>on"
     state-off: "<gray>State: <red>off"
     line1: "<gray>Shows compact Prob holograms"
@@ -346,7 +349,7 @@ connect:
 guide:
   title: "<white>How to use"
   what: "AI anticheat for aim. It watches fights and scores them."
-  watch: "<white>/oai monitor<gray> - live list, red dot = suspicious."
+  watch: "<white>/oai monitor<gray> - live list only for you, red dot = suspicious."
   check: "<white>/oai prob player<gray> - follow one player closely."
   act: "<white>/oai journal<gray> - what already triggered. <white>/oai history player<gray> - past readings."
   numbers: "Percent is this moment, the bar is the buffer. Alert at <white>%alert%<gray>, punish at <white>%punish%<gray>."
@@ -358,7 +361,7 @@ monitor-cmd:
   not-watching: "<gray>Monitor is off."
   empty: "<dark_gray>Nothing yet."
   more: "<dark_gray>+%value% more"
-  global-on: "<green>Watching everybody in PvP. <gray>Say it again to stop."
+  global-on: "<green>Watching everybody in PvP — only you see these lines. <gray>Say it again to stop."
   global-off: "<gray>PvP watch is off."
   pvp-none: "<dark_gray>Nobody is fighting right now."
 prob:
@@ -483,6 +486,16 @@ checks:
     aim: "Neuro Aim"
     hitbox: "HitBox"
     punish: "Punishment"
+update:
+  available: "<gold>Version <white>%version%<gold> is out — update the anticheat. <gray>This server runs <white>%current%<gray>."
+  staged: "<green>Version %version% is downloaded<gray> — it is applied on the next restart."
+  notes: " <dark_gray>· %value%"
+  download: " <yellow>[Download]"
+  hover: "<gray>Click to open"
+  checking: "<gray>Asking the service about a newer build..."
+  current: "<green>This is the newest build, <white>%version%<green>."
+  unknown-build: "<red>This jar was not built by Gradle: there is no version to compare."
+  off: "<gray>Update checks are off: <white>update.enabled<gray> in config.yml."
 reload:
   done: "<green>Reloaded <gray>in <white>%value%ms<gray>."
 npc:

@@ -10,7 +10,9 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
@@ -29,6 +31,33 @@ public final class PlayerListener implements Listener {
         Player joining = event.getPlayer();
         plugin.worker().execute(() -> plugin.history().preload(
                 joining.getUniqueId(), joining.getName()));
+
+        // Holograms are packet entities in the viewer's client, and a client
+        // that has just connected has none of them. Both directions matter:
+        // this player may be a viewer whose AlwaysProb has to come back, and
+        // everybody else's AlwaysProb needs a hologram over the new arrival.
+        plugin.displays().resyncAlwaysProb(joining);
+        plugin.displays().resyncAlwaysProb();
+    }
+
+    /** A respawn recreates the player entity client-side, so whatever was
+     *  mounted on it is gone. Next tick, because at the time the event fires
+     *  the player is still at the old location. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
+        plugin.ticks().after(1L, () -> {
+            plugin.displays().resyncAlwaysProb(player);
+            plugin.displays().resyncAlwaysProb();
+        });
+    }
+
+    /** A world change throws the client's whole entity store away. The old
+     *  holograms are dead ids now; everybody watching needs a fresh set. */
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onChangedWorld(PlayerChangedWorldEvent event) {
+        plugin.displays().resyncAlwaysProb(event.getPlayer());
+        plugin.displays().resyncAlwaysProb();
     }
 
     @EventHandler(priority = EventPriority.MONITOR)

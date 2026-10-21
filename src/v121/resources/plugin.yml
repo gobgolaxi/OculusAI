@@ -41,6 +41,9 @@ permissions:
   oculusai.report:
     description: Report a player to the panel.
     default: true
+  oculusai.alwaysprob:
+    description: See every player's reading over their head, permanently.
+    default: op
   oculusai.diag:
     description: Inspect why a player's windows are or are not analysed.
     default: op

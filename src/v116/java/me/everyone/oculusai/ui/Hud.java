@@ -79,7 +79,15 @@ public final class Hud implements Service {
         watch(watcher, target, plugin.hudConfig().hologramCompact(), false);
     }
 
-    public void enableAlwaysProb(Player viewer) {
+    /** 1.16 has no Display entity to hang text on, so there is nothing to
+     *  draw. Saying so is the point of this method: the dashboard used to
+     *  offer the toggle here and the click did nothing at all. */
+    public boolean supportsAlwaysProb() {
+        return false;
+    }
+
+    public boolean enableAlwaysProb(Player viewer) {
+        return false;
     }
 
     public void disableAlwaysProb(Player viewer) {
@@ -87,6 +95,12 @@ public final class Hud implements Service {
 
     public boolean isAlwaysProb(UUID viewer) {
         return false;
+    }
+
+    public void resyncAlwaysProb(Player viewer) {
+    }
+
+    public void resyncAlwaysProb() {
     }
 
     private void watch(Player watcher, PlayerData target, boolean compact, boolean permanent) {

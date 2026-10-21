@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.oculusai.OculusAI;
@@ -29,6 +30,9 @@ public final class Monitor implements Service {
 
     private static final int MAX_ROWS = 12;
     private static final int BAR_WIDTH = 10;
+    /** The pvp feed carries a name, two numbers and a bar on one chat line, so
+     *  its bar is shorter than the one in the padded list. */
+    private static final int PVP_BAR_WIDTH = 8;
 
     private static final String CONSOLE = "console";
     /** A tiny state file rather than config.yml: saving Bukkit's config on
@@ -37,7 +41,7 @@ public final class Monitor implements Service {
 
     private static final class Session {
         private final String id;
-        private CommandSender sender;
+        private final CommandSender sender;
         private final List<String> names;
         private int lines;
 
@@ -51,8 +55,11 @@ public final class Monitor implements Service {
     private final OculusAI plugin;
     private final Map<String, Session> sessions = new ConcurrentHashMap<>();
     private TickLoop.Handle task;
-    /** The watch over everybody, switched on by /oai monitor. */
-    private volatile boolean global;
+    /** Everybody who asked for the watch over all of pvp, by player UUID or
+     *  {@link #CONSOLE}. Each of them gets the frames and nobody else does:
+     *  /oai monitor is a private feed per operator, not a staff broadcast and
+     *  not a single feed two admins have to fight over. */
+    private final Set<String> globalWatchers = ConcurrentHashMap.newKeySet();
     /** Ticks since the watch was switched on - used to say "nobody" now and then. */
     private int globalTicks;
 
@@ -62,7 +69,7 @@ public final class Monitor implements Service {
 
     @Override
     public void enable() {
-        global = loadGlobal();
+        loadGlobalWatchers();
         globalTicks = 0;
         task = plugin.ticks().every(PERIOD_TICKS, this::tick);
     }
@@ -71,30 +78,53 @@ public final class Monitor implements Service {
     public void reload() {
         // /oai reload keeps the watch the operator turned on; the state file
         // is the source of truth, config.yml is the first-run default.
-        global = loadGlobal();
+        loadGlobalWatchers();
         globalTicks = 0;
     }
 
-    private boolean loadGlobal() {
+    /** Reads who was watching when the server last stopped: one recipient per
+     *  line, either {@link #CONSOLE} or a player UUID. A line that is neither
+     *  is skipped - older versions wrote a plain "on", which names nobody, and
+     *  turning that into a console feed would spam a console that never asked
+     *  for one. */
+    private void loadGlobalWatchers() {
+        globalWatchers.clear();
         Path state = plugin.getDataFolder().toPath().resolve(STATE_FILE);
         try {
             if (Files.isRegularFile(state)) {
-                String value = Files.readString(state, StandardCharsets.UTF_8).trim();
-                return value.equalsIgnoreCase("on") || value.equals("1")
-                        || value.equalsIgnoreCase("true");
+                for (String line : Files.readAllLines(state, StandardCharsets.UTF_8)) {
+                    String value = line.trim();
+                    if (value.isEmpty() || value.equals("off")) {
+                        continue;
+                    }
+                    if (value.equals(CONSOLE)) {
+                        globalWatchers.add(CONSOLE);
+                        continue;
+                    }
+                    try {
+                        globalWatchers.add(UUID.fromString(value).toString());
+                    } catch (IllegalArgumentException notAWatcher) {
+                        // An "on" from an older state file, or a hand-edit.
+                    }
+                }
+                return;
             }
         } catch (IOException failure) {
             plugin.getLogger().log(java.util.logging.Level.WARNING,
                     "Could not read " + state + "; using monitor.enabled", failure);
         }
-        return plugin.config().monitorEnabled();
+        if (plugin.config().monitorEnabled()) {
+            globalWatchers.add(CONSOLE);
+        }
     }
 
     private void saveGlobal() {
         Path state = plugin.getDataFolder().toPath().resolve(STATE_FILE);
         try {
             Files.createDirectories(state.getParent());
-            Files.writeString(state, global ? "on\n" : "off\n", StandardCharsets.UTF_8);
+            String value = globalWatchers.isEmpty()
+                    ? "off" : String.join("\n", new ArrayList<>(globalWatchers));
+            Files.writeString(state, value + "\n", StandardCharsets.UTF_8);
         } catch (IOException failure) {
             plugin.getLogger().log(java.util.logging.Level.WARNING,
                     "Could not save the monitor state to " + state, failure);
@@ -108,21 +138,54 @@ public final class Monitor implements Service {
             task = null;
         }
         sessions.clear();
-        global = false;
+        globalWatchers.clear();
     }
 
-    /** Whether the watch over everybody is on. */
+    /** Whether anybody at all is on the watch over everybody. */
     public boolean globalWatching() {
-        return global;
+        return !globalWatchers.isEmpty();
     }
 
-    /** Switches the watch over everybody on or off. Returns the new state.
-     *  The choice is saved so a restart does not quietly turn the watch off. */
-    public boolean toggleGlobal() {
-        global = !global;
+    /** Whether this sender is. */
+    public boolean globalWatching(CommandSender sender) {
+        return globalWatchers.contains(idOf(sender));
+    }
+
+    /** Switches the watch over everybody on or off for this sender, and only
+     *  for them. Returns their new state.
+     *
+     *  <p>Two admins watching at once is the normal case on a staffed server,
+     *  so this is a per-operator subscription: one of them turning it off
+     *  cannot turn it off for the other, and turning it on cannot take the
+     *  feed away from them either. The list is saved, so a restart - or the
+     *  operator reconnecting - does not quietly stop the watch. */
+    public boolean toggleGlobal(CommandSender sender) {
+        String id = idOf(sender);
+        boolean on = !globalWatchers.remove(id);
+        if (on) {
+            globalWatchers.add(id);
+        }
         globalTicks = 0;
         saveGlobal();
-        return global;
+        return on;
+    }
+
+    /** The console, an online player, or null when that id is nobody who can
+     *  be written to right now. */
+    private CommandSender senderOf(String id) {
+        if (id == null) {
+            return null;
+        }
+        if (id.equals(CONSOLE)) {
+            return plugin.getServer().getConsoleSender();
+        }
+        Player player;
+        try {
+            player = plugin.getServer().getPlayer(UUID.fromString(id));
+        } catch (IllegalArgumentException malformed) {
+            return null;
+        }
+        return player != null && player.isOnline() ? player : null;
     }
 
     public static String idOf(CommandSender sender) {
@@ -140,10 +203,9 @@ public final class Monitor implements Service {
         return sessions.size();
     }
 
-    public Session start(CommandSender sender, List<String> names) {
+    public void start(CommandSender sender, List<String> names) {
         Session session = new Session(idOf(sender), sender, List.copyOf(names));
         sessions.put(session.id, session);
-        return session;
     }
 
     public boolean stop(CommandSender sender) {
@@ -155,7 +217,7 @@ public final class Monitor implements Service {
     }
 
     private void tick() {
-        if (global) {
+        if (!globalWatchers.isEmpty()) {
             broadcastPvp();
         }
         for (Session session : new ArrayList<>(sessions.values())) {
@@ -177,6 +239,21 @@ public final class Monitor implements Service {
      * at a mob as combat at all - so this is the list of people actually in a
      * fight, not the list of people swinging at things. */
     private void broadcastPvp() {
+        // A watcher may be offline - they logged off with the watch on, and it
+        // is kept so it comes back with them. With none of them reachable
+        // there is nobody to write to, and sorting every fighter once a second
+        // for a discarded string is work for nothing.
+        List<CommandSender> targets = new ArrayList<>();
+        for (String id : globalWatchers) {
+            CommandSender watcher = senderOf(id);
+            if (watcher != null) {
+                targets.add(watcher);
+            }
+        }
+        if (targets.isEmpty()) {
+            return;
+        }
+
         List<PlayerData> rows = new ArrayList<>();
         long window = plugin.config().monitorPvpMs();
         for (PlayerData data : plugin.data().all()) {
@@ -209,27 +286,33 @@ public final class Monitor implements Service {
         }
         globalTicks++;
 
-        // This is a chat watch for staff. The console is not a chat window:
-        // sending every frame there buried real warnings in a row per second.
-        // A console session still works through tick() when an operator asks
-        // for it explicitly with /oai monitor list.
-        for (Player online : plugin.getServer().getOnlinePlayers()) {
-            if (online.hasPermission("oculusai.alerts")) {
-                online.sendMessage(frame);
-            }
+        // This is a private chat watch: only the operators who turned it on
+        // get the frames. The console is among them only when the console
+        // itself asked for the watch with /oai monitor.
+        for (CommandSender watcher : targets) {
+            watcher.sendMessage(frame);
         }
     }
 
-    private String pvpRow(PlayerData data) {
+    /** The coloured dot both rows start with: grey below the alert line,
+     *  gold over it, red once the buffer is at punishing level. */
+    private String dot(PlayerData data) {
+        if (data.buffer() >= plugin.config().punishAt()) {
+            return "<red>\u25cf";
+        }
+        return data.buffer() >= plugin.config().alertAt() ? "<gold>\u25cf" : "<dark_gray>\u25cf";
+    }
+
+    /** How full the buffer is, 0..1, for the bar. */
+    private double fraction(PlayerData data) {
         double max = plugin.config().bufferMax();
-        double fraction = max > 0.0D ? data.buffer() / max : 0.0D;
+        return max > 0.0D ? data.buffer() / max : 0.0D;
+    }
 
-        String dot = data.buffer() >= plugin.config().punishAt() ? "<red>\u25cf"
-                : (data.buffer() >= plugin.config().alertAt() ? "<gold>\u25cf" : "<dark_gray>\u25cf");
-
-        return " " + dot + " <white>" + data.name()
+    private String pvpRow(PlayerData data) {
+        return " " + dot(data) + " <white>" + data.name()
                 + " " + Values.inline(plugin.config(), shownProbability(data), data.buffer())
-                + " " + Msg.bar(fraction, 8);
+                + " " + Msg.bar(fraction(data), PVP_BAR_WIDTH);
     }
 
     private String frame(Session session) {
@@ -257,6 +340,9 @@ public final class Monitor implements Service {
         }
 
         if (rows.isEmpty()) {
+            if (out.length() > 0) {
+                out.append('\n');
+            }
             out.append(plugin.lang().text("monitor-cmd.empty"));
             return Msg.parse(out.toString());
         }
@@ -277,17 +363,11 @@ public final class Monitor implements Service {
     }
 
     private String row(PlayerData data) {
-        double max = plugin.config().bufferMax();
-        double fraction = max > 0.0D ? data.buffer() / max : 0.0D;
-
-        String dot = data.buffer() >= plugin.config().punishAt() ? "<red>\u25cf"
-                : (data.buffer() >= plugin.config().alertAt() ? "<gold>\u25cf" : "<dark_gray>\u25cf");
-
-        return " " + dot + " <white>" + pad(data.name(), 16)
+        return " " + dot(data) + " <white>" + pad(data.name(), 16)
                 + " " + Values.probability(plugin.config(), shownProbability(data))
                 + " <gray>buf " + Values.buffer(plugin.config(), data.buffer())
-                + "<dark_gray>/<gray>" + Msg.round(max, 1)
-                + " " + Msg.bar(fraction, BAR_WIDTH);
+                + "<dark_gray>/<gray>" + Msg.round(plugin.config().bufferMax(), 1)
+                + " " + Msg.bar(fraction(data), BAR_WIDTH);
     }
 
     private double shownProbability(PlayerData data) {

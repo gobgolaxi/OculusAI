@@ -2,6 +2,7 @@ package me.everyone.oculusai.update;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -43,6 +44,19 @@ class UpdaterTest {
     void suffixIgnored() {
         assertTrue(Updater.newer("1.3.8-rc1", "1.3.7"));
         assertFalse(Updater.newer("1.3.7-rc1", "1.3.7"));
+    }
+
+    @Test
+    @DisplayName("release notes are trimmed to one chat line")
+    void notesAreOneLine() {
+        // The notes come from whoever published the build, and a newline in
+        // them would split the reminder into two messages the client renders
+        // on their own.
+        assertEquals("Faster windows", Updater.firstLine("Faster windows\nand a fix"));
+        assertEquals("Faster windows", Updater.firstLine("  Faster windows  "));
+        assertEquals("", Updater.firstLine(null));
+        assertEquals("", Updater.firstLine("   "));
+        assertEquals(120, Updater.firstLine("x".repeat(400)).length());
     }
 
     @Test

@@ -29,6 +29,7 @@ public final class Config implements Service {
     private boolean updateEnabled = true;
     private boolean updateDownload = true;
     private int updateCheckHours = 6;
+    private int updateRemindSeconds = 15;
 
     private double suspicion = 0.5D;
     private double gain = 1.0D;
@@ -132,6 +133,9 @@ public final class Config implements Service {
         updateEnabled = config.getBoolean("update.enabled", true);
         updateDownload = config.getBoolean("update.download", true);
         updateCheckHours = Math.max(1, config.getInt("update.check-hours", 6));
+        // Нулём выключается только повтор: о новой версии всё равно сообщается
+        // один раз за проверку.
+        updateRemindSeconds = Math.max(0, config.getInt("update.remind-seconds", 15));
 
         suspicion = clamp(config.getDouble("buffer.suspicion", 0.5D), 0.0D, 1.0D);
         gain = Math.max(0.01D, config.getDouble("buffer.gain", 1.0D));
@@ -295,6 +299,10 @@ public final class Config implements Service {
 
     public boolean updateDownload() {
         return updateDownload;
+    }
+
+    public int updateRemindSeconds() {
+        return updateRemindSeconds;
     }
 
     public int updateCheckHours() {

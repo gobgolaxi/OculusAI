@@ -2,6 +2,7 @@ package me.everyone.oculusai.update;
 
 
 import me.everyone.oculusai.core.Service;
+import me.everyone.oculusai.core.TickLoop;
 import com.google.gson.JsonObject;
 import java.io.IOException;
 import java.io.InputStream;
@@ -18,6 +19,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,6 +32,7 @@ import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.chat.hover.content.Text;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 /** Asks the service whether a newer build exists, and stages it if so.
@@ -39,6 +42,12 @@ import org.bukkit.entity.Player;
  * running plugin is how classloaders end up half in one version and half in
  * another. So an update here is always "ready on restart", and the restart is
  * the operator's.
+ *
+ * <p>Finding a new build is useless if nobody reads the line that says so.
+ * The service is asked on a slow timer - a build is published a few times a
+ * month, not a few times an hour - but the answer is repeated to admins in
+ * chat on a fast one, so somebody who logs in long after the check still gets
+ * told. The repeat stops the moment the server runs the newest build.
  *
  * <p>Three things gate a download, because this path writes executable code
  * into a server directory. The URL must be https and must point at a host this
@@ -63,6 +72,17 @@ public final class Updater implements Service {
 
     private final OculusAI plugin;
     private final AtomicReference<String> staged = new AtomicReference<>();
+    /** The newest version the service named, once it turned out to be newer
+     *  than this jar. Held so the reminder can repeat it without asking the
+     *  service again, and cleared when this jar becomes that version. */
+    private final AtomicReference<String> pending = new AtomicReference<>();
+    /** The release notes that came with it, first line only. */
+    private final AtomicReference<String> notes = new AtomicReference<>("");
+    /** The main-thread timer that repeats the line in chat. Runs only while
+     *  something is pending: an up-to-date server schedules nothing. Volatile
+     *  because it is started from the thread the service answers on and read
+     *  from the main thread the timer itself runs on. */
+    private volatile TickLoop.Handle reminder;
     private HttpClient client;
     private ScheduledFuture<?> task;
     /** Downloads are minutes of blocking I/O. They must not occupy the shared
@@ -94,11 +114,31 @@ public final class Updater implements Service {
     }
 
     @Override
+    public void reload() {
+        // The check interval, the download switch and the reminder interval
+        // all come from config.yml, so a reload has to rebuild the timers
+        // rather than keep running on the old numbers. What was already found
+        // is kept: the new build has not gone anywhere.
+        String found = pending.get();
+        String waiting = staged.get();
+        disable();
+        pending.set(found);
+        staged.set(waiting);
+        enable();
+        if (found != null) {
+            startReminder();
+        }
+    }
+
+    @Override
     public void disable() {
         if (task != null) {
             task.cancel(false);
             task = null;
         }
+        stopReminder();
+        pending.set(null);
+        notes.set("");
         if (downloads != null) {
             downloads.shutdownNow();
             downloads = null;
@@ -129,21 +169,29 @@ public final class Updater implements Service {
             return;
         }
         if (newest.equals(staged.get())) {
+            // Already downloaded and waiting for a restart. The reminder keeps
+            // saying so, so there is nothing new to announce.
+            startReminder();
             return;
         }
+
+        notes.set(firstLine(answer.has("notes") ? answer.get("notes").getAsString() : ""));
+        boolean first = !newest.equals(pending.getAndSet(newest));
+        if (first) {
+            announce(newest, false);
+        }
+        startReminder();
 
         String url = answer.has("url") ? answer.get("url").getAsString() : "";
         String digest = answer.has("sha256") ? answer.get("sha256").getAsString() : "";
 
         if (!plugin.config().updateDownload() || url.isBlank() || digest.isBlank()) {
-            announce(newest, false);
             return;
         }
         if (!trusted(url)) {
             plugin.getLogger().warning("Refusing the update at " + url
                     + ": only https downloads from " + String.join(", ", ALLOWED_HOSTS)
                     + " are accepted.");
-            announce(newest, false);
             return;
         }
         ExecutorService executor = downloads;
@@ -298,30 +346,152 @@ public final class Updater implements Service {
         return builder.toString();
     }
 
-    private void announce(String version, boolean stagedNow) {
-        String line = stagedNow
-                ? "OculusAI " + version + " is downloaded and will be applied on the next restart."
-                : "OculusAI " + version + " is out; this server runs " + plugin.buildVersion() + ".";
-        plugin.getLogger().info(line);
+    // ----------------------------------------------------------------- telling
+    //  people about it
 
-        String site = plugin.config().site();
+    /** Turns the reminder on. Idempotent: a check that finds the same build
+     *  again must not stack a second timer onto the first. */
+    private void startReminder() {
+        if (reminder != null) {
+            return;
+        }
+        long seconds = plugin.config().updateRemindSeconds();
+        if (seconds <= 0L) {
+            // Nought means "say it once". The announcement has already gone
+            // out by the time this is reached.
+            return;
+        }
+        reminder = plugin.ticks().every(seconds * 20L, this::remind);
+    }
+
+    private void stopReminder() {
+        if (reminder != null) {
+            reminder.cancel();
+            reminder = null;
+        }
+    }
+
+    /** The repeat, on the main thread. Chat only - the console heard it once
+     *  from {@link #announce} and does not need it every quarter minute. */
+    private void remind() {
+        String version = pending.get();
+        if (version == null) {
+            stopReminder();
+            return;
+        }
+        // The jar may have been replaced by a restart since the last check:
+        // nothing to nag about then, and the line would be wrong.
+        if (!newer(version, plugin.buildVersion())) {
+            pending.set(null);
+            staged.set(null);
+            stopReminder();
+            return;
+        }
+        TextComponent message = line(version, version.equals(staged.get()));
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (online.hasPermission("oculusai.alerts")) {
+                online.spigot().sendMessage(message);
+            }
+        }
+    }
+
+    /** The one line everybody gets, built from the language file so the
+     *  wording lives beside every other message rather than in this class. */
+    private TextComponent line(String version, boolean stagedNow) {
+        Map<String, String> values = Map.of(
+                "version", version,
+                "current", plugin.buildVersion());
+        String body = plugin.lang().text(stagedNow ? "update.staged" : "update.available",
+                values);
+
         TextComponent message = new TextComponent(TextComponent.fromLegacyText(
-                Msg.parse(plugin.config().prefix()) + Msg.parse("<gray>" + line)));
-        if (!stagedNow && !site.isBlank()) {
-            TextComponent link = new TextComponent(TextComponent.fromLegacyText(
-                    Msg.parse(" <yellow>[Скачать]")));
-            link.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, site));
-            link.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    new Text(TextComponent.fromLegacyText(site))));
-            message.addExtra(link);
+                Msg.parse(plugin.config().prefix()) + body));
+
+        String note = notes.get();
+        if (note != null && !note.isBlank()) {
+            message.addExtra(new TextComponent(TextComponent.fromLegacyText(
+                    plugin.lang().text("update.notes", Map.of("value", note)))));
         }
 
+        // A staged build needs no link: it is already on disk, and clicking
+        // through to download it by hand is how an operator ends up with two.
+        String site = plugin.config().site();
+        if (!stagedNow && !site.isBlank()) {
+            TextComponent link = new TextComponent(TextComponent.fromLegacyText(
+                    plugin.lang().text("update.download")));
+            link.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, site));
+            link.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                    new Text(TextComponent.fromLegacyText(
+                            plugin.lang().text("update.hover")))));
+            message.addExtra(link);
+        }
+        return message;
+    }
+
+    /** The first announcement: the console log, and chat for whoever is on. */
+    private void announce(String version, boolean stagedNow) {
+        plugin.getLogger().info(stagedNow
+                ? "OculusAI " + version + " is downloaded and will be applied on the next restart."
+                : "OculusAI " + version + " is out; this server runs " + plugin.buildVersion() + ".");
+
         plugin.mainThread().run(() -> {
+            TextComponent message = line(version, stagedNow);
             for (Player online : plugin.getServer().getOnlinePlayers()) {
                 if (online.hasPermission("oculusai.alerts")) {
                     online.spigot().sendMessage(message);
                 }
             }
+        });
+    }
+
+    /** Notes are free text written by whoever published the build. One line is
+     *  what fits in chat, and a stray newline would otherwise split the
+     *  message into two the client renders separately. */
+    static String firstLine(String value) {
+        if (value == null) {
+            return "";
+        }
+        String line = value.strip();
+        int newline = line.indexOf('\n');
+        if (newline >= 0) {
+            line = line.substring(0, newline).strip();
+        }
+        return line.length() > 120 ? line.substring(0, 117) + "..." : line;
+    }
+
+    /** The version a check has found, or null while this jar is the newest
+     *  thing the service knows about. */
+    public String pendingVersion() {
+        return pending.get();
+    }
+
+    /** Asks the service now and answers the sender, for /oai update. Runs the
+     *  call off the main thread, like the timer does, and replies on it. */
+    public void checkNow(CommandSender sender) {
+        String flavour = plugin.buildFlavour();
+        if (flavour.isBlank()) {
+            // A jar built outside Gradle has no flavour stamped into it, so
+            // there is no way to know which of the two builds to compare with.
+            sender.sendMessage(plugin.config().prefix()
+                    + plugin.lang().text("update.unknown-build"));
+            return;
+        }
+        sender.sendMessage(plugin.config().prefix() + plugin.lang().text("update.checking"));
+        String current = plugin.buildVersion();
+        plugin.api().latestBuild(flavour).thenAccept(answer -> {
+            consider(answer, current);
+            plugin.mainThread().run(() -> {
+                String found = pending.get();
+                if (found == null) {
+                    sender.sendMessage(plugin.config().prefix()
+                            + plugin.lang().text("update.current",
+                                    Map.of("version", current)));
+                } else if (sender instanceof Player player) {
+                    player.spigot().sendMessage(line(found, found.equals(staged.get())));
+                } else {
+                    sender.sendMessage(line(found, found.equals(staged.get())).toLegacyText());
+                }
+            });
         });
     }
 
@@ -333,6 +503,10 @@ public final class Updater implements Service {
                 "checks " + (plugin.config().updateEnabled()
                         ? "every " + plugin.config().updateCheckHours() + "h" : "off"),
                 "downloads " + (plugin.config().updateDownload() ? "on" : "off"),
+                "reminder " + (plugin.config().updateRemindSeconds() > 0
+                        ? "every " + plugin.config().updateRemindSeconds() + "s while out of date"
+                        : "once per check"),
+                pending.get() == null ? "up to date" : pending.get() + " available",
                 waiting == null ? "nothing staged" : waiting + " staged for the next restart");
     }
 }

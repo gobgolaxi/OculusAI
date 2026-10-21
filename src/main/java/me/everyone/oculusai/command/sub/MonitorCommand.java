@@ -27,7 +27,7 @@ public final class MonitorCommand extends SubCommand {
         // Without a name this is the watch over everybody: on, and off again
         // by the same command.
         if (args.length == 0) {
-            boolean on = monitors.toggleGlobal();
+            boolean on = monitors.toggleGlobal(sender);
             replyKey(sender, on ? "monitor-cmd.global-on" : "monitor-cmd.global-off");
             return;
         }

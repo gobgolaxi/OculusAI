@@ -27,9 +27,11 @@ import me.everyone.oculusai.command.sub.PlayerCommand;
 import me.everyone.oculusai.command.sub.ProbCommand;
 import me.everyone.oculusai.command.sub.ReloadCommand;
 import me.everyone.oculusai.command.sub.ReportCommand;
+import me.everyone.oculusai.command.sub.UpdateCommand;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.entity.Player;
@@ -63,6 +65,7 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
         subCommands.add(new DashboardCommand(plugin));
         subCommands.add(new ChecksCommand(plugin));
         subCommands.add(new DiagCommand(plugin));
+        subCommands.add(new UpdateCommand(plugin));
         subCommands.add(new ReloadCommand(plugin));
 
         PluginCommand command = plugin.getCommand("oculusai");
@@ -78,9 +81,22 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
         return subCommands;
     }
 
+    /** Whether this sender may use a node.
+     *
+     * <p>The console is the server itself. It cannot be given a permission the
+     * way a player can, and every node in plugin.yml is default:false - which
+     * on a plain Paper box means the console was refused its own anticheat,
+     * /oai reload and /oai monitor included, even though the monitor is
+     * written to be able to print to it. Whoever reads the console already has
+     * the machine, so there is nothing left to protect from them. A command
+     * block is not the console and still has to be granted the node. */
+    private static boolean allowed(CommandSender sender, String permission) {
+        return sender instanceof ConsoleCommandSender || sender.hasPermission(permission);
+    }
+
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission("oculusai.command")) {
+        if (!allowed(sender, "oculusai.command")) {
             sender.sendMessage(plugin.config().prefix() + plugin.lang().text("command.no-permission"));
             return true;
         }
@@ -95,7 +111,7 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
                     Map.of("label", label)));
             return true;
         }
-        if (subCommand.permission() != null && !sender.hasPermission(subCommand.permission())) {
+        if (subCommand.permission() != null && !allowed(sender, subCommand.permission())) {
             sender.sendMessage(plugin.config().prefix() + plugin.lang().text("command.no-permission"));
             return true;
         }
@@ -110,14 +126,14 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission("oculusai.command")) {
+        if (!allowed(sender, "oculusai.command")) {
             return List.of();
         }
         if (args.length <= 1) {
             String partial = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
             List<String> names = new ArrayList<>();
             for (SubCommand subCommand : subCommands) {
-                if (subCommand.permission() != null && !sender.hasPermission(subCommand.permission())) {
+                if (subCommand.permission() != null && !allowed(sender, subCommand.permission())) {
                     continue;
                 }
                 if (subCommand.name().startsWith(partial)) {
@@ -129,7 +145,7 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
 
         SubCommand subCommand = find(args[0]);
         if (subCommand == null
-                || (subCommand.permission() != null && !sender.hasPermission(subCommand.permission()))) {
+                || (subCommand.permission() != null && !allowed(sender, subCommand.permission()))) {
             return List.of();
         }
         return subCommand.complete(sender, Arrays.copyOfRange(args, 1, args.length));

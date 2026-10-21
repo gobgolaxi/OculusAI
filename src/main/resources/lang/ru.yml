@@ -139,6 +139,9 @@ dashboard:
     line2: "<gray>читера с сервера."
   alwaysprob:
     name: "<aqua>AlwaysProb"
+    turned-on: "<green>AlwaysProb включён.<gray> Показания держатся над каждым, кого видишь."
+    turned-off: "<gray>AlwaysProb выключен."
+    unsupported: "<red>На этой версии сервера нет text display — AlwaysProb нечем рисовать."
     state-on: "<gray>Состояние: <green>вкл"
     state-off: "<gray>Состояние: <red>выкл"
     line1: "<gray>Показывает постоянный Prob-hologram"
@@ -349,7 +352,7 @@ connect:
 guide:
   title: "<white>Как пользоваться"
   what: "ИИ-античит по аиму. Смотрит бои и оценивает их."
-  watch: "<white>/oai monitor<gray> - живой список, красная точка = подозрительно."
+  watch: "<white>/oai monitor<gray> - живой список только для тебя, красная точка = подозрительно."
   check: "<white>/oai prob ник<gray> - следить за одним игроком."
   act: "<white>/oai journal<gray> - что уже сработало. <white>/oai history ник<gray> - прошлые показания."
   numbers: "Проценты - это сейчас, полоска - буфер. Алерт на <white>%alert%<gray>, наказание на <white>%punish%<gray>."
@@ -361,7 +364,7 @@ monitor-cmd:
   not-watching: "<gray>Монитор выключен."
   empty: "<dark_gray>Пока пусто."
   more: "<dark_gray>+%value% ещё"
-  global-on: "<green>Слежу за всеми в пвп. <gray>Повтори команду - выключить."
+  global-on: "<green>Слежу за всеми в пвп — эти строки видишь только ты. <gray>Повтори команду - выключить."
   global-off: "<gray>Слежение за пвп выключено."
   pvp-none: "<dark_gray>Сейчас никто не дерётся."
 bypass:
@@ -481,6 +484,16 @@ checks:
     aim: "Neuro Aim"
     hitbox: "HitBox"
     punish: "Наказание"
+update:
+  available: "<gold>Вышла новая версия <white>%version%<gold> — обновите античит. <gray>Сейчас стоит <white>%current%<gray>."
+  staged: "<green>Версия %version% скачана<gray> — применится после рестарта сервера."
+  notes: " <dark_gray>· %value%"
+  download: " <yellow>[Скачать]"
+  hover: "<gray>Нажми, чтобы открыть"
+  checking: "<gray>Спрашиваю сервис о новой версии..."
+  current: "<green>Стоит последняя версия <white>%version%<green>."
+  unknown-build: "<red>Этот jar собран не через Gradle: версию не с чем сравнить."
+  off: "<gray>Проверка обновлений выключена: <white>update.enabled<gray> в config.yml."
 reload:
   done: "<green>Перезагружено <gray>за <white>%value%мс<gray>."
 npc:

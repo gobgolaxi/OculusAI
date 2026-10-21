@@ -27,7 +27,7 @@ public final class FeatureExtractor {
             pitchDeltas.add((double) Math.abs(window.get(i).pitch() - window.get(i - 1).pitch()));
         }
 
-        double scale = median(yawDeltas);
+        double scale = effectiveScale(yawDeltas);
         if (scale < MIN_MEANINGFUL_DELTA) {
             return null;
         }
@@ -106,7 +106,20 @@ public final class FeatureExtractor {
         for (int i = 1; i < window.size(); i++) {
             deltas.add(Math.abs(wrapDegrees(window.get(i).yaw() - window.get(i - 1).yaw())));
         }
-        return median(deltas);
+        return effectiveScale(deltas);
+    }
+
+    /** The rotation scale a window is scored against.
+     *
+     *  <p>The median is the right scale for normal tracking: one stray packet
+     *  must not change every ratio in the vector. It is the wrong scale for a
+     *  short fight, though - one fast hit-and-turn among still samples leaves
+     *  the median at zero and used to drop the whole window. Falling back to
+     *  the mean keeps that flick scoreable without changing the scale of a
+     *  window that already has a real median. */
+    private static double effectiveScale(List<Double> deltas) {
+        double median = median(deltas);
+        return median >= MIN_MEANINGFUL_DELTA ? median : mean(deltas);
     }
 
     static double quantum(List<Double> deltas) {

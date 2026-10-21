@@ -44,6 +44,9 @@ public final class PlayerData {
 
     private volatile double buffer;
     private volatile double probability;
+    /** The model's answer before smoothing or the buffer. /oai math shows this
+     *  instead of {@link #probability}, which stays smoothed. */
+    private volatile double rawProbability;
     private volatile long lastProbabilityMs;
     private volatile long lastAttackMs;
     private volatile int windowsAnalysed;
@@ -401,6 +404,20 @@ public final class PlayerData {
         return probability;
     }
 
+    public void rawProbability(double value) {
+        rawProbability = value;
+    }
+
+    public double rawProbability() {
+        return rawProbability;
+    }
+
+    /** The probability a live display should print: the raw model answer in
+     *  raw mode, the smoothed one otherwise. */
+    public double displayProbability(boolean raw) {
+        return raw ? rawProbability : probability;
+    }
+
     public long lastProbabilityMs() {
         return lastProbabilityMs;
     }
@@ -428,6 +445,7 @@ public final class PlayerData {
         clearWindow();
         resetBuffer();
         probability = 0.0D;
+        rawProbability = 0.0D;
         lastProbabilityMs = 0L;
         lastAttackMs = 0L;
         windowsAnalysed = 0;

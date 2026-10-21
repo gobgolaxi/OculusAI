@@ -193,7 +193,7 @@ public final class Hud implements Service {
             if (!target.analysing(plugin.hudConfig().staleMs())) {
                 builder.append("&cno analysing");
             } else {
-                builder.append("<gray>").append(Msg.percent(target.probability()));
+                builder.append("<gray>").append(Msg.percent(shownProbability(target)));
                 builder.append("<dark_gray>/<white>").append(Msg.round(target.buffer(), 1));
             }
             first = false;
@@ -443,13 +443,19 @@ public final class Hud implements Service {
         return watcher.canSee(target);
     }
 
+    /** The model output /oai math asks for: raw when it is off, the smoothed
+     *  reading that feeds the buffer otherwise. */
+    private double shownProbability(PlayerData target) {
+        return target.displayProbability(!plugin.detection().mathEnabled());
+    }
+
     private Map<String, String> placeholders(PlayerData target, double fraction, int barWidth,
                                              Map<String, String> extra) {
         var theme = plugin.theme().current();
         Map<String, String> placeholders = new HashMap<>();
         placeholders.put("bar", Msg.bar(fraction, barWidth));
         placeholders.put("arrow", arrow(target));
-        placeholders.put("probability", Msg.percent(target.probability()));
+        placeholders.put("probability", Msg.percent(shownProbability(target)));
         placeholders.put("buffer", Msg.round(target.buffer(), 1));
         placeholders.put("max_buffer", Msg.round(plugin.config().bufferMax(), 0));
         placeholders.put("player", target.name());

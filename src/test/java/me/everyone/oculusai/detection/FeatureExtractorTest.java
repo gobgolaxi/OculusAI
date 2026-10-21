@@ -50,22 +50,41 @@ class FeatureExtractorTest {
     @Test
     @DisplayName("a window that never moved is refused instead of scored")
     void stillWindowIsRefused() {
-        assertNull(FeatureExtractor.extract(stillThenFlickWindow(20, 18), 1.0D));
+        assertNull(FeatureExtractor.extract(stillThenFlickWindow(20, 20), 1.0D));
         assertNull(FeatureExtractor.extract(List.of(sample(1, 1), sample(1, 1), sample(1, 1)), 1.0D));
     }
 
     @Test
-    @DisplayName("a refused window is exactly the one whose median delta collapsed")
-    void refusalMatchesZeroRatio() {
-        for (int stillTicks = 10; stillTicks <= 19; stillTicks++) {
+    @DisplayName("a sparse flick is scored even when most samples are still")
+    void sparseFlickIsScored() {
+        // A short fight can be one fast turn surrounded by still samples. The
+        // median delta is zero there, but the window is not empty - refusing it
+        // let a fast hit-and-turn go unanalysed.
+        for (int stillTicks = 10; stillTicks <= 18; stillTicks++) {
             List<RotationSample> window = stillThenFlickWindow(20, stillTicks);
-            boolean medianIsZero = (20 - 1 - stillTicks) < 10;
-            FeatureVector vector = FeatureExtractor.extract(window, 1.0D);
-            if (medianIsZero) {
-                assertNull(vector, "stillTicks=" + stillTicks + " leaves a zero median");
-            } else {
-                assertNotNull(vector, "stillTicks=" + stillTicks + " leaves a real median");
-            }
+            assertNotNull(FeatureExtractor.extract(window, 1.0D),
+                    "stillTicks=" + stillTicks + " has a real flick");
+        }
+    }
+
+    @Test
+    @DisplayName("a one-tick 180 degree flick produces a bounded vector")
+    void fastFlickAmongStillSamples() {
+        List<RotationSample> window = new ArrayList<>(20);
+        for (int i = 0; i < 19; i++) {
+            window.add(sample(0.0D, 0.0D));
+        }
+        window.add(sample(180.0D, 0.0D));
+
+        FeatureVector vector = FeatureExtractor.extract(window, 1.0D);
+
+        assertNotNull(vector);
+        Map<String, Double> features = vector.toMap();
+        assertTrue(features.get("snap_ratio") > 1.0D);
+        assertTrue(features.get("zero_ratio") > 0.9D);
+        for (String name : RATIO_FEATURES) {
+            assertTrue(Double.isFinite(features.get(name)), name + " is not finite");
+            assertTrue(features.get(name) < 1.0E3D, name + " blew up to " + features.get(name));
         }
     }
 
@@ -105,9 +124,9 @@ class FeatureExtractorTest {
     }
 
     @Test
-    @DisplayName("the refusal depends on the median, not on the baseline")
+    @DisplayName("a still window is refused regardless of the baseline")
     void baselineDoesNotRescueAStillWindow() {
-        List<RotationSample> window = stillThenFlickWindow(20, 18);
+        List<RotationSample> window = stillThenFlickWindow(20, 20);
 
         assertNull(FeatureExtractor.extract(window, 0.0D));
         assertNull(FeatureExtractor.extract(window, 1.0D));

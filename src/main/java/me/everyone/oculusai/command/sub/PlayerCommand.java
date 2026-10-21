@@ -37,7 +37,8 @@ public final class PlayerCommand extends SubCommand {
                 "value", Msg.round(data.buffer(), 1),
                 "max", Msg.round(max, 0)));
         replyKey(sender, "player-cmd.probability", Map.of(
-                "value", Msg.percent(data.probability())));
+                "value", Msg.percent(data.displayProbability(
+                        !plugin.detection().mathEnabled()))));
         replyKey(sender, "player-cmd.windows", Map.of(
                 "value", Integer.toString(data.windowsAnalysed())));
 

@@ -180,7 +180,7 @@ public final class Monitor implements Service {
                 : (data.buffer() >= plugin.config().alertAt() ? "<gold>\u25cf" : "<dark_gray>\u25cf");
 
         return " " + dot + " <white>" + data.name()
-                + " " + Values.inline(plugin.config(), data.probability(), data.buffer())
+                + " " + Values.inline(plugin.config(), shownProbability(data), data.buffer())
                 + " " + Msg.bar(fraction, 8);
     }
 
@@ -236,10 +236,14 @@ public final class Monitor implements Service {
                 : (data.buffer() >= plugin.config().alertAt() ? "<gold>\u25cf" : "<dark_gray>\u25cf");
 
         return " " + dot + " <white>" + pad(data.name(), 16)
-                + " " + Values.probability(plugin.config(), data.probability())
+                + " " + Values.probability(plugin.config(), shownProbability(data))
                 + " <gray>buf " + Values.buffer(plugin.config(), data.buffer())
                 + "<dark_gray>/<gray>" + Msg.round(max, 1)
                 + " " + Msg.bar(fraction, BAR_WIDTH);
+    }
+
+    private double shownProbability(PlayerData data) {
+        return data.displayProbability(!plugin.detection().mathEnabled());
     }
 
     private static String pad(String value, int width) {

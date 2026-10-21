@@ -23,6 +23,10 @@ public final class Detection implements Service {
     private final OculusAI plugin;
     private final Map<UUID, Boolean> inFlight = new ConcurrentHashMap<>();
     private TickLoop.Handle task;
+    /** Which probability /oai prob prints. True is the smoothed value that
+     *  feeds the buffer; false is the model's raw answer. The buffer itself
+     *  always runs - this switch must never change detection. */
+    private volatile boolean mathEnabled = true;
 
     public Detection(OculusAI plugin) {
         this.plugin = plugin;
@@ -45,6 +49,17 @@ public final class Detection implements Service {
 
     public void forget(UUID uuid) {
         inFlight.remove(uuid);
+    }
+
+    public boolean mathEnabled() {
+        return mathEnabled;
+    }
+
+    /** Switches only what /oai prob displays. The buffer keeps integrating
+     *  exactly as before, so Aim alerts and punishments do not change. */
+    public boolean toggleMath() {
+        mathEnabled = !mathEnabled;
+        return mathEnabled;
     }
 
     private void tick() {
@@ -139,12 +154,22 @@ public final class Detection implements Service {
         }).whenComplete((ignored, throwable) -> inFlight.remove(data.uuid()));
     }
 
-    private double attackLinkedRotation(List<RotationSample> window) {
+    /** Rotation close enough to an attack to belong to it.
+     *
+     *  <p>The attack packet carries no rotation of its own, and the server can
+     *  receive the look before the hit. In that order the flick that set up
+     *  the hit is one sample before the sample marked as attacked, so looking
+     *  only at samples marked in place skipped exactly the fast hit-and-turn
+     *  case and the window was never analysed. A delta counts when either end
+     *  or the sample right after it is an attack. */
+    static double attackLinkedRotation(List<RotationSample> window) {
         double total = 0.0D;
         for (int i = 1; i < window.size(); i++) {
             RotationSample previous = window.get(i - 1);
             RotationSample current = window.get(i);
-            if (!previous.attacked() && !current.attacked()) {
+            boolean nearAttack = previous.attacked() || current.attacked()
+                    || (i + 1 < window.size() && window.get(i + 1).attacked());
+            if (!nearAttack) {
                 continue;
             }
             double yaw = Math.abs(FeatureExtractor.wrapDegrees(current.yaw() - previous.yaw()));
@@ -158,7 +183,9 @@ public final class Detection implements Service {
         // The buffer integrates the smoothed reading, not the raw one. Recording
         // still gets the raw value - a session is a record of what was measured
         // - but the thing that decides a kick should not be swayed by one
-        // degenerate window.
+        // degenerate window. This path never depends on mathEnabled: that flag
+        // only chooses which probability a live display prints.
+        data.rawProbability(probability);
         data.applyProbability(data.smooth(probability),
                 plugin.config().suspicion(),
                 plugin.config().gain(),

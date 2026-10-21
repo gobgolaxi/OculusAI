@@ -40,11 +40,17 @@ public final class ProbCommand extends SubCommand {
         replyKey(sender, "prob.watching", Map.of(
                 "player", target.name(),
                 "buffer", Msg.round(target.buffer(), 1),
-                "probability", Msg.percent(target.probability()),
+                "probability", Msg.percent(shownProbability(target)),
                 "windows", Integer.toString(target.windowsAnalysed())));
         if (target.windowsAnalysed() == 0) {
             replyKey(sender, "prob.no-data");
         }
+    }
+
+    /** The model's raw answer when /oai math is off, the smoothed one that
+     *  feeds the buffer otherwise. The buffer number is unaffected. */
+    private double shownProbability(PlayerData target) {
+        return target.displayProbability(!plugin.detection().mathEnabled());
     }
 
     @Override

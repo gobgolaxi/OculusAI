@@ -63,7 +63,8 @@ public final class PlayersMenu extends Menu {
                 "value", Msg.round(data.buffer(), 1),
                 "max", Msg.round(plugin.config().bufferMax(), 0))));
         lore.add(Msg.parse(Msg.bar(fraction, 12)));
-        lore.add(plugin.lang().text("players.last-reading", Map.of("value", Msg.percent(data.probability()))));
+        lore.add(plugin.lang().text("players.last-reading", Map.of("value",
+                Msg.percent(data.displayProbability(!plugin.detection().mathEnabled())))));
         lore.add(plugin.lang().text("players.windows", Map.of("value", Integer.toString(data.windowsAnalysed()))));
         if (data.recording()) {
             lore.add(plugin.lang().text("players.recording", Map.of("value", Integer.toString(data.recordedCount()))));

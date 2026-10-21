@@ -32,11 +32,13 @@ dependencies {
     if (modern) {
         compileOnly("io.papermc.paper:paper-api:$mcVersion-R0.1-SNAPSHOT")
         compileOnly("net.dmulloy2:ProtocolLib:5.4.0")
-        testRuntimeOnly("io.papermc.paper:paper-api:$mcVersion-R0.1-SNAPSHOT")
+        // The tests build stubs of the Bukkit types, so the API has to be on
+        // the compile classpath as well, not only on the runtime one.
+        testImplementation("io.papermc.paper:paper-api:$mcVersion-R0.1-SNAPSHOT")
     } else {
         compileOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
         compileOnly("net.dmulloy2:ProtocolLib:5.4.0")
-        testRuntimeOnly("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
+        testImplementation("com.destroystokyo.paper:paper-api:1.16.5-R0.1-SNAPSHOT")
     }
 
     testImplementation(platform("org.junit:junit-bom:5.10.2"))

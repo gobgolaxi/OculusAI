@@ -4,12 +4,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.command.SubCommand;
 import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.storage.DatasetStore;
 import me.everyone.oculusai.util.Msg;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 
 public final class DataCommand extends SubCommand {
@@ -61,13 +63,15 @@ public final class DataCommand extends SubCommand {
             reply(sender, "<red>Usage: <white>/oai data rem <player>");
             return;
         }
-        PlayerData data = plugin.data().byName(args[1]);
-        if (data == null) {
-            reply(sender, "<red>That player is not online.");
+        // The roster keeps a player after they log off, so the admin who wants
+        // somebody off it is usually looking at somebody who is not online.
+        DatasetStore.RosterEntry entry = rosterEntry(args[1]);
+        if (entry == null) {
+            reply(sender, "<red>Nobody called <white>" + args[1] + "<gray> is on the roster.");
             return;
         }
-        reply(sender, plugin.datasets().unenrol(data.uuid())
-                ? "<gray>Removed <white>" + data.name() + "<gray> from the roster."
+        reply(sender, plugin.datasets().unenrol(entry.uuid())
+                ? "<gray>Removed <white>" + entry.name() + "<gray> from the roster."
                 : "<red>They were not on it.");
     }
 
@@ -137,21 +141,77 @@ public final class DataCommand extends SubCommand {
             reply(sender, "<red>Usage: <white>/oai data delete cheater|legit <player>");
             return;
         }
-        PlayerData data = plugin.data().byName(args[2]);
-        if (data == null) {
-            reply(sender, "<red>That player is not online.");
+        String label = args[1].toLowerCase(Locale.ROOT);
+        // Stored data outlives the session, so the player whose data is being
+        // dropped is often not online any more.
+        DatasetStore.RosterEntry entry = rosterEntry(args[2]);
+        if (entry != null) {
+            deleteStored(sender, entry.uuid(), entry.name(), label);
             return;
         }
-        String label = args[1].toLowerCase(Locale.ROOT);
-        deleteStored(sender, data, label);
+        UUID uuid = uuidOf(args[2]);
+        if (uuid == null) {
+            reply(sender, "<red>Nobody called <white>" + args[2] + "<gray> is known to this server.");
+            return;
+        }
+        deleteStored(sender, uuid, args[2], label);
     }
 
-    private void deleteStored(CommandSender sender, PlayerData data, String label) {
-        plugin.datasets().remove(data.uuid().toString(), label).thenAccept(removed ->
+    private void deleteStored(CommandSender sender, UUID uuid, String name, String label) {
+        plugin.datasets().remove(uuid.toString(), label).thenAccept(removed ->
                 reply(sender, removed == null
                         ? "<red>The service did not answer or refused the change."
                         : "<gray>Deleted <white>" + removed + "<gray> stored <white>" + label
-                        + "<gray> windows for <white>" + data.name() + "<gray>."));
+                        + "<gray> windows for <white>" + name + "<gray>."));
+    }
+
+    /** The roster entry a name belongs to, online or not.
+     *
+     * <p>The name is looked for on the roster first, then among the players
+     * the server still knows about: that way a rename does not strand the
+     * entry, and a player who already left can still be taken off the
+     * roster. */
+    private DatasetStore.RosterEntry rosterEntry(String name) {
+        DatasetStore.RosterEntry entry = plugin.datasets().entryByName(name);
+        if (entry != null) {
+            return entry;
+        }
+        UUID uuid = uuidOf(name);
+        return uuid == null ? null : plugin.datasets().entry(uuid);
+    }
+
+    /** The UUID of a player, online or not.
+     *
+     * <p>Only the cached name is asked for: a fresh lookup would go out to the
+     * Mojang API and hold the server thread while it waits. */
+    private UUID uuidOf(String name) {
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        PlayerData data = plugin.data().byName(name);
+        if (data != null) {
+            return data.uuid();
+        }
+        try {
+            OfflinePlayer cached = plugin.getServer().getOfflinePlayerIfCached(name);
+            return cached == null ? null : cached.getUniqueId();
+        } catch (IllegalArgumentException refused) {
+            // The server turns down names it cannot look up, a name that is
+            // empty or too long for a profile for instance.
+            return null;
+        }
+    }
+
+    /** The names on the roster that start with what has been typed. */
+    private List<String> rosterNames(String partial) {
+        String lower = partial.toLowerCase(Locale.ROOT);
+        List<String> names = new ArrayList<>();
+        for (DatasetStore.RosterEntry entry : plugin.datasets().roster()) {
+            if (entry.name() != null && entry.name().toLowerCase(Locale.ROOT).startsWith(lower)) {
+                names.add(entry.name());
+            }
+        }
+        return names;
     }
 
     private void usage(CommandSender sender) {
@@ -185,15 +245,31 @@ public final class DataCommand extends SubCommand {
         boolean needsLabel = args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("delete");
         if (args.length == 2) {
             if (!needsLabel) {
-                return onlineNames(args[1]);
+                // rem takes anybody the roster still holds, not only the ones
+                // who happen to be online.
+                return knownNames(args[1]);
             }
             List<String> labels = new ArrayList<>(List.of(DatasetStore.CHEATER, DatasetStore.LEGIT));
             labels.removeIf(label -> !label.startsWith(args[1].toLowerCase(Locale.ROOT)));
             return labels;
         }
         if (args.length == 3 && needsLabel) {
-            return onlineNames(args[2]);
+            // Signing up needs a player who is here; dropping stored data
+            // does not.
+            return args[0].equalsIgnoreCase("delete") ? knownNames(args[2]) : onlineNames(args[2]);
         }
         return List.of();
+    }
+
+    /** The names that can be picked: the players online and the ones the
+     *  server still knows about, the roster included. */
+    private List<String> knownNames(String partial) {
+        List<String> names = new ArrayList<>(rosterNames(partial));
+        for (String name : onlineNames(partial)) {
+            if (!names.contains(name)) {
+                names.add(name);
+            }
+        }
+        return names;
     }
 }

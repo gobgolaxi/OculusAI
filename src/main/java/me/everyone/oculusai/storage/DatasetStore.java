@@ -100,6 +100,28 @@ public final class DatasetStore implements Service {
         return roster.get(uuid);
     }
 
+    /** The roster entry of a player name, whoever is online and whoever is not.
+     *
+     * <p>The roster keeps a player after they log off, so the admin who wants
+     * somebody off it is usually looking at somebody who is not online. The
+     * match ignores case and surrounding spaces, because a name typed in chat
+     * does not have to be spelled the way the roster remembers it. */
+    public RosterEntry entryByName(String name) {
+        if (name == null) {
+            return null;
+        }
+        String needle = name.trim().toLowerCase(Locale.ROOT);
+        if (needle.isEmpty()) {
+            return null;
+        }
+        for (RosterEntry entry : roster.values()) {
+            if (entry.name() != null && entry.name().toLowerCase(Locale.ROOT).equals(needle)) {
+                return entry;
+            }
+        }
+        return null;
+    }
+
     public boolean collecting() {
         return collecting;
     }

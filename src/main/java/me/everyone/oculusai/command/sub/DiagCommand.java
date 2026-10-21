@@ -58,6 +58,19 @@ public final class DiagCommand extends SubCommand {
         line(sender, "service", plugin.api().reachable(),
                 plugin.api().reachable() ? "reachable" : "paused, not answering");
 
+        // Which plan and which model the service says this key is on. A
+        // lapsed subscription is served by the trimmed model, and that is a
+        // change in what the readings mean - so it belongs here rather than
+        // only in the panel.
+        String plan = plugin.api().servicePlan();
+        if (!plan.isBlank()) {
+            line(sender, "plan", !plugin.api().modelDemoted(),
+                    plugin.api().modelDemoted()
+                            ? plan + ", answering with " + plugin.api().serviceModel()
+                                    + " - the subscription no longer reaches the full model"
+                            : plan + ", answering with " + plugin.api().serviceModel());
+        }
+
         // Captures the service has not taken yet. Silent when there are none,
         // because an empty queue is the normal state and says nothing.
         int held = plugin.uploads().size();

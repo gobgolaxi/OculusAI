@@ -2,6 +2,7 @@ package me.everyone.oculusai.network;
 
 
 import me.everyone.oculusai.core.Service;
+import me.everyone.oculusai.core.TickLoop;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import me.everyone.oculusai.OculusAI;
+import me.everyone.oculusai.player.PlayerData;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -35,6 +37,10 @@ public final class ApiClient implements Service {
     // for: while the service is down nothing is analysed, so thirty seconds of
     // it after every blip is thirty seconds of unchecked combat.
     private static final long PROBE_PERIOD_TICKS = 20L * 5L;
+    /** Counting who is being analysed is a walk over the tracked players, so
+     *  it is done every few seconds rather than every tick. The poll that
+     *  sends it is minutes apart anyway. */
+    private static final long PRESENCE_SAMPLE_TICKS = 20L * 5L;
     private static final int SETTINGS_EVERY_PROBES = 6;
     // Training is minutes of work behind one request. The ordinary timeout is
     // a second and a half, so sending /train on it guarantees a timeout, and a
@@ -58,6 +64,18 @@ public final class ApiClient implements Service {
      *  settings fetch lands, which is why the dataset manager treats empty as
      *  "assume only what has always worked" rather than as "nothing works". */
     private volatile Set<Integer> serviceSchemas = Set.of();
+    /** What the service last said this key is entitled to. Read from the
+     *  settings poll: the plan can lapse between restarts, and until this
+     *  arrived the only way to find out which model was answering was to ask
+     *  somebody with the panel open. */
+    private volatile String servicePlan = "";
+    private volatile String serviceModel = "";
+    private volatile boolean modelDemoted;
+    /** Last counts taken on the main thread, for the settings poll to send.
+     *  Volatile because the sampler and the poll are different threads. */
+    private volatile int onlinePlayers;
+    private volatile int analysedPlayers;
+    private TickLoop.Handle presenceTask;
 
     private record Exclusion(String world, String region) {}
 
@@ -74,6 +92,7 @@ public final class ApiClient implements Service {
                 .build();
         long period = PROBE_PERIOD_TICKS * 50L;
         probeTask = plugin.worker().repeat(this::probe, period, period, TimeUnit.MILLISECONDS);
+        presenceTask = plugin.ticks().every(PRESENCE_SAMPLE_TICKS, this::samplePresence);
         refreshSettings();
     }
 
@@ -83,6 +102,12 @@ public final class ApiClient implements Service {
             probeTask.cancel(false);
             probeTask = null;
         }
+        if (presenceTask != null) {
+            presenceTask.cancel();
+            presenceTask = null;
+        }
+        onlinePlayers = 0;
+        analysedPlayers = 0;
     }
 
     public CompletableFuture<Double> predict(Map<String, Double> features) {
@@ -142,8 +167,56 @@ public final class ApiClient implements Service {
         return serviceSchemas;
     }
 
+    /** The plan the service is serving this key under, as of the last poll.
+     *  Empty until the first one answers. */
+    public String servicePlan() {
+        return servicePlan;
+    }
+
+    /** Which model actually answers for this key - "fast" or "pro". */
+    public String serviceModel() {
+        return serviceModel;
+    }
+
+    /** True when the key is asking for a better model than the plan now
+     *  reaches: the subscription lapsed and Fast is answering. */
+    public boolean modelDemoted() {
+        return modelDemoted;
+    }
+
+    /** Counts the two figures the service cannot work out for itself.
+     *
+     *  <p>On the main thread, because that is the only place the online player
+     *  list may be read: it is a live view of a collection the server mutates
+     *  on its own thread, and walking it from the HTTP worker is how a plugin
+     *  earns a ConcurrentModificationException in somebody else's crash
+     *  report. The numbers are left in two fields for the poll to pick up. */
+    private void samplePresence() {
+        onlinePlayers = plugin.getServer().getOnlinePlayers().size();
+        int analysing = 0;
+        long stale = plugin.hudConfig().staleMs();
+        for (PlayerData data : plugin.data().all()) {
+            if (data.analysing(stale)) {
+                analysing++;
+            }
+        }
+        analysedPlayers = analysing;
+    }
+
+    /** How many players this server has, and how many of them the anticheat is
+     *  scoring right now.
+     *
+     *  <p>Reported on the settings poll rather than on a schedule of its own:
+     *  that poll already happens, and a second timer for two integers would be
+     *  a second thing to go wrong. The service cannot derive either number -
+     *  a window of combat deliberately carries no identity - so if the server
+     *  does not say, nobody knows. */
+    private String presenceQuery() {
+        return "?players=" + onlinePlayers + "&analysing=" + analysedPlayers;
+    }
+
     private void refreshSettings() {
-        get("/plugin/settings").thenAccept(response -> {
+        get("/plugin/settings" + presenceQuery()).thenAccept(response -> {
             if (response == null) return;
             if (response.has("feature_versions")) {
                 Set<Integer> schemas = new java.util.LinkedHashSet<>();
@@ -157,6 +230,14 @@ public final class ApiClient implements Service {
                 });
                 serviceSchemas = Set.copyOf(schemas);
             }
+            if (response.has("plan")) {
+                servicePlan = response.get("plan").getAsString();
+            }
+            if (response.has("model_tier")) {
+                serviceModel = response.get("model_tier").getAsString();
+            }
+            modelDemoted = response.has("model_demoted")
+                    && response.get("model_demoted").getAsBoolean();
             if (!response.has("analysis_exclusions")) return;
             List<Exclusion> loaded = new ArrayList<>();
             response.getAsJsonArray("analysis_exclusions").forEach(element -> {

@@ -3,6 +3,10 @@ package me.everyone.oculusai.ui;
 
 import me.everyone.oculusai.core.Service;
 import me.everyone.oculusai.core.TickLoop;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -27,6 +31,9 @@ public final class Monitor implements Service {
     private static final int BAR_WIDTH = 10;
 
     private static final String CONSOLE = "console";
+    /** A tiny state file rather than config.yml: saving Bukkit's config on
+     *  every toggle rewrites the file and can drop its comments. */
+    private static final String STATE_FILE = "monitor.state";
 
     private static final class Session {
         private final String id;
@@ -55,7 +62,43 @@ public final class Monitor implements Service {
 
     @Override
     public void enable() {
+        global = loadGlobal();
+        globalTicks = 0;
         task = plugin.ticks().every(PERIOD_TICKS, this::tick);
+    }
+
+    @Override
+    public void reload() {
+        // /oai reload keeps the watch the operator turned on; the state file
+        // is the source of truth, config.yml is the first-run default.
+        global = loadGlobal();
+        globalTicks = 0;
+    }
+
+    private boolean loadGlobal() {
+        Path state = plugin.getDataFolder().toPath().resolve(STATE_FILE);
+        try {
+            if (Files.isRegularFile(state)) {
+                String value = Files.readString(state, StandardCharsets.UTF_8).trim();
+                return value.equalsIgnoreCase("on") || value.equals("1")
+                        || value.equalsIgnoreCase("true");
+            }
+        } catch (IOException failure) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING,
+                    "Could not read " + state + "; using monitor.enabled", failure);
+        }
+        return plugin.config().monitorEnabled();
+    }
+
+    private void saveGlobal() {
+        Path state = plugin.getDataFolder().toPath().resolve(STATE_FILE);
+        try {
+            Files.createDirectories(state.getParent());
+            Files.writeString(state, global ? "on\n" : "off\n", StandardCharsets.UTF_8);
+        } catch (IOException failure) {
+            plugin.getLogger().log(java.util.logging.Level.WARNING,
+                    "Could not save the monitor state to " + state, failure);
+        }
     }
 
     @Override
@@ -73,10 +116,12 @@ public final class Monitor implements Service {
         return global;
     }
 
-    /** Switches the watch over everybody on or off. Returns the new state. */
+    /** Switches the watch over everybody on or off. Returns the new state.
+     *  The choice is saved so a restart does not quietly turn the watch off. */
     public boolean toggleGlobal() {
         global = !global;
         globalTicks = 0;
+        saveGlobal();
         return global;
     }
 

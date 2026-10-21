@@ -35,7 +35,8 @@ public final class Hud implements Service {
     private static final int REMOUNT_TICKS = 20;
     private static final int ALWAYS_PROB_SYNC_TICKS = 10;
 
-    private record Watch(UUID target, long expiresAt, List<Line> holograms, boolean compact, boolean permanent) {
+    private record Watch(UUID target, UUID world, long expiresAt, List<Line> holograms,
+                         boolean compact, boolean permanent) {
     }
 
     private record Line(int entityId, UUID uuid) {
@@ -258,9 +259,17 @@ public final class Hud implements Service {
     }
 
     private void watch(Player watcher, PlayerData target, boolean compact, boolean permanent) {
+        // A packet-created display entity lives in the viewer's current world.
+        // Watching a player elsewhere would spawn text at the same coordinates
+        // in the wrong world.
+        if (!watcher.getWorld().equals(target.player().getWorld())) {
+            return;
+        }
         Map<UUID, Watch> watches = watching.computeIfAbsent(watcher.getUniqueId(), ignored -> new ConcurrentHashMap<>());
+        UUID world = watcher.getWorld().getUID();
         Watch previous = watches.get(target.uuid());
-        if (previous != null && previous.compact() == compact && previous.permanent() == permanent) {
+        if (previous != null && previous.world().equals(world)
+                && previous.compact() == compact && previous.permanent() == permanent) {
             return;
         }
         previous = watches.remove(target.uuid());
@@ -270,6 +279,7 @@ public final class Hud implements Service {
         List<Line> holograms = createLines(compact ? 1 : Math.max(1, plugin.hudConfig().hologramLines()));
         Watch watch = new Watch(
                 target.uuid(),
+                world,
                 permanent ? Long.MAX_VALUE : System.currentTimeMillis() + plugin.hudConfig().hologramSeconds() * 1000L,
                 holograms,
                 compact,
@@ -314,11 +324,17 @@ public final class Hud implements Service {
                 return true;
             }
 
+            UUID world = watcher.getWorld().getUID();
             watches.entrySet().removeIf(watchEntry -> {
                 Watch watch = watchEntry.getValue();
                 PlayerData target = plugin.data().get(watch.target());
                 if (target == null
                         || !target.player().isOnline()
+                        // The client discards entities when it changes world.
+                        // An old watch would keep sending metadata to ids the
+                        // client no longer knows, so drop it and let the
+                        // AlwaysProb sync spawn a fresh set in the new world.
+                        || !watch.world().equals(world)
                         || !canKeepWatch(watcher, target.player(), watch.permanent())
                         || (!watch.permanent() && now > watch.expiresAt())) {
                     destroyHolograms(watcher, watch);
@@ -679,7 +695,8 @@ public final class Hud implements Service {
                 return false;
             }
             Player target = plugin.getServer().getPlayer(entry.getKey());
-            if (target != null && isVisibleTo(viewer, target)) {
+            if (target != null && watch.world().equals(viewer.getWorld().getUID())
+                    && isVisibleTo(viewer, target)) {
                 return false;
             }
             destroyHolograms(viewer, watch);
@@ -700,6 +717,13 @@ public final class Hud implements Service {
         if (viewer.getUniqueId().equals(target.getUniqueId())) {
             return false;
         }
+        // A display entity is spawned in the viewer's client world; a target
+        // in another world would put a hologram in the wrong place or nowhere
+        // at all. World transfers also recreate the client's entity store, so
+        // this check is what makes AlwaysProb rebuild itself afterwards.
+        if (!viewer.getWorld().equals(target.getWorld())) {
+            return false;
+        }
         return viewer.canSee(target);
     }
 
@@ -712,6 +736,9 @@ public final class Hud implements Service {
         }
         if (watcher.getUniqueId().equals(target.getUniqueId())) {
             return !permanent;
+        }
+        if (!watcher.getWorld().equals(target.getWorld())) {
+            return false;
         }
         return watcher.canSee(target);
     }

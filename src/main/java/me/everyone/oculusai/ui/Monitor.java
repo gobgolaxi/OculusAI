@@ -164,7 +164,10 @@ public final class Monitor implements Service {
         }
         globalTicks++;
 
-        plugin.getServer().getConsoleSender().sendMessage(frame);
+        // This is a chat watch for staff. The console is not a chat window:
+        // sending every frame there buried real warnings in a row per second.
+        // A console session still works through tick() when an operator asks
+        // for it explicitly with /oai monitor list.
         for (Player online : plugin.getServer().getOnlinePlayers()) {
             if (online.hasPermission("oculusai.alerts")) {
                 online.sendMessage(frame);

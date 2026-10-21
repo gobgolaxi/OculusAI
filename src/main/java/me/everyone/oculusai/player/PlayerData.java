@@ -11,6 +11,7 @@ import me.everyone.oculusai.detection.FeatureSchemas;
 import me.everyone.oculusai.detection.RotationSample;
 import me.everyone.oculusai.detection.MedianWindow;
 import me.everyone.oculusai.detection.RunningStats;
+import me.everyone.oculusai.detection.SuspicionBuffer;
 import org.bukkit.entity.Player;
 
 public final class PlayerData {
@@ -228,20 +229,26 @@ public final class PlayerData {
                 && System.currentTimeMillis() - lastProbabilityMs <= staleMs;
     }
 
+    /** True when the last reading is old enough that the buffer behind it is
+     *  no longer evidence about what the player is doing now. */
+    public boolean idle(long staleMs) {
+        return lastProbabilityMs > 0L
+                && System.currentTimeMillis() - lastProbabilityMs > staleMs;
+    }
+
     /** The reading the buffer should integrate: see {@link MedianWindow}. */
     public double smooth(double value) {
         return probabilitySmoothing.add(value);
     }
 
-    public void applyProbability(double value, double suspicion, double gain, double decay, double max) {
+    public void applyProbability(double value, double suspicion, double gain, double decay,
+                                 double leak, double max) {
         long now = System.currentTimeMillis();
         probability = value;
         lastProbabilityMs = now;
         windowsAnalysed++;
 
-        double distance = value - suspicion;
-        buffer = Math.max(0.0D, Math.min(max,
-                buffer + (distance > 0.0D ? distance * gain : distance * decay)));
+        buffer = SuspicionBuffer.add(buffer, value, suspicion, gain, decay, leak, max);
 
         synchronized (bufferHistory) {
             bufferHistory.addLast(buffer);
@@ -411,6 +418,7 @@ public final class PlayerData {
 
     public void resetBuffer() {
         buffer = 0.0D;
+        probabilitySmoothing.reset();
         synchronized (bufferHistory) {
             bufferHistory.clear();
         }

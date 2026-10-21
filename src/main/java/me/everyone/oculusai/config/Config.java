@@ -33,6 +33,7 @@ public final class Config implements Service {
     private double suspicion = 0.5D;
     private double gain = 1.0D;
     private double decay = 1.4D;
+    private double bufferLeak = 0.4D;
     private double bufferMax = 10.0D;
     private double alertAt = 1.7D;
     private double punishAt = 5.0D;
@@ -85,6 +86,7 @@ public final class Config implements Service {
     private int checkAimConfirmations = 1;
     private long checkAimCooldownMs = 10000L;
     private boolean checkAimTestOnly = false;
+    private boolean checkAimResetAfterCombat = true;
 
     public Config(OculusAI plugin) {
         this.plugin = plugin;
@@ -133,6 +135,7 @@ public final class Config implements Service {
         suspicion = clamp(config.getDouble("buffer.suspicion", 0.5D), 0.0D, 1.0D);
         gain = Math.max(0.01D, config.getDouble("buffer.gain", 1.0D));
         decay = Math.max(0.01D, config.getDouble("buffer.decay", 1.4D));
+        bufferLeak = clamp(config.getDouble("buffer.leak", 0.4D), 0.0D, 0.95D);
         bufferMax = Math.max(0.1D, config.getDouble("buffer.max", 10.0D));
         alertAt = Math.max(0.0D, config.getDouble("buffer.alert-at", 1.7D));
         punishAt = Math.max(alertAt, config.getDouble("buffer.punish-at", 5.0D));
@@ -197,6 +200,7 @@ public final class Config implements Service {
         checkAimCooldownMs = Math.max(0L, config.getLong(
                 "checks.aim.cooldown-ms", alertCooldownMs));
         checkAimTestOnly = config.getBoolean("checks.aim.test-only", false);
+        checkAimResetAfterCombat = config.getBoolean("checks.aim.reset-after-combat", true);
     }
 
     private String stripTrailingSlash(String url) {
@@ -309,6 +313,10 @@ public final class Config implements Service {
 
     public double decay() {
         return decay;
+    }
+
+    public double bufferLeak() {
+        return bufferLeak;
     }
 
     public double bufferMax() {
@@ -502,6 +510,10 @@ public final class Config implements Service {
 
     public boolean checkAimTestOnly() {
         return checkAimTestOnly;
+    }
+
+    public boolean checkAimResetAfterCombat() {
+        return checkAimResetAfterCombat;
     }
 
     private Sound parseSound(String value, Sound fallback) {

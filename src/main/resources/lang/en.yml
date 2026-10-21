@@ -426,6 +426,12 @@ check-settings:
     decay:
       name: "<aqua>Decay rate"
       hint: "<gray>How fast the buffer falls below the threshold."
+    leak:
+      name: "<aqua>Buffer leak"
+      hint: "<gray>Share of the buffer lost on a reading below the threshold. Stops a short cheat burst from staying in the buffer after it ends."
+    reset-after-combat:
+      name: "<aqua>Reset out of combat"
+      hint: "<gray>Clear the buffer when no new readings arrive for longer than the combat window."
   wall:
     max-distance:
       name: "<aqua>Maximum distance"

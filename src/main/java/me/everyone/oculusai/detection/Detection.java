@@ -53,7 +53,20 @@ public final class Detection implements Service {
         }
         for (PlayerData data : plugin.data().all()) {
             Player player = data.player();
-            if (!player.isOnline() || player.hasPermission("oculusai.bypass")) {
+            if (!player.isOnline()) {
+                continue;
+            }
+            // A buffer is evidence about the last few seconds, not a permanent
+            // record. Once readings stop arriving the player has changed what
+            // they are doing, so the next fight must not inherit the peak of
+            // the previous one.
+            if (plugin.config().checkAimResetAfterCombat()
+                    && data.buffer() > 0.0D
+                    && data.idle(plugin.config().combatMs())) {
+                data.resetBuffer();
+                plugin.alerts().reset(data.uuid(), "aim");
+            }
+            if (player.hasPermission("oculusai.bypass")) {
                 continue;
             }
             if (plugin.api().excluded(player)) {
@@ -150,6 +163,7 @@ public final class Detection implements Service {
                 plugin.config().suspicion(),
                 plugin.config().gain(),
                 plugin.config().decay(),
+                plugin.config().bufferLeak(),
                 plugin.config().bufferMax());
         plugin.history().record(data);
         plugin.journal().record(data);

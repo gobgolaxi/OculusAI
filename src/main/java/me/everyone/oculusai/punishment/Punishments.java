@@ -34,7 +34,8 @@ public final class Punishments implements Service {
     public void handle(PlayerData data) {
         if (!plugin.config().analysisEnabled()
                 || !plugin.config().punishmentEnabled()
-                || !data.player().isOnline()) {
+                || !data.player().isOnline()
+                || plugin.bypass().isBypassed(data.player())) {
             return;
         }
         long now = System.currentTimeMillis();

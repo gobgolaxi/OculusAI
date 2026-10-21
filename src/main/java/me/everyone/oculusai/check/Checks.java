@@ -66,7 +66,7 @@ public final class Checks implements Service {
      *  be cancelled. */
     public boolean onAttack(Player attacker, PlayerData data, int targetEntityId) {
         if (!plugin.config().analysisEnabled() || !plugin.config().checksEnabled()
-                || attacker.hasPermission("oculusai.bypass")) {
+                || plugin.bypass().isBypassed(attacker)) {
             return false;
         }
 
@@ -98,7 +98,7 @@ public final class Checks implements Service {
     public boolean onPrediction(PlayerData data) {
         Player player = data.player();
         if (!plugin.config().analysisEnabled() || !player.isOnline()
-                || player.hasPermission("oculusai.bypass")) {
+                || plugin.bypass().isBypassed(player)) {
             return false;
         }
 

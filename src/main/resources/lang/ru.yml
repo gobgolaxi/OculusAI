@@ -22,6 +22,7 @@ help:
     history: "Листать историю детектов игрока."
     prob: "Следить за Prob игрока в реальном времени."
     math: "Показывать чистую вероятность модели вместо сглаженной."
+    bypass: "Выключить или включить античит для игрока."
     player: "Показать данные подозрений игрока."
     forget: "Сбросить текущее подозрение."
     data: "Записывать и размечать обучающие данные."
@@ -363,6 +364,13 @@ monitor-cmd:
   global-on: "<green>Слежу за всеми в пвп. <gray>Повтори команду - выключить."
   global-off: "<gray>Слежение за пвп выключено."
   pvp-none: "<dark_gray>Сейчас никто не дерётся."
+bypass:
+  usage: "<red>Использование: <white>%value%"
+  enabled: "<green>Античит выключен для <white>%player%<green>."
+  disabled: "<green>Античит снова включён для <white>%player%<green>."
+  unknown: "<red>Такой игрок ещё ни разу не заходил на сервер."
+  save-failed: "<red>Не удалось сохранить bypass.yml: после перезапуска список сбросится."
+  permission: "<yellow>У %player% всё ещё есть право oculusai.bypass - сними его, чтобы включить анализ."
 forget:
   usage: "<red>Использование: <white>%value%"
   done: "<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> <white>0%dropped%<gray>. Подозрение начинается заново."

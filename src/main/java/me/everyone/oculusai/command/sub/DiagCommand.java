@@ -44,9 +44,14 @@ public final class DiagCommand extends SubCommand {
             return;
         }
 
-        line(sender, "bypass", !target.hasPermission("oculusai.bypass"),
-                target.hasPermission("oculusai.bypass")
-                        ? "has oculusai.bypass (a wildcard permission grants it too)" : "no");
+        boolean permissionBypass = target.hasPermission("oculusai.bypass");
+        boolean managedBypass = plugin.bypass().managed(target.getUniqueId());
+        line(sender, "bypass", !(permissionBypass || managedBypass),
+                permissionBypass
+                        ? "has oculusai.bypass (a wildcard permission grants it too)"
+                        : managedBypass
+                                ? "disabled with /oai bypass - run it again to enable"
+                                : "no");
         line(sender, "excluded", !plugin.api().excluded(target),
                 plugin.api().excluded(target)
                         ? "world/region excluded by the service" : "no");

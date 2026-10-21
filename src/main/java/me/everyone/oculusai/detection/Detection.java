@@ -81,7 +81,7 @@ public final class Detection implements Service {
                 data.resetBuffer();
                 plugin.alerts().reset(data.uuid(), "aim");
             }
-            if (player.hasPermission("oculusai.bypass")) {
+            if (plugin.bypass().isBypassed(player)) {
                 continue;
             }
             if (plugin.api().excluded(player)) {

@@ -21,6 +21,7 @@ import me.everyone.oculusai.network.Network;
 import me.everyone.oculusai.network.UploadQueue;
 import me.everyone.oculusai.npc.Npcs;
 import me.everyone.oculusai.packet.PacketBridge;
+import me.everyone.oculusai.player.Bypass;
 import me.everyone.oculusai.player.EntityTracker;
 import me.everyone.oculusai.player.PlayerRegistry;
 import me.everyone.oculusai.player.Players;
@@ -47,6 +48,7 @@ public final class OculusAI extends JavaPlugin {
     private Configuration configuration;
     private Network network;
     private Players players;
+    private Bypass bypass;
     private Storage storage;
     private Ui ui;
     private Alerts alerts;
@@ -75,6 +77,7 @@ public final class OculusAI extends JavaPlugin {
         configuration = register(new Configuration(this));
         network = register(new Network(this));
         players = register(new Players(this));
+        bypass = register(new Bypass(this));
         storage = register(new Storage(this));
         alerts = register(new Alerts(this));
         punishments = register(new Punishments(this));
@@ -207,6 +210,10 @@ public final class OculusAI extends JavaPlugin {
 
     public PlayerRegistry data() {
         return players.registry();
+    }
+
+    public Bypass bypass() {
+        return bypass;
     }
 
     public EntityTracker tracker() {

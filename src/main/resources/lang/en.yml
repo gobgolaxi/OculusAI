@@ -22,6 +22,7 @@ help:
     history: "Browse a player's detection history."
     prob: "Watch a player's live aim reading."
     math: "Show the raw model probability instead of the smoothed one."
+    bypass: "Turn the anticheat on or off for one player."
     player: "View a player's suspicion data."
     forget: "Drop the current suspicion and start over."
     data: "Record and label training data."
@@ -365,6 +366,13 @@ prob:
   not-watching: "<gray>You were not watching anyone."
   watching: "<gray>Watching <white>%player%<gray>. Buffer <white>%buffer%<gray>, last reading <white>%probability%<gray>, windows analysed <white>%windows%"
   no-data: "<dark_gray>Nothing analysed yet - readings only appear while they fight."
+bypass:
+  usage: "<red>Usage: <white>%value%"
+  enabled: "<green>Anticheat disabled for <white>%player%<green>."
+  disabled: "<green>Anticheat enabled for <white>%player%<green>."
+  unknown: "<red>That player has never joined this server."
+  save-failed: "<red>Could not save bypass.yml: the list will reset after a restart."
+  permission: "<yellow>%player% still has oculusai.bypass - remove it to enable analysis."
 forget:
   usage: "<red>Usage: <white>%value%"
   done: "<gray>Forgot <white>%player%<gray>: buffer <white>%buffer%<gray> -> <white>0%dropped%<gray>. Suspicion starts again from nothing."

@@ -95,6 +95,7 @@ public final class Config implements Service {
     private long checkAimCooldownMs = 10000L;
     private boolean checkAimTestOnly = false;
     private boolean checkAimResetAfterCombat = true;
+    private long checkAimResetAfterMs = 8000L;
 
     public Config(OculusAI plugin) {
         this.plugin = plugin;
@@ -219,6 +220,11 @@ public final class Config implements Service {
                 "checks.aim.cooldown-ms", alertCooldownMs));
         checkAimTestOnly = config.getBoolean("checks.aim.test-only", false);
         checkAimResetAfterCombat = config.getBoolean("checks.aim.reset-after-combat", true);
+        // Never shorter than the combat window itself: a reset that can fire
+        // while the player is still counted as fighting is the bug this key
+        // exists to fix.
+        checkAimResetAfterMs = Math.max(combatMs(),
+                config.getLong("checks.aim.reset-after-ms", 8000L));
     }
 
     private String stripTrailingSlash(String url) {
@@ -567,6 +573,12 @@ public final class Config implements Service {
 
     public boolean checkAimTestOnly() {
         return checkAimTestOnly;
+    }
+
+    /** How long a player must be quiet - no readings and no swings - before
+     *  the buffer is thrown away. */
+    public long checkAimResetAfterMs() {
+        return checkAimResetAfterMs;
     }
 
     public boolean checkAimResetAfterCombat() {

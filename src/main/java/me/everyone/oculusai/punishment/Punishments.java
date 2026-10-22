@@ -278,6 +278,7 @@ public final class Punishments implements Service {
         inventory.clear();
         inventory.setArmorContents(null);
         inventory.setItemInOffHand(null);
+        Animations.spilled(world, from);
     }
 
     /** Throws one item out of the player: up and away, so the inventory is

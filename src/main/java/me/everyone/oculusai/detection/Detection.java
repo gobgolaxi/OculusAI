@@ -71,13 +71,25 @@ public final class Detection implements Service {
             if (!player.isOnline()) {
                 continue;
             }
-            // A buffer is evidence about the last few seconds, not a permanent
-            // record. Once readings stop arriving the player has changed what
-            // they are doing, so the next fight must not inherit the peak of
-            // the previous one.
+            // A buffer is evidence about the last few seconds, not a
+            // permanent record, so a player who has stopped fighting must not
+            // carry their peak into the next fight.
+            //
+            // Both halves are needed, and the swing is the important one.
+            // Readings alone stopping does not mean the fight stopped: a
+            // window is dropped whenever it falls under min-rotation, under
+            // min-attack-rotation or under min-attacks, which happens
+            // constantly in a real fight - chasing, missing, drinking, waiting
+            // out a cooldown. Keyed on readings alone and measured against the
+            // two-second combat window, this threw away a buffer of 6.9 in the
+            // middle of a PvP fight, which is also exactly how a cheater who
+            // pauses every few seconds would never reach the punishment
+            // threshold at all.
+            long quiet = plugin.config().checkAimResetAfterMs();
             if (plugin.config().checkAimResetAfterCombat()
                     && data.buffer() > 0.0D
-                    && data.idle(plugin.config().combatMs())) {
+                    && data.idle(quiet)
+                    && !data.inCombat(quiet)) {
                 data.resetBuffer();
                 plugin.alerts().reset(data.uuid(), "aim");
             }

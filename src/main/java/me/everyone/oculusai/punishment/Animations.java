@@ -117,10 +117,15 @@ public final class Animations {
         if (world == null) {
             return;
         }
+        // Everybody gets the whoosh of being thrown; the rest is per show.
+        play(world, where, 0.9F, 1.6F, "ENTITY_BLAZE_SHOOT");
         switch (chosen) {
             case ASCEND -> play(world, where, 1.0F, 1.4F, "ENTITY_ENDER_DRAGON_FLAP");
             case EXPLODE -> play(world, where, 0.8F, 0.6F, "ENTITY_TNT_PRIMED", "ENTITY_GENERIC_EXPLODE");
-            case LIGHTNING -> world.strikeLightningEffect(where);
+            case LIGHTNING -> {
+                world.strikeLightningEffect(where);
+                play(world, where, 0.7F, 0.8F, "ENTITY_ELDER_GUARDIAN_CURSE");
+            }
             case WITHER -> play(world, where, 0.8F, 1.2F, "ENTITY_WITHER_SPAWN");
             default -> {
             }
@@ -146,6 +151,12 @@ public final class Animations {
             case ASCEND -> {
                 spawn(world, centre, 6, 0.35D, particle("CRIT", "CRIT"));
                 spawn(world, centre, 4, 0.3D, particle("CLOUD", "CLOUD"));
+                // A rising ladder of chimes: the pitch climbs with the player,
+                // so the ear follows them up without a second effect.
+                if (tick % 5 == 0) {
+                    play(world, where, 0.7F, 0.8F + (1.2F * tick) / total,
+                            "ENTITY_ITEM_PICKUP");
+                }
             }
             case EXPLODE -> {
                 // Builds towards the burst: the last ticks are visibly busier
@@ -153,6 +164,12 @@ public final class Animations {
                 int count = 2 + (10 * tick) / total;
                 spawn(world, centre, count, 0.4D, particle("SMOKE_NORMAL", "SMOKE"));
                 spawn(world, centre, count / 2, 0.3D, particle("FLAME", "FLAME"));
+                // A fuse that quickens: every fifth tick to begin with, every
+                // other one by the end.
+                int fuse = Math.max(2, 6 - (4 * tick) / total);
+                if (tick % fuse == 0) {
+                    play(world, where, 0.5F, 1.4F, "ENTITY_TNT_PRIMED");
+                }
             }
             case LIGHTNING -> {
                 if (tick % 8 == 0) {
@@ -163,11 +180,15 @@ public final class Animations {
             case FIREWORK -> {
                 if (tick % 12 == 0) {
                     firework(world, around(where, 1.5D).add(0.0D, 1.0D, 0.0D), false);
+                    play(world, where, 0.8F, 1.0F, "ENTITY_FIREWORK_ROCKET_LAUNCH");
                 }
             }
             case WITHER -> {
                 spawn(world, centre, 8, 0.45D, particle("SMOKE_LARGE", "LARGE_SMOKE"));
                 spawn(world, centre, 4, 0.4D, particle("SOUL", "SOUL_FIRE_FLAME"));
+                if (tick % 10 == 0) {
+                    play(world, where, 0.6F, 0.7F, "BLOCK_PORTAL_TRIGGER");
+                }
             }
             default -> {
             }
@@ -200,6 +221,19 @@ public final class Animations {
             default -> {
             }
         }
+    }
+
+    /** The sound of a cheater's inventory coming out of them: the chest
+     *  opening under the clatter of what was in it. Played once for the lot
+     *  rather than once per stack - forty items each firing their own pickup
+     *  sound is a wall of noise, not an effect. */
+    public static void spilled(World world, Location where) {
+        if (world == null) {
+            return;
+        }
+        play(world, where, 1.0F, 0.7F, "BLOCK_CHEST_OPEN");
+        play(world, where, 1.0F, 1.4F, "ENTITY_ITEM_FRAME_BREAK");
+        play(world, where, 0.8F, 0.6F, "BLOCK_ANVIL_LAND");
     }
 
     /** The push given to an item coming out of a punished player: up and

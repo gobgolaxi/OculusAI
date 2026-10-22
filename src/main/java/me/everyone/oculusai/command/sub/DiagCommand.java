@@ -55,6 +55,11 @@ public final class DiagCommand extends SubCommand {
         line(sender, "excluded", !plugin.api().excluded(target),
                 plugin.api().excluded(target)
                         ? "world/region excluded by the service" : "no");
+        // Without this line a flying player reads as "no windows, no reason",
+        // because the samples are dropped before anything else can count them.
+        line(sender, "elytra", !target.isGliding(),
+                target.isGliding()
+                        ? "gliding - samples are not taken while flying" : "not gliding");
         line(sender, "service", plugin.api().reachable(),
                 plugin.api().reachable() ? "reachable" : "paused, not answering");
 

@@ -94,6 +94,17 @@ public final class PacketBridge implements Service {
         }
 
         if (isMovement(type)) {
+            // An elytra flight is a different instrument. Rotation steers the
+            // body rather than a crosshair, pitch is held at extremes for
+            // seconds at a time, and the whole window is smooth by
+            // construction - which is what the model was taught to read as
+            // assistance. Samples are dropped rather than merely left
+            // unscored, and the window is cleared, so that a flight cannot
+            // splice onto the ground fight that follows it.
+            if (player.isGliding()) {
+                data.clearWindow();
+                return;
+            }
             data.noteGround(player.isOnGround());
             data.noteSprint(player.isSprinting());
             if (type == PacketType.Play.Client.POSITION || type == PacketType.Play.Client.GROUND) {

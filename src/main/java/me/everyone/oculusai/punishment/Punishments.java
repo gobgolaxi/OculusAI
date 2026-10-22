@@ -100,14 +100,8 @@ public final class Punishments implements Service {
             boolean strip = vanilla && plugin.config().punishmentStrip();
             if (strip) {
                 // The ban is the kick escalated, so it strips for the same
-                // reason the kick does. Order matters and is bought with a
-                // tick: /ban disconnects them, and a player who has left can
-                // no longer be stripped or killed.
-                plugin.platform().onEntity(player, () -> {
-                    dropEverything(player);
-                    player.setHealth(0.0D);
-                });
-                plugin.ticks().after(1L, () -> run(banCommand));
+                // reason the kick does.
+                stripThenDisconnect(player, () -> run(banCommand));
             } else {
                 run(banCommand);
             }
@@ -117,13 +111,12 @@ public final class Punishments implements Service {
             // On Folia a player may only be touched from the thread that owns
             // them, and detection runs on the global one.
             boolean strip = plugin.config().punishmentStrip();
-            plugin.platform().onEntity(player, () -> {
-                if (strip) {
-                    dropEverything(player);
-                    player.setHealth(0.0D);
-                }
-                player.kickPlayer(Msg.parse("Cheat detected"));
-            });
+            if (strip) {
+                stripThenDisconnect(player,
+                        () -> plugin.platform().onEntity(player, () -> kick(player)));
+            } else {
+                plugin.platform().onEntity(player, () -> kick(player));
+            }
             plugin.getLogger().info((strip ? "Stripped, killed and kicked " : "Kicked ")
                     + data.name());
         } else {
@@ -149,6 +142,36 @@ public final class Punishments implements Service {
         if (!withoutSlash.isBlank()) {
             plugin.getServer().dispatchCommand(
                     plugin.getServer().getConsoleSender(), withoutSlash);
+        }
+    }
+
+    /** Empties the player onto the ground, kills them, and only then lets
+     *  them be disconnected.
+     *
+     *  <p>The disconnect waits a tick on purpose. Killing and kicking in the
+     *  same tick means the player leaves while the server is still working
+     *  through the death: the death message, the statistic and the respawn
+     *  state are all decided after {@code setHealth} returns, and a session
+     *  that ends inside that window can save the player as they were before
+     *  it. A tick is cheap and makes the death a death.
+     *
+     *  <p>The strip runs on the thread owning the player; the disconnect is
+     *  scheduled on the tick loop, which is the global thread on Folia, so
+     *  the order holds on both servers. A disconnect that touches the player
+     *  rather than dispatching a command has to find its way back onto the
+     *  owning thread itself - the kick does, the ban command does not. */
+    private void stripThenDisconnect(Player player, Runnable disconnect) {
+        plugin.platform().onEntity(player, () -> {
+            dropEverything(player);
+            player.setHealth(0.0D);
+        });
+        plugin.ticks().after(1L, disconnect);
+    }
+
+    /** Disconnects a player who may already have left on their own. */
+    private void kick(Player player) {
+        if (player.isOnline()) {
+            player.kickPlayer(Msg.parse("Cheat detected"));
         }
     }
 

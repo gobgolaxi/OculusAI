@@ -390,6 +390,18 @@ punish-menu:
     left: "<dark_gray>ЛКМ <gray>+1"
     right: "<dark_gray>ПКМ <gray>-1"
     shift: "<dark_gray>Shift <gray>шаг 5"
+market:
+  searching: "<gray>Спрашиваю маркет..."
+  failed: "<red>Маркет не ответил."
+  empty: "<gray>Ничего не нашлось."
+  not-found: "<red>Такого пресета нет."
+  apply-hint: "<dark_gray>Применить: <gray>/oai market apply <id>"
+  usage-info: "<red>Использование: <white>/oai market info <id>"
+  usage-apply: "<red>Использование: <white>/oai market apply <id>"
+  usage-publish: "<red>Использование: <white>/oai market publish <название>"
+  applied: "<green>Применён <white>%name%<green>: настроек изменено <white>%value%<green>."
+  publishing: "<gray>Выкладываю настройки..."
+  published: "<green>Выложено: <white>%name%<green>, id <white>%value%<green>."
 kickanim:
   ascend: "Подброс"
   none: "Без анимации"

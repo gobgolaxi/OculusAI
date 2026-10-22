@@ -392,6 +392,18 @@ punish-menu:
     left: "<dark_gray>Left <gray>+1"
     right: "<dark_gray>Right <gray>-1"
     shift: "<dark_gray>Shift <gray>step 5"
+market:
+  searching: "<gray>Asking the market..."
+  failed: "<red>The market did not answer."
+  empty: "<gray>Nothing found."
+  not-found: "<red>No such preset."
+  apply-hint: "<dark_gray>Apply with: <gray>/oai market apply <id>"
+  usage-info: "<red>Usage: <white>/oai market info <id>"
+  usage-apply: "<red>Usage: <white>/oai market apply <id>"
+  usage-publish: "<red>Usage: <white>/oai market publish <name>"
+  applied: "<green>Applied <white>%name%<green>: <white>%value%<green> settings changed."
+  publishing: "<gray>Publishing your settings..."
+  published: "<green>Published <white>%name%<green>, id <white>%value%<green>."
 kickanim:
   ascend: "Ascend"
   none: "None"

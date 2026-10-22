@@ -1,6 +1,7 @@
 package me.everyone.oculusai.player;
 
 
+import me.everyone.oculusai.core.Platform;
 import me.everyone.oculusai.core.Service;
 import me.everyone.oculusai.core.TickLoop;
 import java.util.ArrayDeque;
@@ -44,6 +45,8 @@ public final class EntityTracker implements Service {
      *  to scan every online player on every hit to find this mapping. */
     private final Map<Integer, Player> players = new ConcurrentHashMap<>();
     private TickLoop.Handle task;
+    /** Folia only: one sampling task per player, on the thread owning them. */
+    private final Map<UUID, Platform.Cancellable> followers = new ConcurrentHashMap<>();
 
     public EntityTracker(OculusAI plugin) {
         this.plugin = plugin;
@@ -51,7 +54,43 @@ public final class EntityTracker implements Service {
 
     @Override
     public void enable() {
+        // One sweep of every online player is a cross-region read, which Folia
+        // forbids: there is no thread on which every player is legal. The same
+        // work is therefore split up and each player sampled on the thread
+        // that owns them. On Paper the single sweep stays, because one task
+        // doing the rounds is cheaper than one task per player.
+        if (plugin.platform().folia()) {
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                follow(player);
+            }
+            return;
+        }
         task = plugin.ticks().every(1L, this::sample);
+    }
+
+    /** Starts sampling one player on their own thread. Does nothing off
+     *  Folia, where the single sweep already covers them. */
+    public void follow(Player player) {
+        if (!plugin.platform().folia() || player == null) {
+            return;
+        }
+        Platform.Cancellable existing = followers.remove(player.getUniqueId());
+        if (existing != null) {
+            existing.cancel();
+        }
+        followers.put(player.getUniqueId(),
+                plugin.platform().entityRepeating(player, 1L, 1L, () -> sample(player)));
+    }
+
+    /** Stops sampling one player. */
+    public void unfollow(Player player) {
+        if (player == null) {
+            return;
+        }
+        Platform.Cancellable follower = followers.remove(player.getUniqueId());
+        if (follower != null) {
+            follower.cancel();
+        }
     }
 
     @Override
@@ -60,6 +99,10 @@ public final class EntityTracker implements Service {
             task.cancel();
             task = null;
         }
+        for (Platform.Cancellable follower : followers.values()) {
+            follower.cancel();
+        }
+        followers.clear();
         tracked.clear();
         history.clear();
         players.clear();
@@ -70,18 +113,23 @@ public final class EntityTracker implements Service {
         // to a budget per tick, so that a swing at one could be scored - but a
         // swing at one is no longer analysed at all, so their positions were
         // being written twenty times a second and never read.
-        long now = System.currentTimeMillis();
         for (Player player : plugin.getServer().getOnlinePlayers()) {
-            Location location = player.getLocation();
-            World world = location.getWorld();
-            if (world == null) {
-                continue;
-            }
-            players.put(player.getEntityId(), player);
-            remember(player.getEntityId(), new Tracked(
-                    location.getX(), location.getY(), location.getZ(),
-                    player.getWidth(), player.getHeight(), true, world.getUID(), now));
+            sample(player);
         }
+    }
+
+    /** Records where one player is. Must run on the thread owning them. */
+    private void sample(Player player) {
+        Location location = player.getLocation();
+        World world = location.getWorld();
+        if (world == null) {
+            return;
+        }
+        players.put(player.getEntityId(), player);
+        remember(player.getEntityId(), new Tracked(
+                location.getX(), location.getY(), location.getZ(),
+                player.getWidth(), player.getHeight(), true, world.getUID(),
+                System.currentTimeMillis()));
     }
 
     public void track(int entityId, double x, double y, double z, double width,

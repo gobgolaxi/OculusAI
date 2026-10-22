@@ -309,6 +309,7 @@ journal:
     offline: "<dark_gray>Player is offline right now."
   player-offline: "<red>This player is no longer online."
   observe-started: "<gray>Observing <white>%player%<gray> in spectator with Prob enabled."
+  observe-unsupported: "<red>Spectating does not work on Folia: it teleports you onto a player another thread is ticking."
 vanish:
   gamemode-blocked: "<red>You cannot change gamemode while vanished."
 player-cmd:
@@ -503,6 +504,7 @@ npc:
   spawned: "<gray>Spawned <white>%value%<gray> sparring dummy/dummies."
   cleared: "<gray>Sparring dummies removed."
   full: "<red>Already at the sparring dummy limit."
+  unsupported: "<red>The sparring manikin does not work on Folia: it walks after a player across regions, which Folia does not allow from one thread."
   killed: "<gray>Dummy <white>%value%<gray> is down."
 dummy:
   title: "Dummy Settings"

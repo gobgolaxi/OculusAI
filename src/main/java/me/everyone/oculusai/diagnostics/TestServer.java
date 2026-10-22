@@ -55,7 +55,7 @@ public final class TestServer implements Service, Listener {
 
     @Override
     public void enable() {
-        if (!plugin.config().testServerEnabled()) {
+        if (!plugin.config().testServerEnabled() || plugin.platform().folia()) {
             return;
         }
 

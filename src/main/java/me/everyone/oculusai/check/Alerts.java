@@ -156,8 +156,11 @@ public final class Alerts implements Service {
             }
             online.sendMessage(message);
             if (sound) {
-                online.playSound(online.getLocation(), plugin.config().alertSound(),
-                        plugin.config().alertSoundVolume(), plugin.config().alertSoundPitch());
+                // A sound is played at a location, so it belongs to whichever
+                // thread owns the listener; chat does not.
+                plugin.platform().onEntity(online, () -> online.playSound(online.getLocation(),
+                        plugin.config().alertSound(), plugin.config().alertSoundVolume(),
+                        plugin.config().alertSoundPitch()));
             }
         }
     }

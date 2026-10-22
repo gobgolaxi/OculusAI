@@ -213,7 +213,8 @@ public final class DashboardMenu extends Menu {
                 viewer.closeInventory();
                 int spawned = plugin.npcs().spawn(viewer, 1, NpcOptions.DEFAULT);
                 viewer.sendMessage(plugin.config().prefix() + plugin.lang().text(
-                        spawned > 0 ? "npc.spawned" : "npc.full",
+                        spawned > 0 ? "npc.spawned"
+                                : plugin.npcs().supported() ? "npc.full" : "npc.unsupported",
                         Map.of("value", Integer.toString(spawned))));
             }
             case SLOT_THEME -> {

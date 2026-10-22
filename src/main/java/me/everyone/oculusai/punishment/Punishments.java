@@ -67,7 +67,9 @@ public final class Punishments implements Service {
 
         String command = Msg.fill(plugin.config().punishmentCommand(), placeholders).trim();
         if (command.isBlank()) {
-            player.kickPlayer(Msg.parse("Cheat detected"));
+            // On Folia a player may only be kicked from the thread that owns
+            // them, and detection runs on the global one.
+            plugin.platform().onEntity(player, () -> player.kickPlayer(Msg.parse("Cheat detected")));
             plugin.getLogger().info("Kicked " + data.name());
         } else {
             String commandWithoutSlash = command.startsWith("/")

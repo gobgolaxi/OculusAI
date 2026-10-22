@@ -11,6 +11,7 @@ import me.everyone.oculusai.config.Language;
 import me.everyone.oculusai.config.Themes;
 import me.everyone.oculusai.core.AsyncWorker;
 import me.everyone.oculusai.core.MainThread;
+import me.everyone.oculusai.core.Platform;
 import me.everyone.oculusai.core.Service;
 import me.everyone.oculusai.core.ServiceHost;
 import me.everyone.oculusai.core.TickLoop;
@@ -43,6 +44,7 @@ public final class OculusAI extends JavaPlugin {
     private ServiceHost host;
     private AsyncWorker worker;
     private MainThread mainThread;
+    private Platform platform;
     private TickLoop ticks;
 
     private Configuration configuration;
@@ -72,6 +74,13 @@ public final class OculusAI extends JavaPlugin {
         host = new ServiceHost(getLogger());
         worker = new AsyncWorker(getLogger());
         mainThread = new MainThread(this);
+        platform = new Platform(this);
+        if (platform.folia()) {
+            getLogger().info("Folia detected: analysis, alerts and punishments run per region."
+                    + " Holograms, the sparring manikin and the test arena are off - each of"
+                    + " them reads entities across region boundaries, which Folia does not"
+                    + " allow from one thread.");
+        }
 
         ticks = register(new TickLoop(this));
         configuration = register(new Configuration(this));
@@ -169,6 +178,12 @@ public final class OculusAI extends JavaPlugin {
 
     public MainThread mainThread() {
         return mainThread;
+    }
+
+    /** Which server fork this is, and how to get onto the thread that owns a
+     *  given entity. */
+    public Platform platform() {
+        return platform;
     }
 
     public Configuration configuration() {

@@ -61,7 +61,7 @@ public final class NpcCommand extends SubCommand {
         NpcOptions options = new NpcOptions(health, stationary, invulnerable);
         int spawned = plugin.testServer().spawnDummies(player, requested, options);
         if (spawned == 0) {
-            replyKey(sender, "npc.full");
+            replyKey(sender, plugin.npcs().supported() ? "npc.full" : "npc.unsupported");
             return;
         }
         replyKey(sender, "npc.spawned", Map.of("value", Integer.toString(spawned)));

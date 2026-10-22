@@ -206,6 +206,14 @@ public final class Hud implements Service {
     public void enable() {
         ticks = 0;
         remountTicks = 0;
+        // A hologram is a packet entity mounted on a player and refreshed from
+        // the position of whoever is being watched, so one pass reads a
+        // watcher and a target that Folia may well be ticking on two different
+        // threads. Making that safe means a redesign, not a scheduler swap, so
+        // on Folia the display side stays off and the analysis runs without it.
+        if (plugin.platform().folia()) {
+            return;
+        }
         loadAlwaysProb();
         task = plugin.ticks().every(1L, DISPLAY_UPDATE_TICKS, this::tick);
     }
@@ -277,7 +285,7 @@ public final class Hud implements Service {
     /** Whether this server build can draw the holograms at all. False on
      *  1.16, where there is no Display entity to hang text on. */
     public boolean supportsAlwaysProb() {
-        return true;
+        return !plugin.platform().folia();
     }
 
     public void watch(Player watcher, PlayerData target) {

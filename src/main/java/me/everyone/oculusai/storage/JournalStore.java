@@ -313,10 +313,20 @@ public final class JournalStore implements Service {
         return entries.size();
     }
 
-    public void observe(Player watcher, UUID targetId) {
+    /** Puts a watcher into spectator mode on a suspect.
+     *
+     *  @return false if this server cannot do it, so the caller can say so
+     *          instead of reporting a spectate that never started. */
+    public boolean observe(Player watcher, UUID targetId) {
         PlayerData data = plugin.data().get(targetId);
         if (data == null || !data.player().isOnline()) {
-            return;
+            return false;
+        }
+        // Spectating reads the target's position and teleports the watcher to
+        // it. On Folia those are two entities two region threads may own, and
+        // the read happens on the watcher's thread, so it is not ours to make.
+        if (plugin.platform().folia()) {
+            return false;
         }
         enterVanish(watcher);
         Player target = data.player();
@@ -324,6 +334,7 @@ public final class JournalStore implements Service {
         watcher.teleport(target.getLocation());
         watcher.setSpectatorTarget(target);
         plugin.displays().watch(watcher, data);
+        return true;
     }
 
     public boolean enterVanish(Player watcher) {

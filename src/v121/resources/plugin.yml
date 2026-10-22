@@ -3,6 +3,11 @@ version: '${version}'
 
 main: me.everyone.oculusai.OculusAI
 api-version: '1.21'
+# Folia runs the analysis, alerts and punishments; holograms, the sparring
+# manikin and the test arena switch themselves off there. Without this flag
+# Folia refuses to load the plugin at all, which is worse than loading it
+# with the three display features missing.
+folia-supported: true
 load: POSTWORLD
 author: everyone
 description: Aim analysis for Paper, backed by a neural network served over HTTP.

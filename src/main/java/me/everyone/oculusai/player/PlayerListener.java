@@ -29,6 +29,9 @@ public final class PlayerListener implements Listener {
         plugin.data().add(event.getPlayer());
         plugin.journal().refreshFor(event.getPlayer());
         Player joining = event.getPlayer();
+        // On Folia each player is sampled by their own task, which has to be
+        // started here; off Folia one sweep already covers everybody.
+        plugin.tracker().follow(joining);
         plugin.worker().execute(() -> plugin.history().preload(
                 joining.getUniqueId(), joining.getName()));
 
@@ -84,6 +87,7 @@ public final class PlayerListener implements Listener {
                     "buffer " + String.format(Locale.ROOT, "%.1f", present.buffer()));
         }
 
+        plugin.tracker().unfollow(player);
         plugin.tracker().forget(player);
         plugin.displays().forget(player.getUniqueId());
         plugin.monitors().forget(player.getUniqueId());

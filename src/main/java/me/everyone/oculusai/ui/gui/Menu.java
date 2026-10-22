@@ -59,7 +59,10 @@ public abstract class Menu implements InventoryHolder {
         inventory = Bukkit.createInventory(this, size(), title());
         buttons.clear();
         build();
-        viewer.openInventory(inventory);
+        // On Folia an inventory may only be opened from the thread owning the
+        // viewer. A menu opened from a command is already there; one opened
+        // from a timer is not.
+        plugin.platform().onEntity(viewer, () -> viewer.openInventory(inventory));
     }
 
     public final void refresh() {

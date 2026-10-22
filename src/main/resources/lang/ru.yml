@@ -307,6 +307,7 @@ journal:
     offline: "<dark_gray>Игрок сейчас оффлайн."
   player-offline: "<red>Этот игрок уже не в сети."
   observe-started: "<gray>Теперь наблюдаешь за <white>%player%<gray> с включённым Prob."
+  observe-unsupported: "<red>Слежка не работает на Folia: она телепортирует тебя к игроку, которого тикает другой поток."
 vanish:
   gamemode-blocked: "<red>Нельзя менять gamemode во время скрытого наблюдения."
 player-cmd:
@@ -501,6 +502,7 @@ npc:
   spawned: "<gray>Заспавнено манекенов: <white>%value%<gray>."
   cleared: "<gray>Манекены убраны."
   full: "<red>Уже достигнут лимит манекенов."
+  unsupported: "<red>Манекен не работает на Folia: он ходит за игроком между регионами, а Folia этого из одного потока не позволяет."
   killed: "<gray>Манекен <white>%value%<gray> повержен."
 dummy:
   title: "Настройки манекена"

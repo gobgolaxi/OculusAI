@@ -95,6 +95,12 @@ public final class Npcs implements Service, Listener {
         task = plugin.ticks().every(1L, this::tick);
     }
 
+    /** False on Folia: the manikin chases a player and damages them, so its
+     *  tick touches an entity owned by whatever region it has walked into. */
+    public boolean supported() {
+        return !plugin.platform().folia();
+    }
+
     @Override
     public void disable() {
         if (task != null) {
@@ -109,6 +115,9 @@ public final class Npcs implements Service, Listener {
     }
 
     public int spawn(Player owner, int count, NpcOptions options) {
+        if (!supported()) {
+            return 0;
+        }
         int allowed = Math.min(Math.max(1, count), MAX_NPCS - npcs.size());
         if (allowed <= 0) {
             return 0;

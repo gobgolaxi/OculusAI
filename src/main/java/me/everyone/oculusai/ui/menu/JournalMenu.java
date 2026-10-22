@@ -126,7 +126,12 @@ public final class JournalMenu extends Menu {
             return;
         }
 
-        plugin.journal().observe(viewer, entry.uuid());
+        if (!plugin.journal().observe(viewer, entry.uuid())) {
+            viewer.sendMessage(plugin.config().prefix()
+                    + plugin.lang().text("journal.observe-unsupported"));
+            refresh();
+            return;
+        }
         viewer.closeInventory();
         viewer.sendMessage(plugin.config().prefix() + plugin.lang().text("journal.observe-started",
                 Map.of("player", target.getName())));

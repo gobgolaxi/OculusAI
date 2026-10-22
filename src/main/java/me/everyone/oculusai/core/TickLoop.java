@@ -3,13 +3,12 @@ package me.everyone.oculusai.core;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import me.everyone.oculusai.OculusAI;
-import org.bukkit.scheduler.BukkitTask;
 
 public final class TickLoop implements Service {
 
     private final OculusAI plugin;
     private final List<Timer> timers = new CopyOnWriteArrayList<>();
-    private BukkitTask task;
+    private Platform.Cancellable task;
     private volatile long tick;
 
     public TickLoop(OculusAI plugin) {
@@ -19,7 +18,10 @@ public final class TickLoop implements Service {
     @Override
     public void enable() {
         tick = 0L;
-        task = plugin.getServer().getScheduler().runTaskTimer(plugin, this::runTick, 1L, 1L);
+        // On Folia this is the global region thread: it owns no entities, so
+        // anything a timer does to a player has to go through
+        // Platform.onEntity first.
+        task = plugin.platform().globalRepeating(1L, 1L, this::runTick);
     }
 
     @Override

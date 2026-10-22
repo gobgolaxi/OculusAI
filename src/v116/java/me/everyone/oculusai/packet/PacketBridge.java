@@ -63,6 +63,16 @@ public final class PacketBridge implements Service {
         if (data == null) {
             return;
         }
+        // While the send-off is playing the cheater is frozen: attacks,
+        // looks and positions are all dropped here, so nothing they do from
+        // the moment of the verdict counts. Their own client keeps swinging
+        // and turning on screen - no server can stop that - but the server
+        // never hears any of it.
+        if (plugin.punishments().isHeld(player.getUniqueId())) {
+            event.setCancelled(true);
+            return;
+        }
+
         PacketType type = event.getPacketType();
 
         if (type == PacketType.Play.Client.USE_ENTITY) {

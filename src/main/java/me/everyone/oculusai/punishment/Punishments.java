@@ -1,10 +1,13 @@
 package me.everyone.oculusai.punishment;
 
 
+import me.everyone.oculusai.core.Platform;
 import me.everyone.oculusai.core.Service;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.util.Msg;
@@ -25,6 +28,15 @@ public final class Punishments implements Service {
 
     private final OculusAI plugin;
     private final Map<UUID, Long> lastPunished = new ConcurrentHashMap<>();
+    /** Players whose send-off is playing right now.
+     *
+     *  <p>{@code PacketBridge} drops everything these send while they are in
+     *  here, which is what "they cannot do anything" means in practice: a
+     *  cancelled attack never lands, and a cancelled look or position never
+     *  reaches the server, so the cheater is frozen where the show put them.
+     *  The client will still swing and turn on its own screen - no server can
+     *  prevent that - but nothing it does from here counts. */
+    private final Set<UUID> held = ConcurrentHashMap.newKeySet();
 
     public Punishments(OculusAI plugin) {
         this.plugin = plugin;
@@ -33,6 +45,12 @@ public final class Punishments implements Service {
     @Override
     public void disable() {
         lastPunished.clear();
+        held.clear();
+    }
+
+    /** True while this player's send-off is playing. */
+    public boolean isHeld(UUID uuid) {
+        return held.contains(uuid);
     }
 
     public void handle(PlayerData data) {
@@ -62,6 +80,9 @@ public final class Punishments implements Service {
 
     public void forget(UUID uuid) {
         lastPunished.remove(uuid);
+        // A player who left in the middle of their own send-off must not stay
+        // held: the id would be reused by their next session.
+        held.remove(uuid);
     }
 
     private void execute(PlayerData data) {
@@ -97,33 +118,20 @@ public final class Punishments implements Service {
             // plugin has it on /ban - taking that over is what an operator who
             // installed one expects.
             String banCommand = vanilla ? "ban " + data.name() + " Cheat detected" : configured;
+            // The ban is the kick escalated, so it gets the same send-off -
+            // but only when the plugin is the one banning. A named command
+            // owns the punishment, show included.
             boolean strip = vanilla && plugin.config().punishmentStrip();
-            if (strip) {
-                // The ban is the kick escalated, so it strips for the same
-                // reason the kick does.
-                stripThenDisconnect(player, () -> run(banCommand));
+            if (vanilla) {
+                show(player, strip, () -> run(banCommand));
             } else {
-                if (vanilla) {
-                    plugin.platform().onEntity(player,
-                            () -> Animations.play(player, plugin.config().punishmentAnimation()));
-                }
                 run(banCommand);
             }
             plugin.getLogger().info((strip ? "Stripped, killed and banned " : "Banned ")
                     + data.name() + " after " + punishments + " punishment(s): " + banCommand);
         } else if (command.isBlank()) {
-            // On Folia a player may only be touched from the thread that owns
-            // them, and detection runs on the global one.
             boolean strip = plugin.config().punishmentStrip();
-            if (strip) {
-                stripThenDisconnect(player,
-                        () -> plugin.platform().onEntity(player, () -> kick(player)));
-            } else {
-                plugin.platform().onEntity(player, () -> {
-                    Animations.play(player, plugin.config().punishmentAnimation());
-                    kick(player);
-                });
-            }
+            show(player, strip, () -> plugin.platform().onEntity(player, () -> kick(player)));
             plugin.getLogger().info((strip ? "Stripped, killed and kicked " : "Kicked ")
                     + data.name());
         } else {
@@ -152,30 +160,89 @@ public final class Punishments implements Service {
         }
     }
 
-    /** Empties the player onto the ground, kills them, and only then lets
-     *  them be disconnected.
+    /** Runs a show on a player: the throw, the frames, the closing burst.
      *
-     *  <p>The disconnect waits a tick on purpose. Killing and kicking in the
-     *  same tick means the player leaves while the server is still working
-     *  through the death: the death message, the statistic and the respawn
-     *  state are all decided after {@code setHealth} returns, and a session
-     *  that ends inside that window can save the player as they were before
-     *  it. A tick is cheap and makes the death a death.
+     *  <p>Holds nobody, strips nobody, disconnects nobody - those belong to
+     *  the caller, which is why {@code /oai animations} can borrow this to
+     *  preview an effect on an admin without any of the rest happening to
+     *  them.
      *
-     *  <p>The strip runs on the thread owning the player; the disconnect is
-     *  scheduled on the tick loop, which is the global thread on Folia, so
-     *  the order holds on both servers. A disconnect that touches the player
+     *  @param onStart runs on the owning thread right after the throw
+     *  @param atEnd   runs on the tick loop once the show is over */
+    public void playShow(Player player, String chosen, Runnable onStart, Runnable atEnd) {
+        int total = Animations.ticks(chosen);
+        if (total <= 0) {
+            if (onStart != null) {
+                plugin.platform().onEntity(player, onStart);
+            }
+            plugin.ticks().after(1L, atEnd);
+            return;
+        }
+
+        plugin.platform().onEntity(player, () -> {
+            Animations.start(player, chosen);
+            if (onStart != null) {
+                onStart.run();
+            }
+        });
+
+        AtomicInteger tick = new AtomicInteger();
+        Platform.Cancellable frames = plugin.platform().entityRepeating(player, 1L, 1L,
+                () -> Animations.frame(player, chosen, tick.incrementAndGet(), total));
+
+        plugin.ticks().after(total, () -> {
+            frames.cancel();
+            plugin.platform().onEntity(player, () -> {
+                if (player.isOnline()) {
+                    Location where = player.getLocation();
+                    Animations.finish(where.getWorld(), where, chosen);
+                }
+            });
+            atEnd.run();
+        });
+    }
+
+    /** Plays the send-off, then disconnects.
+     *
+     *  <p>The order is the whole point. The cheater is thrown up and frozen,
+     *  their inventory comes out of them on the way, the show runs its span,
+     *  and only at the end are they killed and disconnected. Before this the
+     *  kick went first and the effect second, which meant the effect played
+     *  over an empty spot and the punished player never saw any of it - they
+     *  were already back at the server list.
+     *
+     *  <p>The disconnect still waits a tick after the kill. The death
+     *  message, the statistic and the respawn state are all decided after
+     *  {@code setHealth} returns, and a session that ends inside that window
+     *  can save the player as they were before it.
+     *
+     *  <p>Frames run on the thread owning the player; the hand-offs go
+     *  through the tick loop, which is the global thread on Folia, so the
+     *  order holds on both servers. A disconnect that touches the player
      *  rather than dispatching a command has to find its way back onto the
      *  owning thread itself - the kick does, the ban command does not. */
-    private void stripThenDisconnect(Player player, Runnable disconnect) {
-        plugin.platform().onEntity(player, () -> {
-            // Before the drop, so the effect is centred on a player who is
-            // still standing there rather than on a pile of items.
-            Animations.play(player, plugin.config().punishmentAnimation());
-            dropEverything(player);
-            player.setHealth(0.0D);
-        });
-        plugin.ticks().after(1L, disconnect);
+    private void show(Player player, boolean strip, Runnable disconnect) {
+        String chosen = Animations.pick(plugin.config().punishmentAnimation());
+        UUID uuid = player.getUniqueId();
+        if (Animations.ticks(chosen) > 0) {
+            held.add(uuid);
+        }
+        playShow(player, chosen,
+                // On the way up, so the inventory is seen leaving them rather
+                // than found in a heap afterwards.
+                strip ? () -> dropEverything(player) : null,
+                () -> {
+                    held.remove(uuid);
+                    plugin.platform().onEntity(player, () -> {
+                        if (strip && player.isOnline()) {
+                            // Harmless when the throw already emptied them,
+                            // and the whole punishment when there was no show.
+                            dropEverything(player);
+                            player.setHealth(0.0D);
+                        }
+                    });
+                    plugin.ticks().after(1L, disconnect);
+                });
     }
 
     /** Disconnects a player who may already have left on their own. */
@@ -200,21 +267,24 @@ public final class Punishments implements Service {
         if (world == null) {
             return;
         }
+        Location from = where.clone().add(0.0D, 1.0D, 0.0D);
         for (ItemStack stack : inventory.getContents()) {
-            dropOne(world, where, stack);
+            dropOne(world, from, stack);
         }
         for (ItemStack stack : inventory.getArmorContents()) {
-            dropOne(world, where, stack);
+            dropOne(world, from, stack);
         }
-        dropOne(world, where, inventory.getItemInOffHand());
+        dropOne(world, from, inventory.getItemInOffHand());
         inventory.clear();
         inventory.setArmorContents(null);
         inventory.setItemInOffHand(null);
     }
 
+    /** Throws one item out of the player: up and away, so the inventory is
+     *  visibly leaving them instead of appearing under their feet. */
     private void dropOne(World world, Location where, ItemStack stack) {
         if (stack != null && !stack.getType().isAir()) {
-            world.dropItemNaturally(where, stack.clone());
+            world.dropItem(where, stack.clone()).setVelocity(Animations.spill());
         }
     }
 }

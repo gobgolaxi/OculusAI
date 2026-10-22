@@ -51,8 +51,12 @@ public final class AnimationsCommand extends SubCommand {
 
         // Played on the asker, where they can see it, and only once the choice
         // is stored - so what they are shown is what the next cheater gets.
+        // The same sequence the punishment uses, minus everything that is a
+        // punishment: no freeze, no stripping, no kick. Being thrown into the
+        // air is left in, because that is the effect.
         if (sender instanceof Player player && !wanted.equals(Animations.NONE)) {
-            plugin.platform().onEntity(player, () -> Animations.play(player, wanted));
+            plugin.punishments().playShow(player, Animations.pick(wanted), null, () -> {
+            });
         }
     }
 

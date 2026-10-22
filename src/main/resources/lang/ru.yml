@@ -383,6 +383,7 @@ alert:
   click: "Следить"
   hover: "<gray>Нажми, чтобы следить за <white>%player%"
 kickanim:
+  ascend: "Подброс"
   none: "Без анимации"
   explode: "Взрыв"
   lightning: "Молния"

@@ -385,6 +385,7 @@ alert:
   click: "Watch"
   hover: "<gray>Click to start watching <white>%player%"
 kickanim:
+  ascend: "Ascend"
   none: "None"
   explode: "Explode"
   lightning: "Lightning"

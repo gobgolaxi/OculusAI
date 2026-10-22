@@ -244,9 +244,15 @@ public final class DataCommand extends SubCommand {
 
         boolean needsLabel = args[0].equalsIgnoreCase("add") || args[0].equalsIgnoreCase("delete");
         if (args.length == 2) {
+            if (args[0].equalsIgnoreCase("rem") || args[0].equalsIgnoreCase("remove")) {
+                // Only the roster, and not the players who happen to be
+                // online: rem answers "nobody called that is on the roster"
+                // for anybody else, so offering those names was offering
+                // rejections. The roster keeps a player after they log off,
+                // which is the usual case for taking somebody off it.
+                return rosterNames(args[1]);
+            }
             if (!needsLabel) {
-                // rem takes anybody the roster still holds, not only the ones
-                // who happen to be online.
                 return knownNames(args[1]);
             }
             List<String> labels = new ArrayList<>(List.of(DatasetStore.CHEATER, DatasetStore.LEGIT));

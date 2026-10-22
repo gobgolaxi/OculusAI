@@ -60,7 +60,7 @@ public final class SettingsMenu extends Menu {
     private ItemStack toggleItem(Material material, String key, boolean value) {
         return item(material, plugin.lang().text("settings." + key + ".name"),
                 List.of(
-                        plugin.lang().text("settings." + key + (value ? ".on" : ".off")),
+                        plugin.lang().text("settings." + key + (value ? ".enabled" : ".disabled")),
                         "",
                         plugin.lang().text("settings." + key + ".hint"),
                         plugin.lang().text("shared.click-toggle")));

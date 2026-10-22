@@ -43,13 +43,10 @@ dashboard:
     state-on: "<gray>Состояние: <green>включены"
     state-off: "<gray>Состояние: <red>выключены"
     count: "<gray>Зарегистрировано: <white>%value%"
-    click: "<yellow>Нажми, чтобы открыть список проверок"
   dummy:
-    click: "<yellow>Нажми, чтобы заспавнить"
     count: "<gray>Заспавнено: <white>%value%"
     name: "<aqua>Манекен"
   journal:
-    click: "<yellow>Нажми, чтобы открыть"
     name: "<gold>Журнал"
   title: "Dashboard"
   service:
@@ -82,7 +79,6 @@ dashboard:
   theme:
     name: "<aqua>Тема"
     current: "<gray>Текущая: <white>%value%"
-    click: "<yellow>Нажми, чтобы сменить тему"
     changed: "<gray>Тема изменена на <white>%value%<gray>."
   train:
     name: "<gold>Train"
@@ -103,13 +99,10 @@ dashboard:
   players:
     name: "<aqua>Игроки"
     online: "<gray>Онлайн: <white>%value%"
-    click: "<yellow>Нажми, чтобы посмотреть live readings"
   punish:
-    no-command: "не задана"
     name: "<red>Действовать по детектам"
     state-on: "<gray>Состояние: <red>включено"
     state-off: "<gray>Состояние: <green>выкл - только алерты"
-    command: "<gray>Команда: <white>%value%"
     line1: "<gray>Не включай это, пока не убедишься,"
     line2: "<gray>что модель реально права на твоём сервере."
   power:
@@ -133,11 +126,7 @@ dashboard:
     line1: "<gray>Меняет звук, который слышат"
     line2: "<gray>пользователи с правом на алерты."
   kickanim:
-    name: "<red>Анимация кика"
     current: "<gray>Текущая: <white>%value%"
-    line1: "<gray>Визуальный эффект при кике"
-    line2: "<gray>читера с сервера."
-    click: "<yellow>Нажми, чтобы открыть настройки наказания."
   alwaysprob:
     name: "<aqua>AlwaysProb"
     turned-on: "<green>AlwaysProb включён.<gray> Показания держатся над каждым, кого видишь."
@@ -190,35 +179,35 @@ settings:
   title: "Настройки OculusAI"
   analysis:
     name: "<aqua>Анализ"
-    on: "<gray>Состояние: <green>включён"
-    off: "<gray>Состояние: <red>выключен"
+    enabled: "<gray>Состояние: <green>включён"
+    disabled: "<gray>Состояние: <red>выключен"
     hint: "<gray>Главный выключатель модели и проверок."
   checks:
     name: "<aqua>Проверки ударов"
-    on: "<gray>Состояние: <green>включены"
-    off: "<gray>Состояние: <red>выключены"
+    enabled: "<gray>Состояние: <green>включены"
+    disabled: "<gray>Состояние: <red>выключены"
     hint: "<gray>Wall и другие проверки на пакет удара."
     count: "<gray>Зарегистрировано: <white>%value%"
     click: "<yellow>Нажми, чтобы открыть список проверок"
   test:
     name: "<yellow>Тестовый режим"
-    on: "<gray>Состояние: <green>включён"
-    off: "<gray>Состояние: <red>выключен"
+    enabled: "<gray>Состояние: <green>включён"
+    disabled: "<gray>Состояние: <red>выключен"
     hint: "<gray>Проверки с test-only не наказывают."
   wall:
     name: "<gold>Wall"
-    on: "<gray>Состояние: <green>включён"
-    off: "<gray>Состояние: <red>выключен"
+    enabled: "<gray>Состояние: <green>включён"
+    disabled: "<gray>Состояние: <red>выключен"
     hint: "<gray>Удары через стены и закрытые двери."
   aim:
     name: "<light_purple>Neuro Aim"
-    on: "<gray>Состояние: <green>включён"
-    off: "<gray>Состояние: <red>выключен"
+    enabled: "<gray>Состояние: <green>включён"
+    disabled: "<gray>Состояние: <red>выключен"
     hint: "<gray>Нейросетевая проверка прицела."
   punish:
     name: "<red>Наказание"
-    on: "<gray>Состояние: <red>включено"
-    off: "<gray>Состояние: <green>выключено"
+    enabled: "<gray>Состояние: <red>включено"
+    disabled: "<gray>Состояние: <green>выключено"
     hint: "<gray>Выполнять команду после подтверждённого детекта."
   back: "<yellow>Назад в Dashboard"
   hint: "<dark_gray>ЛКМ по пункту - переключить. ПКМ по OculusAI - настройки."
@@ -326,8 +315,6 @@ player-cmd:
   prob-history: "<gray>История вероятностей:"
   no-data: "<dark_gray>Данных пока нет — readings появляются только во время боя."
 prob:
-  stopped: "<gray>Наблюдение остановлено."
-  not-watching: "<gray>Ты ни за кем не наблюдал."
   watching: "<gray>Смотришь за <white>%player%<gray>. Буфер <white>%buffer%<gray>, последний reading <white>%probability%<gray>, окон проанализировано <white>%windows%"
   no-data: "<dark_gray>Пока ничего не проанализировано - readings появляются только во время боя."
 # enabled/disabled, not on/off: YAML 1.1 turns on/off into booleans,
@@ -360,14 +347,8 @@ guide:
   numbers: "Проценты - это сейчас, полоска - буфер. Алерт на <white>%alert%<gray>, наказание на <white>%punish%<gray>."
   test: "<white>/oai npc<gray> - заспавнить манекен и проверить самому."
 monitor-cmd:
-  started: "<gray>Слежу за <white>%players%<gray>."
-  started-all: "<gray>Слежу за всеми."
-  stopped: "<gray>Монитор выключен."
-  not-watching: "<gray>Монитор выключен."
   empty: "<dark_gray>Пока пусто."
   more: "<dark_gray>+%value% ещё"
-  global-on: "<green>Слежу за всеми в пвп — эти строки видишь только ты. <gray>Повтори команду - выключить."
-  global-off: "<gray>Слежение за пвп выключено."
   pvp-none: "<dark_gray>Сейчас никто не дерётся."
 bypass:
   usage: "<red>Использование: <white>%value%"
@@ -386,7 +367,6 @@ alert:
 punish-menu:
   title: "Наказание"
   header: "<red>Наказание"
-  hint: "<gray>Что произойдёт с пойманным читером."
   state-on: "<gray>Состояние: <green>вкл"
   state-off: "<gray>Состояние: <red>выкл"
   command: "<gray>Команда: <white>%value%"
@@ -400,11 +380,10 @@ punish-menu:
   strip:
     name: "<gold>Высыпать вещи"
     line1: "<gray>Инвентарь вылетает из игрока,"
-    line2: "<gray>затем смерть. Необратимо."
   ban:
     name: "<dark_red>Бан по счёту"
     after: "<gray>Банить на <white>%value%<gray>-м наказании"
-    off: "<gray>Бан выключен"
+    none: "<gray>Бан выключен"
     with: "<gray>Чем: <white>%value%"
     vanilla: "ванильный /ban"
     left: "<dark_gray>ЛКМ <gray>+1"
@@ -446,8 +425,8 @@ check-settings:
   no-description: "<dark_gray>Описание не задано."
   header-hint: "<dark_gray>Значения сохраняются в config.yml."
   value: "<gray>Сейчас: <white>%value%"
-  on: "<green>включено"
-  off: "<red>выключено"
+  enabled: "<green>включено"
+  disabled: "<red>выключено"
   seconds: "с"
   toggle-hint: "<yellow>ЛКМ <gray>- переключить"
   number-hint: "<yellow>ЛКМ <gray>+ <yellow>ПКМ <gray>- <dark_gray>(Shift = x5)"
@@ -511,8 +490,8 @@ checks:
   enabled: "<green>%name% включён."
   disabled: "<gray>%name% выключен."
   state:
-    on: "<green>вкл"
-    off: "<red>выкл"
+    enabled: "<green>вкл"
+    disabled: "<red>выкл"
   name:
     analysis: "Анализ"
     checks: "Проверки ударов"
@@ -529,7 +508,7 @@ update:
   checking: "<gray>Спрашиваю сервис о новой версии..."
   current: "<green>Стоит последняя версия <white>%version%<green>."
   unknown-build: "<red>Этот jar собран не через Gradle: версию не с чем сравнить."
-  off: "<gray>Проверка обновлений выключена: <white>update.enabled<gray> в config.yml."
+  disabled: "<gray>Проверка обновлений выключена: <white>update.enabled<gray> в config.yml."
 reload:
   done: "<green>Перезагружено <gray>за <white>%value%мс<gray>."
 npc:

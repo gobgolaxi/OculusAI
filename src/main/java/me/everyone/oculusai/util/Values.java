@@ -15,7 +15,7 @@ public final class Values {
 
     public static String probability(Config config, double probability) {
         if (Double.isNaN(probability)) {
-            return "<dark_gray>-";
+            return "<dark_gray><bold>-";
         }
         String colour;
         if (probability < config.suspicion()) {
@@ -27,7 +27,9 @@ public final class Values {
         } else {
             colour = "red";
         }
-        return "<" + colour + ">" + Msg.percent(probability);
+        // Bold: in a chat full of grey the number is the thing being read.
+        // The tag that follows it in inline() clears the bold again.
+        return "<" + colour + "><bold>" + Msg.percent(probability);
     }
 
     public static String buffer(Config config, double buffer) {
@@ -41,7 +43,7 @@ public final class Values {
         } else {
             colour = "dark_gray";
         }
-        return "<" + colour + ">" + Msg.round(buffer, 1);
+        return "<" + colour + "><bold>" + Msg.round(buffer, 1);
     }
 
     /** The compact "p 82% | buf 4.1/10.0" block used by alerts. */

@@ -32,6 +32,10 @@ public final class PlayerListener implements Listener {
         // On Folia each player is sampled by their own task, which has to be
         // started here; off Folia one sweep already covers everybody.
         plugin.tracker().follow(joining);
+        // A banned player cannot be here, so arriving while still flagged
+        // means the ban was lifted: their count towards the next one starts
+        // again from zero.
+        plugin.banCounter().seen(joining.getUniqueId());
         plugin.worker().execute(() -> plugin.history().preload(
                 joining.getUniqueId(), joining.getName()));
 

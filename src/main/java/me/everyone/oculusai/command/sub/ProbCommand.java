@@ -24,9 +24,8 @@ public final class ProbCommand extends SubCommand {
 
         if (args.length == 0 || args[0].equalsIgnoreCase("off")
                 || args[0].equalsIgnoreCase("stop")) {
-            boolean was = plugin.displays().isWatching(watcher.getUniqueId());
+            // Silent, like the monitor: the hologram going away says it.
             plugin.displays().stop(watcher);
-            replyKey(sender, was ? "prob.stopped" : "prob.not-watching");
             return;
         }
 

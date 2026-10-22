@@ -95,13 +95,14 @@ public final class Punishments implements Service {
         plugin.history().note(data.uuid(), data.name(), "punish",
                 "buffer " + Msg.round(data.buffer(), 1) + ", p " + Msg.percent(data.probability()));
 
-        // The note above is already counted, so this includes the punishment
-        // being handed out now: ban-after 3 bans on the third one, not the
-        // fourth. The tally is the history's own, which means the count
-        // survives a restart - and also that it lives no longer than
-        // history.retention-days, which is the right lifetime for it anyway.
-        int punishments = plugin.history().tally(data.uuid()).punishments();
+        // Counted only while banning is switched on, and counted by
+        // BanCounter rather than by the history: turning ban-after on must
+        // not reach backwards over punishments collected before the operator
+        // asked for any of this.
         int banAfter = plugin.config().punishmentBanAfter();
+        int punishments = banAfter > 0
+                ? plugin.banCounter().record(data.uuid())
+                : plugin.banCounter().count(data.uuid());
         boolean ban = banAfter > 0 && punishments >= banAfter;
 
         Map<String, String> placeholders = Map.of(
@@ -129,6 +130,7 @@ public final class Punishments implements Service {
             } else {
                 run(banCommand);
             }
+            plugin.banCounter().banned(data.uuid());
             plugin.getLogger().info((strip ? "Stripped, killed and banned " : "Banned ")
                     + data.name() + " after " + punishments + " punishment(s): " + banCommand);
         } else if (command.isBlank()) {

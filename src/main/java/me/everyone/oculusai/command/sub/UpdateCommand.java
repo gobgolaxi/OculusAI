@@ -21,7 +21,7 @@ public final class UpdateCommand extends SubCommand {
             // The check is one HTTP call and would work, but answering it
             // while the operator has turned checks off would be answering a
             // question they asked the config not to ask.
-            replyKey(sender, "update.off");
+            replyKey(sender, "update.disabled");
             return;
         }
         plugin.updates().checkNow(sender);

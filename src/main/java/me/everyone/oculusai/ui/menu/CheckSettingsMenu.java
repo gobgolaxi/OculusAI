@@ -185,7 +185,7 @@ public final class CheckSettingsMenu extends Menu {
         if (option.toggle()) {
             return plugin.lang().text(plugin.getConfig().getBoolean(option.path(),
                     option.fallback() >= 0.5D)
-                    ? "check-settings.on" : "check-settings.off");
+                    ? "check-settings.enabled" : "check-settings.disabled");
         }
         double value = plugin.getConfig().getDouble(option.path(), option.fallback());
         if (option.millis()) {

@@ -310,7 +310,7 @@ public final class Monitor implements Service {
     }
 
     private String pvpRow(PlayerData data) {
-        return " " + dot(data) + " <white>" + data.name()
+        return " " + dot(data) + " <white><bold>" + data.name()
                 + " " + Values.inline(plugin.config(), shownProbability(data), data.buffer())
                 + " " + Msg.bar(fraction(data), PVP_BAR_WIDTH);
     }

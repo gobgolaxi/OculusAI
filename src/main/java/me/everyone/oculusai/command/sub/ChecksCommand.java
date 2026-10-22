@@ -90,7 +90,7 @@ public final class ChecksCommand extends SubCommand {
     }
 
     private String state(boolean value) {
-        return plugin.lang().text(value ? "checks.state.on" : "checks.state.off");
+        return plugin.lang().text(value ? "checks.state.enabled" : "checks.state.disabled");
     }
 
     @Override

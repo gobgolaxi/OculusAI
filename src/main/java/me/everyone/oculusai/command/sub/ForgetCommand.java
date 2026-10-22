@@ -32,6 +32,9 @@ public final class ForgetCommand extends SubCommand {
         int discarded = data.recordedCount();
 
         plugin.punishments().forget(data.uuid());
+        // Only here. The same method runs on every quit and on every bypass
+        // toggle, and neither of those is anybody saying "wipe this player".
+        plugin.banCounter().forget(data.uuid());
         plugin.analysis().forget(data.uuid());
         // Журнал теперь переживает перезапуск, поэтому забытый игрок должен
         // уходить и оттуда: иначе он остаётся в списке подозрительных с

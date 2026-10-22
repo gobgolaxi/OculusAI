@@ -26,28 +26,27 @@ public final class MonitorCommand extends SubCommand {
 
         // Without a name this is the watch over everybody: on, and off again
         // by the same command.
+        // No confirmation either way. The rows starting or stopping is the
+        // confirmation, and a line of prose about it sat on top of the feed
+        // it was announcing.
         if (args.length == 0) {
-            boolean on = monitors.toggleGlobal(sender);
-            replyKey(sender, on ? "monitor-cmd.global-on" : "monitor-cmd.global-off");
+            monitors.toggleGlobal(sender);
             return;
         }
 
         String first = args[0].toLowerCase(Locale.ROOT);
         if (first.equals("stop") || first.equals("off") || first.equals("clear")) {
-            boolean was = monitors.stop(sender);
-            replyKey(sender, was ? "monitor-cmd.stopped" : "monitor-cmd.not-watching");
+            monitors.stop(sender);
             return;
         }
 
         if (first.equals(LIST)) {
             monitors.start(sender, List.of());
-            replyKey(sender, "monitor-cmd.started-all");
             return;
         }
 
         List<String> names = new ArrayList<>(List.of(args));
         monitors.start(sender, names);
-        replyKey(sender, "monitor-cmd.started", Map.of("players", String.join(", ", names)));
     }
 
     @Override

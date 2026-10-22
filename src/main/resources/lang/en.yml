@@ -43,13 +43,10 @@ dashboard:
     state-on: "<gray>State: <green>enabled"
     state-off: "<gray>State: <red>disabled"
     count: "<gray>Registered: <white>%value%"
-    click: "<yellow>Click to open the check list"
   dummy:
-    click: "<yellow>Click to spawn one"
     count: "<gray>Spawned: <white>%value%"
     name: "<aqua>Sparring dummy"
   journal:
-    click: "<yellow>Click to open"
     name: "<gold>Journal"
   title: "Dashboard"
   service:
@@ -82,7 +79,6 @@ dashboard:
   theme:
     name: "<aqua>Theme"
     current: "<gray>Current: <white>%value%"
-    click: "<yellow>Click to switch theme"
     changed: "<gray>Theme changed to <white>%value%<gray>."
   train:
     name: "<gold>Train"
@@ -103,13 +99,10 @@ dashboard:
   players:
     name: "<aqua>Players"
     online: "<gray>Online: <white>%value%"
-    click: "<yellow>Click to see live readings"
   punish:
-    no-command: "none set"
     name: "<red>Act on detections"
     state-on: "<gray>State: <red>on"
     state-off: "<gray>State: <green>off - alerts only"
-    command: "<gray>Command: <white>%value%"
     line1: "<gray>Leave this off until you have watched"
     line2: "<gray>the model be right on your own server."
   power:
@@ -133,11 +126,7 @@ dashboard:
     line1: "<gray>Changes the sound heard by"
     line2: "<gray>players with alert permission."
   kickanim:
-    name: "<red>Kick Animation"
     current: "<gray>Current: <white>%value%"
-    line1: "<gray>Visual effect played when a"
-    line2: "<gray>cheater gets kicked from the server."
-    click: "<yellow>Click to open punishment settings."
   alwaysprob:
     name: "<aqua>AlwaysProb"
     turned-on: "<green>AlwaysProb is on.<gray> Readings stay over every player you can see."
@@ -192,35 +181,35 @@ settings:
   title: "OculusAI settings"
   analysis:
     name: "<aqua>Analysis"
-    on: "<gray>State: <green>on"
-    off: "<gray>State: <red>off"
+    enabled: "<gray>State: <green>on"
+    disabled: "<gray>State: <red>off"
     hint: "<gray>Master switch for the model and checks."
   checks:
     name: "<aqua>Attack checks"
-    on: "<gray>State: <green>on"
-    off: "<gray>State: <red>off"
+    enabled: "<gray>State: <green>on"
+    disabled: "<gray>State: <red>off"
     hint: "<gray>Wall and other packet checks."
     count: "<gray>Registered: <white>%value%"
     click: "<yellow>Click to open the check list"
   test:
     name: "<yellow>Test mode"
-    on: "<gray>State: <green>on"
-    off: "<gray>State: <red>off"
+    enabled: "<gray>State: <green>on"
+    disabled: "<gray>State: <red>off"
     hint: "<gray>test-only checks do not punish."
   wall:
     name: "<gold>Wall"
-    on: "<gray>State: <green>on"
-    off: "<gray>State: <red>off"
+    enabled: "<gray>State: <green>on"
+    disabled: "<gray>State: <red>off"
     hint: "<gray>Hits through walls and closed doors."
   aim:
     name: "<light_purple>Neuro Aim"
-    on: "<gray>State: <green>on"
-    off: "<gray>State: <red>off"
+    enabled: "<gray>State: <green>on"
+    disabled: "<gray>State: <red>off"
     hint: "<gray>The neural aim check."
   punish:
     name: "<red>Punishment"
-    on: "<gray>State: <red>on"
-    off: "<gray>State: <green>off"
+    enabled: "<gray>State: <red>on"
+    disabled: "<gray>State: <green>off"
     hint: "<gray>Run the configured command after a confirmed detection."
   back: "<yellow>Back to Dashboard"
   hint: "<dark_gray>Left click a row to toggle. Right click OculusAI for settings."
@@ -357,18 +346,10 @@ guide:
   numbers: "Percent is this moment, the bar is the buffer. Alert at <white>%alert%<gray>, punish at <white>%punish%<gray>."
   test: "<white>/oai npc<gray> - spawn a dummy and try it yourself."
 monitor-cmd:
-  started: "<gray>Watching <white>%players%<gray>."
-  started-all: "<gray>Watching everyone."
-  stopped: "<gray>Monitor off."
-  not-watching: "<gray>Monitor is off."
   empty: "<dark_gray>Nothing yet."
   more: "<dark_gray>+%value% more"
-  global-on: "<green>Watching everybody in PvP — only you see these lines. <gray>Say it again to stop."
-  global-off: "<gray>PvP watch is off."
   pvp-none: "<dark_gray>Nobody is fighting right now."
 prob:
-  stopped: "<gray>Stopped watching."
-  not-watching: "<gray>You were not watching anyone."
   watching: "<gray>Watching <white>%player%<gray>. Buffer <white>%buffer%<gray>, last reading <white>%probability%<gray>, windows analysed <white>%windows%"
   no-data: "<dark_gray>Nothing analysed yet - readings only appear while they fight."
 bypass:
@@ -388,7 +369,6 @@ alert:
 punish-menu:
   title: "Punishment"
   header: "<red>Punishment"
-  hint: "<gray>What happens to a cheater once caught."
   state-on: "<gray>State: <green>on"
   state-off: "<gray>State: <red>off"
   command: "<gray>Command: <white>%value%"
@@ -402,11 +382,10 @@ punish-menu:
   strip:
     name: "<gold>Drop everything"
     line1: "<gray>The inventory comes out of them,"
-    line2: "<gray>then the death. Irreversible."
   ban:
     name: "<dark_red>Ban on count"
     after: "<gray>Ban on punishment <white>%value%"
-    off: "<gray>Banning off"
+    none: "<gray>Banning off"
     with: "<gray>With: <white>%value%"
     vanilla: "vanilla /ban"
     left: "<dark_gray>Left <gray>+1"
@@ -448,8 +427,8 @@ check-settings:
   no-description: "<dark_gray>No description."
   header-hint: "<dark_gray>Values are saved to config.yml."
   value: "<gray>Current: <white>%value%"
-  on: "<green>enabled"
-  off: "<red>disabled"
+  enabled: "<green>enabled"
+  disabled: "<red>disabled"
   seconds: "s"
   toggle-hint: "<yellow>Left click <gray>- toggle"
   number-hint: "<yellow>Left click <gray>+ <yellow>right click <gray>- <dark_gray>(Shift = x5)"
@@ -513,8 +492,8 @@ checks:
   enabled: "<green>%name% enabled."
   disabled: "<gray>%name% disabled."
   state:
-    on: "<green>on"
-    off: "<red>off"
+    enabled: "<green>on"
+    disabled: "<red>off"
   name:
     analysis: "Analysis"
     checks: "Attack checks"
@@ -531,7 +510,7 @@ update:
   checking: "<gray>Asking the service about a newer build..."
   current: "<green>This is the newest build, <white>%version%<green>."
   unknown-build: "<red>This jar was not built by Gradle: there is no version to compare."
-  off: "<gray>Update checks are off: <white>update.enabled<gray> in config.yml."
+  disabled: "<gray>Update checks are off: <white>update.enabled<gray> in config.yml."
 reload:
   done: "<green>Reloaded <gray>in <white>%value%ms<gray>."
 npc:

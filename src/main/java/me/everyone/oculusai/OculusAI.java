@@ -27,6 +27,7 @@ import me.everyone.oculusai.player.EntityTracker;
 import me.everyone.oculusai.player.PlayerRegistry;
 import me.everyone.oculusai.player.Players;
 import me.everyone.oculusai.player.SetupNotifier;
+import me.everyone.oculusai.punishment.BanCounter;
 import me.everyone.oculusai.punishment.Punishments;
 import me.everyone.oculusai.storage.DatasetStore;
 import me.everyone.oculusai.storage.HistoryStore;
@@ -55,6 +56,7 @@ public final class OculusAI extends JavaPlugin {
     private Ui ui;
     private Alerts alerts;
     private Punishments punishments;
+    private BanCounter banCounter;
     private Checks checks;
     private Detection detection;
     private PacketBridge packets;
@@ -89,6 +91,7 @@ public final class OculusAI extends JavaPlugin {
         bypass = register(new Bypass(this));
         storage = register(new Storage(this));
         alerts = register(new Alerts(this));
+        banCounter = register(new BanCounter(this));
         punishments = register(new Punishments(this));
         checks = register(new Checks(this));
         detection = register(new Detection(this));
@@ -273,6 +276,11 @@ public final class OculusAI extends JavaPlugin {
 
     public Punishments punishments() {
         return punishments;
+    }
+
+    /** Punishments collected towards a ban, per player. */
+    public BanCounter banCounter() {
+        return banCounter;
     }
 
     public Alerts alerts() {

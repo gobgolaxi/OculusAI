@@ -25,10 +25,10 @@ public final class PunishmentMenu extends Menu {
     /** One slot per effect, in the order {@link Animations#ALL} lists them. */
     private static final int[] ANIMATION_SLOTS = {10, 11, 12, 13, 14, 15, 16};
 
-    private static final int SLOT_ENABLED = 29;
-    private static final int SLOT_STRIP = 31;
-    private static final int SLOT_BAN_AFTER = 33;
-    private static final int SLOT_BACK = 40;
+    private static final int SLOT_ENABLED = 20;
+    private static final int SLOT_STRIP = 21;
+    private static final int SLOT_BAN_AFTER = 22;
+    private static final int SLOT_BACK = 31;
 
     public PunishmentMenu(OculusAI plugin, Player viewer) {
         super(plugin, viewer);
@@ -41,7 +41,7 @@ public final class PunishmentMenu extends Menu {
 
     @Override
     protected int size() {
-        return 45;
+        return 36;
     }
 
     @Override
@@ -56,9 +56,7 @@ public final class PunishmentMenu extends Menu {
                         plugin.lang().text(enabled
                                 ? "punish-menu.state-on" : "punish-menu.state-off"),
                         plugin.lang().text("punish-menu.command",
-                                Map.of("value", command())),
-                        "",
-                        plugin.lang().text("punish-menu.hint"))));
+                                Map.of("value", command())))));
 
         for (int i = 0; i < Animations.ALL.size() && i < ANIMATION_SLOTS.length; i++) {
             String id = Animations.ALL.get(i);
@@ -87,9 +85,7 @@ public final class PunishmentMenu extends Menu {
                 plugin.lang().text("punish-menu.enabled.name"),
                 List.of(
                         plugin.lang().text(enabled
-                                ? "punish-menu.state-on" : "punish-menu.state-off"),
-                        "",
-                        plugin.lang().text("shared.click-toggle"))),
+                                ? "punish-menu.state-on" : "punish-menu.state-off"))),
                 () -> flip("punishment.enabled", enabled));
 
         button(SLOT_STRIP, item(strip ? Material.HOPPER : Material.CHEST,
@@ -97,11 +93,7 @@ public final class PunishmentMenu extends Menu {
                 List.of(
                         plugin.lang().text(strip
                                 ? "punish-menu.state-on" : "punish-menu.state-off"),
-                        "",
-                        plugin.lang().text("punish-menu.strip.line1"),
-                        plugin.lang().text("punish-menu.strip.line2"),
-                        "",
-                        plugin.lang().text("shared.click-toggle"))),
+                        plugin.lang().text("punish-menu.strip.line1"))),
                 () -> flip("punishment.strip", strip));
 
         button(SLOT_BAN_AFTER, item(banAfter > 0 ? Material.BARRIER : Material.PAPER,
@@ -110,7 +102,7 @@ public final class PunishmentMenu extends Menu {
                         banAfter > 0
                                 ? plugin.lang().text("punish-menu.ban.after",
                                         Map.of("value", Integer.toString(banAfter)))
-                                : plugin.lang().text("punish-menu.ban.off"),
+                                : plugin.lang().text("punish-menu.ban.none"),
                         plugin.lang().text("punish-menu.ban.with",
                                 Map.of("value", banCommand())),
                         "",

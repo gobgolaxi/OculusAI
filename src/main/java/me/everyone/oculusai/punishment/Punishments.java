@@ -8,7 +8,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.util.Msg;
+import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 /** Executes the configured punishment after a confirmed detection.
  *
@@ -75,10 +79,18 @@ public final class Punishments implements Service {
 
         String command = Msg.fill(plugin.config().punishmentCommand(), placeholders).trim();
         if (command.isBlank()) {
-            // On Folia a player may only be kicked from the thread that owns
+            // On Folia a player may only be touched from the thread that owns
             // them, and detection runs on the global one.
-            plugin.platform().onEntity(player, () -> player.kickPlayer(Msg.parse("Cheat detected")));
-            plugin.getLogger().info("Kicked " + data.name());
+            boolean strip = plugin.config().punishmentStrip();
+            plugin.platform().onEntity(player, () -> {
+                if (strip) {
+                    dropEverything(player);
+                    player.setHealth(0.0D);
+                }
+                player.kickPlayer(Msg.parse("Cheat detected"));
+            });
+            plugin.getLogger().info((strip ? "Stripped, killed and kicked " : "Kicked ")
+                    + data.name());
         } else {
             String commandWithoutSlash = command.startsWith("/")
                     ? command.substring(1) : command;
@@ -98,5 +110,38 @@ public final class Punishments implements Service {
         plugin.api().reportKick(data.name(), data.uuid().toString(),
                 data.probability(), data.buffer(),
                 command.isBlank() ? "kick" : "command");
+    }
+
+    /** Drops the whole inventory on the ground and empties it.
+     *
+     *  <p>The death alone is not enough: a server with keepInventory on would
+     *  kill the cheater and hand them everything back on respawn, which is the
+     *  opposite of the point. Dropping first and clearing after means the
+     *  gamerule no longer decides what this punishment does.
+     *
+     *  <p>Must run on the thread owning the player. */
+    private void dropEverything(Player player) {
+        PlayerInventory inventory = player.getInventory();
+        Location where = player.getLocation();
+        World world = where.getWorld();
+        if (world == null) {
+            return;
+        }
+        for (ItemStack stack : inventory.getContents()) {
+            dropOne(world, where, stack);
+        }
+        for (ItemStack stack : inventory.getArmorContents()) {
+            dropOne(world, where, stack);
+        }
+        dropOne(world, where, inventory.getItemInOffHand());
+        inventory.clear();
+        inventory.setArmorContents(null);
+        inventory.setItemInOffHand(null);
+    }
+
+    private void dropOne(World world, Location where, ItemStack stack) {
+        if (stack != null && !stack.getType().isAir()) {
+            world.dropItemNaturally(where, stack.clone());
+        }
     }
 }

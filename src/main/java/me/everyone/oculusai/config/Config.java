@@ -49,6 +49,7 @@ public final class Config implements Service {
     private String punishmentBroadcast = "";
     private long punishmentCooldownMs = 60_000L;
     private boolean punishmentSkipWhileRecording = true;
+    private boolean punishmentStrip = false;
 
     private int progressSeconds = 15;
     private int monitorPvpSeconds = 5;
@@ -158,6 +159,7 @@ public final class Config implements Service {
                 config.getLong("punishment.cooldown-ms", 60_000L));
         punishmentSkipWhileRecording =
                 config.getBoolean("punishment.skip-while-recording", true);
+        punishmentStrip = config.getBoolean("punishment.strip", false);
 
         progressSeconds = config.getInt("recording.progress-seconds", 15);
         monitorPvpSeconds = Math.max(1, config.getInt("monitor.pvp-seconds", 5));
@@ -388,6 +390,13 @@ public final class Config implements Service {
      *  punishment. Analysis, readings and alerts are unaffected. */
     public boolean punishmentSkipWhileRecording() {
         return punishmentSkipWhileRecording;
+    }
+
+    /** What an empty {@code punishment.command} does: a plain kick, or drop
+     *  the inventory on the ground, kill, then kick. Ignored when a command
+     *  is set - that command is then the whole punishment. */
+    public boolean punishmentStrip() {
+        return punishmentStrip;
     }
 
     public String actionBarFormat() {

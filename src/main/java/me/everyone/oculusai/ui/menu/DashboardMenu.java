@@ -53,19 +53,6 @@ public final class DashboardMenu extends Menu {
 
     @Override
     protected void build() {
-        ItemStack edge = item(Material.BLACK_STAINED_GLASS_PANE, " ", null);
-        fillBorder(edge);
-        ItemStack divider = item(Material.GRAY_STAINED_GLASS_PANE, " ", null);
-        for (int slot = 19; slot <= 25; slot++) {
-            set(slot, divider);
-        }
-        for (int slot = 46; slot <= 47; slot++) {
-            set(slot, edge);
-        }
-        for (int slot = 51; slot <= 52; slot++) {
-            set(slot, edge);
-        }
-
         boolean analysis = plugin.config().analysisEnabled();
         ItemStack power = item(analysis ? Material.LEVER : Material.STONE_BUTTON,
                 plugin.lang().text("dashboard.power.name"),

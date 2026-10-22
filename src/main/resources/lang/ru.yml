@@ -334,7 +334,7 @@ math:
   enabled: "<green>Prob показывает сглаженное показание.<gray> Буфер, Aim-алерты и наказания работают как обычно."
   disabled: "<yellow>Prob показывает чистую вероятность модели.<gray> Буфер и проверки продолжают работать."
 setup:
-  not-connected: "<red>Античит не подключён к API — анализ не работает."
+  not-connected: "<red><bold>Античит не подключён к API — анализ не работает."
   how: "<gray>Получи ключ и привяжи сервер:"
   hover: "<gray>Нажми, чтобы открыть"
   command: "<gray>Или прямо здесь: <white>%value%"
@@ -346,7 +346,7 @@ connect:
   asking: "<gray>Запрашиваю ссылку у сервиса..."
   open: "<gray>Открой ссылку под своим аккаунтом, чтобы привязать сервер:"
   hover: "<gray>Нажми, чтобы открыть"
-  failed: "<red>Сервис не ответил. Проверь <white>api.url<red> в config.yml."
+  failed: "<red><bold>Сервис не ответил.<red> Проверь <white>api.url<red> в config.yml."
   expired: "<red>Ссылка истекла. Напиши <white>/oai connect<red> ещё раз."
   done: "<green>Сервер привязан. <gray>Ключ сохранён и привязан к <white>%address%<gray>."
 guide:
@@ -373,7 +373,7 @@ bypass:
   disabled: "<green>Античит снова включён для <white>%player%<green>."
   unknown: "<red>Такой игрок ещё ни разу не заходил на сервер."
   save-failed: "<red>Не удалось сохранить bypass.yml: после перезапуска список сбросится."
-  permission: "<yellow>У %player% всё ещё есть право oculusai.bypass - сними его, чтобы включить анализ."
+  permission: "<yellow>У <bold>%player%<yellow> всё ещё есть право oculusai.bypass - сними его, чтобы включить анализ."
 forget:
   usage: "<red>Использование: <white>%value%"
   done: "<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> <white>0%dropped%<gray>. Подозрение начинается заново."
@@ -485,7 +485,7 @@ checks:
     hitbox: "HitBox"
     punish: "Наказание"
 update:
-  available: "<gold>Вышла новая версия <white>%version%<gold> — обновите античит. <gray>Сейчас стоит <white>%current%<gray>."
+  available: "<gold>Вышла новая версия <white><bold>%version%<gold> — обновите античит. <gray>Сейчас стоит <white>%current%<gray>."
   staged: "<green>Версия %version% скачана<gray> — применится после рестарта сервера."
   notes: " <dark_gray>· %value%"
   download: " <yellow>[Скачать]"
@@ -532,8 +532,8 @@ check:
     wall: "<gray>Удары через стены и закрытые двери."
     aim: "<gray>Нейросетевая проверка прицела."
     hitbox: "<gray>Удар вне реального хитбокса цели."
-  test-line: "<dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
-  alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
+  test-line: "<dark_gray>[ТЕСТ] <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
+  alert-line: "<accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   reason:
     wall: "нет видимости"
     aim: "окно выше порога"

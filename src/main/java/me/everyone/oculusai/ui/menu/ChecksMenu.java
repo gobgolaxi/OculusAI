@@ -41,8 +41,6 @@ public final class ChecksMenu extends Menu {
 
     @Override
     protected void build() {
-        fillBorder(item(Material.BLACK_STAINED_GLASS_PANE, " ", (List<String>) null));
-
         List<Check> checks = plugin.checks().all();
         set(SLOT_HEADER, item(Material.COMPARATOR, plugin.lang().text("checks-menu.header"),
                 List.of(

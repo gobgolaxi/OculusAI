@@ -68,8 +68,6 @@ public final class CheckSettingsMenu extends Menu {
 
     @Override
     protected void build() {
-        fillBorder(item(Material.BLACK_STAINED_GLASS_PANE, " ", (List<String>) null));
-
         Check check = plugin.checks().find(checkId);
         String name = plugin.lang().textOr("check.name." + checkId, checkId);
         boolean enabled = check != null && plugin.getConfig().getBoolean(check.enabledPath(), true);

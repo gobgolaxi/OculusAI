@@ -331,7 +331,7 @@ math:
   enabled: "<green>Prob shows the smoothed reading.<gray> The buffer, Aim alerts and punishments work as usual."
   disabled: "<yellow>Prob shows the raw model probability.<gray> The buffer and checks keep running."
 setup:
-  not-connected: "<red>Anticheat is not connected to the API - nothing is being analysed."
+  not-connected: "<red><bold>Anticheat is not connected to the API - nothing is being analysed."
   how: "<gray>Get a key and bind this server:"
   hover: "<gray>Click to open"
   command: "<gray>Or right here: <white>%value%"
@@ -343,7 +343,7 @@ connect:
   asking: "<gray>Asking the service for a link..."
   open: "<gray>Open this link while signed in to bind the server:"
   hover: "<gray>Click to open"
-  failed: "<red>The service did not answer. Check <white>api.url<red> in config.yml."
+  failed: "<red><bold>The service did not answer.<red> Check <white>api.url<red> in config.yml."
   expired: "<red>The link expired. Run <white>/oai connect<red> again."
   done: "<green>Server connected. <gray>The key is saved and bound to <white>%address%<gray>."
 guide:
@@ -375,7 +375,7 @@ bypass:
   disabled: "<green>Anticheat enabled for <white>%player%<green>."
   unknown: "<red>That player has never joined this server."
   save-failed: "<red>Could not save bypass.yml: the list will reset after a restart."
-  permission: "<yellow>%player% still has oculusai.bypass - remove it to enable analysis."
+  permission: "<yellow><bold>%player%<yellow> still has oculusai.bypass - remove it to enable analysis."
 forget:
   usage: "<red>Usage: <white>%value%"
   done: "<gray>Forgot <white>%player%<gray>: buffer <white>%buffer%<gray> -> <white>0%dropped%<gray>. Suspicion starts again from nothing."
@@ -487,7 +487,7 @@ checks:
     hitbox: "HitBox"
     punish: "Punishment"
 update:
-  available: "<gold>Version <white>%version%<gold> is out — update the anticheat. <gray>This server runs <white>%current%<gray>."
+  available: "<gold>Version <white><bold>%version%<gold> is out — update the anticheat. <gray>This server runs <white>%current%<gray>."
   staged: "<green>Version %version% is downloaded<gray> — it is applied on the next restart."
   notes: " <dark_gray>· %value%"
   download: " <yellow>[Download]"
@@ -534,8 +534,8 @@ check:
     wall: "<gray>Hits through walls and closed doors."
     aim: "<gray>Neural aim check."
     hitbox: "<gray>Hits outside the target's real hitbox."
-  test-line: "<dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
-  alert-line: "<accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
+  test-line: "<dark_gray>[TEST] <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
+  alert-line: "<accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
   reason:
     wall: "no line of sight"
     aim: "window above threshold"

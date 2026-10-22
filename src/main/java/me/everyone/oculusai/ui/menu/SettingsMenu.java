@@ -33,9 +33,6 @@ public final class SettingsMenu extends Menu {
 
     @Override
     protected void build() {
-        ItemStack edge = item(Material.BLACK_STAINED_GLASS_PANE, " ", (List<String>) null);
-        fillBorder(edge);
-
         toggleButton(SLOT_ANALYSIS, toggleItem(Material.COMPARATOR, "analysis",
                         plugin.config().analysisEnabled()),
                 "analysis.enabled", true);

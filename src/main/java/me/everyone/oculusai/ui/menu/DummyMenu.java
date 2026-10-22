@@ -51,8 +51,6 @@ public final class DummyMenu extends Menu {
             return;
         }
 
-        fillBorder(item(Material.GRAY_STAINED_GLASS_PANE, "", null));
-
         double health = options.health() > 0 ? options.health() : DEFAULT_HEALTH;
         String hpKey = options.health() > 0 ? "dummy.hp.current" : "dummy.hp.default";
         set(SLOT_HP_MINUS, item(Material.RED_DYE, plugin.lang().text("shared.click-toggle"), null));

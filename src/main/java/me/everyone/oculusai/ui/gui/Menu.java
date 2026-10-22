@@ -116,23 +116,6 @@ public abstract class Menu implements InventoryHolder {
         }
     }
 
-    protected final void fillBorder(ItemStack item) {
-        int size = inventory.getSize();
-        for (int slot = 0; slot < size; slot++) {
-            boolean edge = slot < 9 || slot >= size - 9 || slot % 9 == 0 || slot % 9 == 8;
-            if (edge) {
-                set(slot, item);
-            }
-        }
-    }
-
-    protected final void fillRow(int row, ItemStack item) {
-        int from = Math.max(0, row) * 9;
-        for (int slot = from; slot < from + 9; slot++) {
-            set(slot, item);
-        }
-    }
-
     protected final void toggleButton(int slot, ItemStack item, String path, boolean fallback) {
         button(slot, item, () -> {
             plugin.getConfig().set(path, !plugin.getConfig().getBoolean(path, fallback));

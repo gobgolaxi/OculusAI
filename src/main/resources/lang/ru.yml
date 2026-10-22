@@ -137,6 +137,7 @@ dashboard:
     current: "<gray>Текущая: <white>%value%"
     line1: "<gray>Визуальный эффект при кике"
     line2: "<gray>читера с сервера."
+    click: "<yellow>Нажми, чтобы открыть настройки наказания."
   alwaysprob:
     name: "<aqua>AlwaysProb"
     turned-on: "<green>AlwaysProb включён.<gray> Показания держатся над каждым, кого видишь."
@@ -382,6 +383,33 @@ forget:
 alert:
   click: "Следить"
   hover: "<gray>Нажми, чтобы следить за <white>%player%"
+punish-menu:
+  title: "Наказание"
+  header: "<red>Наказание"
+  hint: "<gray>Что произойдёт с пойманным читером."
+  state-on: "<gray>Состояние: <green>вкл"
+  state-off: "<gray>Состояние: <red>выкл"
+  command: "<gray>Команда: <white>%value%"
+  command-none: "нет, наказывает плагин"
+  animation-chosen: "<green>Выбрана."
+  animation-pick: "<gray>Нажми, чтобы выбрать."
+  random-note: "<dark_gray>Каждый раз другая, подряд не повторяется."
+  ascend-needs-strip: "<yellow>Вещи вылетят только при включённом «Высыпать вещи»."
+  enabled:
+    name: "<red>Наказывать"
+  strip:
+    name: "<gold>Высыпать вещи"
+    line1: "<gray>Инвентарь вылетает из игрока,"
+    line2: "<gray>затем смерть. Необратимо."
+  ban:
+    name: "<dark_red>Бан по счёту"
+    after: "<gray>Банить на <white>%value%<gray>-м наказании"
+    off: "<gray>Бан выключен"
+    with: "<gray>Чем: <white>%value%"
+    vanilla: "ванильный /ban"
+    left: "<dark_gray>ЛКМ <gray>+1"
+    right: "<dark_gray>ПКМ <gray>-1"
+    shift: "<dark_gray>Shift <gray>шаг 5"
 kickanim:
   ascend: "Подброс"
   none: "Без анимации"

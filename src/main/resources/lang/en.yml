@@ -137,6 +137,7 @@ dashboard:
     current: "<gray>Current: <white>%value%"
     line1: "<gray>Visual effect played when a"
     line2: "<gray>cheater gets kicked from the server."
+    click: "<yellow>Click to open punishment settings."
   alwaysprob:
     name: "<aqua>AlwaysProb"
     turned-on: "<green>AlwaysProb is on.<gray> Readings stay over every player you can see."
@@ -384,6 +385,33 @@ forget:
 alert:
   click: "Watch"
   hover: "<gray>Click to start watching <white>%player%"
+punish-menu:
+  title: "Punishment"
+  header: "<red>Punishment"
+  hint: "<gray>What happens to a cheater once caught."
+  state-on: "<gray>State: <green>on"
+  state-off: "<gray>State: <red>off"
+  command: "<gray>Command: <white>%value%"
+  command-none: "none, the plugin does it"
+  animation-chosen: "<green>Selected."
+  animation-pick: "<gray>Click to select."
+  random-note: "<dark_gray>A different one each time, never twice in a row."
+  ascend-needs-strip: "<yellow>Items only fly out with Drop everything on."
+  enabled:
+    name: "<red>Punish"
+  strip:
+    name: "<gold>Drop everything"
+    line1: "<gray>The inventory comes out of them,"
+    line2: "<gray>then the death. Irreversible."
+  ban:
+    name: "<dark_red>Ban on count"
+    after: "<gray>Ban on punishment <white>%value%"
+    off: "<gray>Banning off"
+    with: "<gray>With: <white>%value%"
+    vanilla: "vanilla /ban"
+    left: "<dark_gray>Left <gray>+1"
+    right: "<dark_gray>Right <gray>-1"
+    shift: "<dark_gray>Shift <gray>step 5"
 kickanim:
   ascend: "Ascend"
   none: "None"

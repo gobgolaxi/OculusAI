@@ -1,5 +1,6 @@
 package me.everyone.oculusai.punishment;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ThreadLocalRandom;
@@ -74,6 +75,13 @@ public final class Animations {
     private static final double LAUNCH = 0.9D;
     private static final double LIFT = 0.12D;
 
+    /** What {@code random} drew last time, so it does not draw it again.
+     *
+     *  <p>One shared value rather than one per player: the point is that two
+     *  punishments in a row on the same server look different, and the people
+     *  watching are the same people either way. */
+    private static volatile String lastDrawn = "";
+
     private Animations() {
     }
 
@@ -92,9 +100,21 @@ public final class Animations {
      *  so the whole sequence draws one show rather than a new one per tick. */
     public static String pick(String id) {
         String chosen = normalise(id);
-        return chosen.equals(RANDOM)
-                ? PICKABLE.get(ThreadLocalRandom.current().nextInt(PICKABLE.size()))
-                : chosen;
+        if (!chosen.equals(RANDOM)) {
+            return chosen;
+        }
+        // Drawn from everything except what came last. With five to choose
+        // from, a plain draw repeats itself one time in five, and two
+        // identical send-offs in a row are exactly what "random always gives
+        // the same one" looks like from the outside.
+        List<String> pool = PICKABLE;
+        if (PICKABLE.size() > 1 && PICKABLE.contains(lastDrawn)) {
+            pool = new ArrayList<>(PICKABLE);
+            pool.remove(lastDrawn);
+        }
+        String drawn = pool.get(ThreadLocalRandom.current().nextInt(pool.size()));
+        lastDrawn = drawn;
+        return drawn;
     }
 
     /** How many ticks {@link #pick} 's result runs for. */

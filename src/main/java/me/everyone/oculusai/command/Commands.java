@@ -21,7 +21,6 @@ import me.everyone.oculusai.command.sub.GuideCommand;
 import me.everyone.oculusai.command.sub.HelpCommand;
 import me.everyone.oculusai.command.sub.HistoryCommand;
 import me.everyone.oculusai.command.sub.JournalCommand;
-import me.everyone.oculusai.command.sub.MarketCommand;
 import me.everyone.oculusai.command.sub.MathCommand;
 import me.everyone.oculusai.command.sub.MonitorCommand;
 import me.everyone.oculusai.command.sub.NpcCommand;
@@ -67,7 +66,6 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
         subCommands.add(new DashboardCommand(plugin));
         subCommands.add(new ChecksCommand(plugin));
         subCommands.add(new AnimationsCommand(plugin));
-        subCommands.add(new MarketCommand(plugin));
         subCommands.add(new DiagCommand(plugin));
         subCommands.add(new UpdateCommand(plugin));
         subCommands.add(new ReloadCommand(plugin));

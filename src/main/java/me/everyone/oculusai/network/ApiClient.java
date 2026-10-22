@@ -8,8 +8,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.lang.reflect.Method;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -348,33 +346,6 @@ public final class ApiClient implements Service {
         String path = "/plugin/latest?flavour="
                 + java.net.URLEncoder.encode(flavour, java.nio.charset.StandardCharsets.UTF_8);
         return send(builder(path, plugin.config().apiKey()).GET().build(), false);
-    }
-
-    // -- маркет настроек ------------------------------------------------
-
-    public CompletableFuture<JsonObject> marketList(String query) {
-        String suffix = query == null || query.isBlank()
-                ? "" : "?q=" + URLEncoder.encode(query.trim(), StandardCharsets.UTF_8);
-        return get("/market/list" + suffix);
-    }
-
-    public CompletableFuture<JsonObject> marketPreset(String id) {
-        return get("/market/preset?id=" + URLEncoder.encode(id, StandardCharsets.UTF_8));
-    }
-
-    public CompletableFuture<JsonObject> marketInstall(String id) {
-        JsonObject body = new JsonObject();
-        body.addProperty("id", id);
-        return post("/market/install", body);
-    }
-
-    public CompletableFuture<JsonObject> marketPublish(String name, String blurb,
-                                                       JsonObject values) {
-        JsonObject body = new JsonObject();
-        body.addProperty("name", name);
-        body.addProperty("blurb", blurb);
-        body.add("values", values);
-        return post("/market/publish", body);
     }
 
     public CompletableFuture<JsonObject> status() {

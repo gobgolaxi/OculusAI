@@ -69,16 +69,51 @@ public final class Punishments implements Service {
         if (!player.isOnline()) {
             return;
         }
-        Map<String, String> placeholders = Map.of(
-                "player", data.name(),
-                "probability", Msg.percent(data.probability()),
-                "buffer", Msg.round(data.buffer(), 1));
-
         plugin.history().note(data.uuid(), data.name(), "punish",
                 "buffer " + Msg.round(data.buffer(), 1) + ", p " + Msg.percent(data.probability()));
 
+        // The note above is already counted, so this includes the punishment
+        // being handed out now: ban-after 3 bans on the third one, not the
+        // fourth. The tally is the history's own, which means the count
+        // survives a restart - and also that it lives no longer than
+        // history.retention-days, which is the right lifetime for it anyway.
+        int punishments = plugin.history().tally(data.uuid()).punishments();
+        int banAfter = plugin.config().punishmentBanAfter();
+        boolean ban = banAfter > 0 && punishments >= banAfter;
+
+        Map<String, String> placeholders = Map.of(
+                "player", data.name(),
+                "probability", Msg.percent(data.probability()),
+                "buffer", Msg.round(data.buffer(), 1),
+                "punishments", Integer.toString(punishments));
+
         String command = Msg.fill(plugin.config().punishmentCommand(), placeholders).trim();
-        if (command.isBlank()) {
+        if (ban) {
+            String configured = Msg.fill(plugin.config().punishmentBanCommand(), placeholders).trim();
+            boolean vanilla = configured.isBlank();
+            // Minecraft's own ban, which also kicks. Dispatched rather than
+            // written through BanList because the two jars compile against
+            // APIs whose ban types differ, and because a server running a ban
+            // plugin has it on /ban - taking that over is what an operator who
+            // installed one expects.
+            String banCommand = vanilla ? "ban " + data.name() + " Cheat detected" : configured;
+            boolean strip = vanilla && plugin.config().punishmentStrip();
+            if (strip) {
+                // The ban is the kick escalated, so it strips for the same
+                // reason the kick does. Order matters and is bought with a
+                // tick: /ban disconnects them, and a player who has left can
+                // no longer be stripped or killed.
+                plugin.platform().onEntity(player, () -> {
+                    dropEverything(player);
+                    player.setHealth(0.0D);
+                });
+                plugin.ticks().after(1L, () -> run(banCommand));
+            } else {
+                run(banCommand);
+            }
+            plugin.getLogger().info((strip ? "Stripped, killed and banned " : "Banned ")
+                    + data.name() + " after " + punishments + " punishment(s): " + banCommand);
+        } else if (command.isBlank()) {
             // On Folia a player may only be touched from the thread that owns
             // them, and detection runs on the global one.
             boolean strip = plugin.config().punishmentStrip();
@@ -92,14 +127,9 @@ public final class Punishments implements Service {
             plugin.getLogger().info((strip ? "Stripped, killed and kicked " : "Kicked ")
                     + data.name());
         } else {
-            String commandWithoutSlash = command.startsWith("/")
-                    ? command.substring(1) : command;
-            if (!commandWithoutSlash.isBlank()) {
-                plugin.getServer().dispatchCommand(
-                        plugin.getServer().getConsoleSender(), commandWithoutSlash);
-                plugin.getLogger().info("Executed punishment command for " + data.name()
-                        + ": " + commandWithoutSlash);
-            }
+            run(command);
+            plugin.getLogger().info("Executed punishment command for " + data.name()
+                    + ": " + command);
         }
 
         String broadcast = plugin.config().punishmentBroadcast();
@@ -109,7 +139,17 @@ public final class Punishments implements Service {
 
         plugin.api().reportKick(data.name(), data.uuid().toString(),
                 data.probability(), data.buffer(),
-                command.isBlank() ? "kick" : "command");
+                ban ? "ban" : command.isBlank() ? "kick" : "command");
+    }
+
+    /** Runs a configured command from the console, with or without the slash
+     *  the operator may have typed. */
+    private void run(String command) {
+        String withoutSlash = command.startsWith("/") ? command.substring(1) : command;
+        if (!withoutSlash.isBlank()) {
+            plugin.getServer().dispatchCommand(
+                    plugin.getServer().getConsoleSender(), withoutSlash);
+        }
     }
 
     /** Drops the whole inventory on the ground and empties it.

@@ -50,6 +50,8 @@ public final class Config implements Service {
     private long punishmentCooldownMs = 60_000L;
     private boolean punishmentSkipWhileRecording = true;
     private boolean punishmentStrip = false;
+    private int punishmentBanAfter = 0;
+    private String punishmentBanCommand = "";
 
     private int progressSeconds = 15;
     private int monitorPvpSeconds = 5;
@@ -160,6 +162,8 @@ public final class Config implements Service {
         punishmentSkipWhileRecording =
                 config.getBoolean("punishment.skip-while-recording", true);
         punishmentStrip = config.getBoolean("punishment.strip", false);
+        punishmentBanAfter = Math.max(0, config.getInt("punishment.ban-after", 0));
+        punishmentBanCommand = config.getString("punishment.ban-command", "");
 
         progressSeconds = config.getInt("recording.progress-seconds", 15);
         monitorPvpSeconds = Math.max(1, config.getInt("monitor.pvp-seconds", 5));
@@ -397,6 +401,17 @@ public final class Config implements Service {
      *  is set - that command is then the whole punishment. */
     public boolean punishmentStrip() {
         return punishmentStrip;
+    }
+
+    /** How many punishments a player may collect before the next one bans
+     *  them instead. 0 disables banning entirely. */
+    public int punishmentBanAfter() {
+        return punishmentBanAfter;
+    }
+
+    /** The command that bans. Empty means Minecraft's own {@code /ban}. */
+    public String punishmentBanCommand() {
+        return punishmentBanCommand;
     }
 
     public String actionBarFormat() {

@@ -3,6 +3,8 @@ package me.everyone.oculusai.punishment;
 
 import me.everyone.oculusai.core.Platform;
 import me.everyone.oculusai.core.Service;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -267,18 +269,49 @@ public final class Punishments implements Service {
         if (world == null) {
             return;
         }
+        // Gathered before anything is thrown, and deduplicated by identity.
+        // A player inventory's getContents() is 41 slots - the main grid, the
+        // armour and the off hand - so the armour and off hand also come back
+        // from their own getters. Dropping both lists would have turned one
+        // helmet on a cheater into two on the ground, which is a duplication
+        // bug handed to the one person with the most reason to exploit it.
+        // The getters are still read: it costs nothing and does not assume
+        // that every server agrees on what getContents() covers.
+        List<ItemStack> spilling = new ArrayList<>();
+        collect(spilling, inventory.getContents());
+        collect(spilling, inventory.getArmorContents());
+        collect(spilling, new ItemStack[] {inventory.getItemInOffHand()});
+
         Location from = where.clone().add(0.0D, 1.0D, 0.0D);
-        for (ItemStack stack : inventory.getContents()) {
+        for (ItemStack stack : spilling) {
             dropOne(world, from, stack);
         }
-        for (ItemStack stack : inventory.getArmorContents()) {
-            dropOne(world, from, stack);
-        }
-        dropOne(world, from, inventory.getItemInOffHand());
         inventory.clear();
         inventory.setArmorContents(null);
         inventory.setItemInOffHand(null);
         Animations.spilled(world, from);
+    }
+
+    /** Adds the real items of an array, skipping anything already gathered. */
+    private void collect(List<ItemStack> into, ItemStack[] stacks) {
+        if (stacks == null) {
+            return;
+        }
+        for (ItemStack stack : stacks) {
+            if (stack == null || stack.getType().isAir()) {
+                continue;
+            }
+            boolean seen = false;
+            for (ItemStack already : into) {
+                if (already == stack) {
+                    seen = true;
+                    break;
+                }
+            }
+            if (!seen) {
+                into.add(stack);
+            }
+        }
     }
 
     /** Throws one item out of the player: up and away, so the inventory is

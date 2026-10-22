@@ -4,6 +4,7 @@ package me.everyone.oculusai.config;
 import me.everyone.oculusai.core.Service;
 import java.util.Locale;
 import me.everyone.oculusai.OculusAI;
+import me.everyone.oculusai.punishment.Animations;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 
@@ -52,6 +53,7 @@ public final class Config implements Service {
     private boolean punishmentStrip = false;
     private int punishmentBanAfter = 0;
     private String punishmentBanCommand = "";
+    private String punishmentAnimation = "none";
 
     private int progressSeconds = 15;
     private int monitorPvpSeconds = 5;
@@ -164,6 +166,7 @@ public final class Config implements Service {
         punishmentStrip = config.getBoolean("punishment.strip", false);
         punishmentBanAfter = Math.max(0, config.getInt("punishment.ban-after", 0));
         punishmentBanCommand = config.getString("punishment.ban-command", "");
+        punishmentAnimation = Animations.normalise(config.getString("punishment.animation", "none"));
 
         progressSeconds = config.getInt("recording.progress-seconds", 15);
         monitorPvpSeconds = Math.max(1, config.getInt("monitor.pvp-seconds", 5));
@@ -412,6 +415,12 @@ public final class Config implements Service {
     /** The command that bans. Empty means Minecraft's own {@code /ban}. */
     public String punishmentBanCommand() {
         return punishmentBanCommand;
+    }
+
+    /** The send-off played when the plugin punishes on its own. One of
+     *  {@link Animations#ALL}. */
+    public String punishmentAnimation() {
+        return punishmentAnimation;
     }
 
     public String actionBarFormat() {

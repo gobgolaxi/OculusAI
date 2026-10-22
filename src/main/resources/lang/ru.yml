@@ -388,6 +388,7 @@ kickanim:
   lightning: "Молния"
   firework: "Фейерверк"
   wither: "Визер"
+  random: "Случайная"
 checks-menu:
   title: "Проверки"
   header: "<aqua>Проверки"

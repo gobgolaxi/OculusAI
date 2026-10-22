@@ -390,6 +390,7 @@ kickanim:
   lightning: "Lightning"
   firework: "Firework"
   wither: "Wither"
+  random: "Random"
 checks-menu:
   title: "Checks"
   header: "<aqua>Checks"

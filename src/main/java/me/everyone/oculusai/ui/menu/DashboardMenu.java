@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.npc.NpcOptions;
+import me.everyone.oculusai.punishment.Animations;
 import me.everyone.oculusai.util.Msg;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -24,6 +25,7 @@ public final class DashboardMenu extends Menu {
     private static final int SLOT_CHECKS = 30;
     private static final int SLOT_ALERT_SOUND = 32;
     private static final int SLOT_ALWAYS_PROB = 34;
+    private static final int SLOT_KICKANIM = 38;
     private static final int SLOT_PROB_HEIGHT = 40;
 
     private static final int SLOT_THEME = 48;
@@ -132,6 +134,20 @@ public final class DashboardMenu extends Menu {
                         "",
                         allowed ? plugin.lang().text("shared.click-toggle") : "")));
 
+        // The strings for this button have been in the language files all
+        // along; until now nothing read them.
+        String animation = plugin.config().punishmentAnimation();
+        set(SLOT_KICKANIM, item(Material.FIREWORK_ROCKET,
+                plugin.lang().text("dashboard.kickanim.name"),
+                List.of(
+                        plugin.lang().text("dashboard.kickanim.current",
+                                Map.of("value", plugin.lang().text("kickanim." + animation))),
+                        "",
+                        plugin.lang().text("dashboard.kickanim.line1"),
+                        plugin.lang().text("dashboard.kickanim.line2"),
+                        "",
+                        plugin.lang().text("shared.click-toggle"))));
+
         double hologramHeight = plugin.hudConfig().hologramHeight();
         button(SLOT_PROB_HEIGHT, item(Material.END_ROD,
                 plugin.lang().text("dashboard.probheight.name"),
@@ -191,6 +207,17 @@ public final class DashboardMenu extends Menu {
                 plugin.config().alertSoundVolume(), plugin.config().alertSoundPitch());
     }
 
+    /** Steps to the next send-off. No preview is played: an effect drawn
+     *  behind an open inventory is one the clicker cannot see, which is why
+     *  the alert sound previews and this does not. */
+    private void cycleAnimation() {
+        String next = Animations.next(plugin.config().punishmentAnimation());
+        plugin.getConfig().set("punishment.animation", next);
+        plugin.saveConfig();
+        plugin.reloadEverything();
+        refresh();
+    }
+
     private String shorten(String command) {
         if (command == null || command.isBlank()) {
             return plugin.lang().text("dashboard.punish.no-command");
@@ -204,6 +231,7 @@ public final class DashboardMenu extends Menu {
             case SLOT_PUNISH -> toggle("punishment.enabled", false);
             case SLOT_CHECKS -> new ChecksMenu(plugin, viewer).open();
             case SLOT_ALERT_SOUND -> cycleAlertSound();
+            case SLOT_KICKANIM -> cycleAnimation();
             case SLOT_JOURNAL -> new JournalMenu(plugin, viewer).open();
             case SLOT_PLAYERS -> new PlayersMenu(plugin, viewer).open();
             case SLOT_DUMMY -> {

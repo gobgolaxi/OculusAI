@@ -103,6 +103,10 @@ public final class Punishments implements Service {
                 // reason the kick does.
                 stripThenDisconnect(player, () -> run(banCommand));
             } else {
+                if (vanilla) {
+                    plugin.platform().onEntity(player,
+                            () -> Animations.play(player, plugin.config().punishmentAnimation()));
+                }
                 run(banCommand);
             }
             plugin.getLogger().info((strip ? "Stripped, killed and banned " : "Banned ")
@@ -115,7 +119,10 @@ public final class Punishments implements Service {
                 stripThenDisconnect(player,
                         () -> plugin.platform().onEntity(player, () -> kick(player)));
             } else {
-                plugin.platform().onEntity(player, () -> kick(player));
+                plugin.platform().onEntity(player, () -> {
+                    Animations.play(player, plugin.config().punishmentAnimation());
+                    kick(player);
+                });
             }
             plugin.getLogger().info((strip ? "Stripped, killed and kicked " : "Kicked ")
                     + data.name());
@@ -162,6 +169,9 @@ public final class Punishments implements Service {
      *  owning thread itself - the kick does, the ban command does not. */
     private void stripThenDisconnect(Player player, Runnable disconnect) {
         plugin.platform().onEntity(player, () -> {
+            // Before the drop, so the effect is centred on a player who is
+            // still standing there rather than on a pile of items.
+            Animations.play(player, plugin.config().punishmentAnimation());
             dropEverything(player);
             player.setHealth(0.0D);
         });

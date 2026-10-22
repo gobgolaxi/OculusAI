@@ -3,6 +3,7 @@ build/
 run/
 *.log
 *.rar
+*.zip
 bin/
 libs/
 

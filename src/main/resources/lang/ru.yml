@@ -385,6 +385,7 @@ punish-menu:
     after: "<gray>Банить на <white>%value%<gray>-м наказании"
     none: "<gray>Бан выключен"
     with: "<gray>Чем: <white>%value%"
+    command-name: "<dark_red>Чем банить"
     vanilla: "ванильный /ban"
     left: "<dark_gray>ЛКМ <gray>+1"
     right: "<dark_gray>ПКМ <gray>-1"

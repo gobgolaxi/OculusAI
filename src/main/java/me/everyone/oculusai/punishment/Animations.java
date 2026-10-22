@@ -243,6 +243,25 @@ public final class Animations {
         }
     }
 
+    /** How often the inventory should let go of another handful, in ticks,
+     *  or 0 for "all of it at once".
+     *
+     *  <p>The number is each show's own repeating beat - the chime ladder, the
+     *  fuse, the rocket, the portal - so the items come out on the sound
+     *  rather than beside it. A show with no beat of its own has nothing to
+     *  fall in time with, and dribbling items out in silence looks like a lag
+     *  spike, so it empties them in one go instead. */
+    public static int spillEvery(String chosen) {
+        return switch (chosen) {
+            case ASCEND -> 5;
+            case EXPLODE -> 4;
+            case LIGHTNING -> 8;
+            case WITHER -> 10;
+            case FIREWORK -> 12;
+            default -> 0;
+        };
+    }
+
     /** The sound of a cheater's inventory coming out of them: the chest
      *  opening under the clatter of what was in it. Played once for the lot
      *  rather than once per stack - forty items each firing their own pickup

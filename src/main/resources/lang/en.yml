@@ -387,6 +387,7 @@ punish-menu:
     after: "<gray>Ban on punishment <white>%value%"
     none: "<gray>Banning off"
     with: "<gray>With: <white>%value%"
+    command-name: "<dark_red>Ban with"
     vanilla: "vanilla /ban"
     left: "<dark_gray>Left <gray>+1"
     right: "<dark_gray>Right <gray>-1"

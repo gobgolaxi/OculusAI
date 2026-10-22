@@ -55,7 +55,7 @@ public final class AnimationsCommand extends SubCommand {
         // punishment: no freeze, no stripping, no kick. Being thrown into the
         // air is left in, because that is the effect.
         if (sender instanceof Player player && !wanted.equals(Animations.NONE)) {
-            plugin.punishments().playShow(player, Animations.pick(wanted), null, () -> {
+            plugin.punishments().playShow(player, Animations.pick(wanted), null, null, () -> {
             });
         }
     }

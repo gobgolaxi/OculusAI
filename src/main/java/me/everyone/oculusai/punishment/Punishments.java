@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.IntConsumer;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.util.Msg;
@@ -173,7 +174,8 @@ public final class Punishments implements Service {
      *
      *  @param onStart runs on the owning thread right after the throw
      *  @param atEnd   runs on the tick loop once the show is over */
-    public void playShow(Player player, String chosen, Runnable onStart, Runnable atEnd) {
+    public void playShow(Player player, String chosen, Runnable onStart,
+                         IntConsumer onFrame, Runnable atEnd) {
         int total = Animations.ticks(chosen);
         if (total <= 0) {
             if (onStart != null) {
@@ -191,8 +193,13 @@ public final class Punishments implements Service {
         });
 
         AtomicInteger tick = new AtomicInteger();
-        Platform.Cancellable frames = plugin.platform().entityRepeating(player, 1L, 1L,
-                () -> Animations.frame(player, chosen, tick.incrementAndGet(), total));
+        Platform.Cancellable frames = plugin.platform().entityRepeating(player, 1L, 1L, () -> {
+            int now = tick.incrementAndGet();
+            Animations.frame(player, chosen, now, total);
+            if (onFrame != null) {
+                onFrame.accept(now);
+            }
+        });
 
         plugin.ticks().after(total, () -> {
             frames.cancel();
@@ -228,25 +235,70 @@ public final class Punishments implements Service {
     private void show(Player player, boolean strip, Runnable disconnect) {
         String chosen = Animations.pick(plugin.config().punishmentAnimation());
         UUID uuid = player.getUniqueId();
-        if (Animations.ticks(chosen) > 0) {
+        int total = Animations.ticks(chosen);
+        if (total > 0) {
             held.add(uuid);
         }
+
+        // Taken off them at the very start whatever happens next: a cheater
+        // who keeps their gear through the show would also take it with them
+        // if the server stopped halfway. What varies is only how fast the
+        // pile is let go of.
+        int beat = total > 0 ? Animations.spillEvery(chosen) : 0;
+        List<ItemStack> pending = new ArrayList<>();
+        int[] perBeat = {Integer.MAX_VALUE};
+
         playShow(player, chosen,
-                // On the way up, so the inventory is seen leaving them rather
-                // than found in a heap afterwards.
-                strip ? () -> dropEverything(player) : null,
+                strip ? () -> {
+                    pending.addAll(takeEverything(player));
+                    if (beat <= 0) {
+                        release(player, pending, pending.size());
+                        return;
+                    }
+                    // Spread over the beats the show actually has, so the
+                    // last handful lands on the last sound rather than
+                    // halfway through.
+                    int beats = Math.max(1, total / beat);
+                    perBeat[0] = Math.max(1, (pending.size() + beats - 1) / beats);
+                } : null,
+                strip && beat > 0 ? tick -> {
+                    if (tick % beat == 0) {
+                        release(player, pending, perBeat[0]);
+                    }
+                } : null,
                 () -> {
                     held.remove(uuid);
                     plugin.platform().onEntity(player, () -> {
-                        if (strip && player.isOnline()) {
-                            // Harmless when the throw already emptied them,
-                            // and the whole punishment when there was no show.
-                            dropEverything(player);
+                        if (!player.isOnline()) {
+                            return;
+                        }
+                        if (strip) {
+                            // Whatever the beats did not reach, plus anything
+                            // picked up since - the show is over either way.
+                            release(player, pending, pending.size());
+                            release(player, takeEverything(player), Integer.MAX_VALUE);
                             player.setHealth(0.0D);
                         }
                     });
                     plugin.ticks().after(1L, disconnect);
                 });
+    }
+
+    /** Drops up to {@code count} of the waiting items where the player is
+     *  now, which during a show is wherever the throw has carried them. */
+    private void release(Player player, List<ItemStack> waiting, int count) {
+        if (waiting.isEmpty() || !player.isOnline()) {
+            return;
+        }
+        Location where = player.getLocation();
+        World world = where.getWorld();
+        if (world == null) {
+            return;
+        }
+        Location from = where.clone().add(0.0D, 1.0D, 0.0D);
+        for (int i = 0; i < count && !waiting.isEmpty(); i++) {
+            dropOne(world, from, waiting.remove(0));
+        }
     }
 
     /** Disconnects a player who may already have left on their own. */
@@ -264,13 +316,8 @@ public final class Punishments implements Service {
      *  gamerule no longer decides what this punishment does.
      *
      *  <p>Must run on the thread owning the player. */
-    private void dropEverything(Player player) {
+    private List<ItemStack> takeEverything(Player player) {
         PlayerInventory inventory = player.getInventory();
-        Location where = player.getLocation();
-        World world = where.getWorld();
-        if (world == null) {
-            return;
-        }
         // Gathered before anything is thrown, and deduplicated by identity.
         // A player inventory's getContents() is 41 slots - the main grid, the
         // armour and the off hand - so the armour and off hand also come back
@@ -284,14 +331,14 @@ public final class Punishments implements Service {
         collect(spilling, inventory.getArmorContents());
         collect(spilling, new ItemStack[] {inventory.getItemInOffHand()});
 
-        Location from = where.clone().add(0.0D, 1.0D, 0.0D);
-        for (ItemStack stack : spilling) {
-            dropOne(world, from, stack);
-        }
         inventory.clear();
         inventory.setArmorContents(null);
         inventory.setItemInOffHand(null);
-        Animations.spilled(world, from);
+        Location where = player.getLocation();
+        if (!spilling.isEmpty()) {
+            Animations.spilled(where.getWorld(), where.clone().add(0.0D, 1.0D, 0.0D));
+        }
+        return spilling;
     }
 
     /** Adds the real items of an array, skipping anything already gathered. */

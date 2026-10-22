@@ -25,9 +25,13 @@ public final class PunishmentMenu extends Menu {
     /** One slot per effect, in the order {@link Animations#ALL} lists them. */
     private static final int[] ANIMATION_SLOTS = {10, 11, 12, 13, 14, 15, 16};
 
-    private static final int SLOT_ENABLED = 20;
-    private static final int SLOT_STRIP = 21;
-    private static final int SLOT_BAN_AFTER = 22;
+    // Three groups on one screen: what the send-off looks like across the
+    // middle row, then the kick on the left of the row below and the ban on
+    // the right, with a gap between them doing the separating.
+    private static final int SLOT_ENABLED = 19;
+    private static final int SLOT_STRIP = 20;
+    private static final int SLOT_BAN_AFTER = 24;
+    private static final int SLOT_BAN_WITH = 25;
     private static final int SLOT_BACK = 31;
 
     public PunishmentMenu(OculusAI plugin, Player viewer) {
@@ -103,8 +107,6 @@ public final class PunishmentMenu extends Menu {
                                 ? plugin.lang().text("punish-menu.ban.after",
                                         Map.of("value", Integer.toString(banAfter)))
                                 : plugin.lang().text("punish-menu.ban.none"),
-                        plugin.lang().text("punish-menu.ban.with",
-                                Map.of("value", banCommand())),
                         "",
                         plugin.lang().text("punish-menu.ban.left"),
                         plugin.lang().text("punish-menu.ban.right"),
@@ -118,6 +120,13 @@ public final class PunishmentMenu extends Menu {
                     plugin.getConfig().set("punishment.ban-after", next);
                     save();
                 });
+
+        // Not a button: the command is edited in config.yml, and a click
+        // that silently did nothing would read as a broken control.
+        set(SLOT_BAN_WITH, item(Material.WRITABLE_BOOK,
+                plugin.lang().text("punish-menu.ban.command-name"),
+                List.of(plugin.lang().text("punish-menu.ban.with",
+                        Map.of("value", banCommand())))));
 
         button(SLOT_BACK, item(Material.ARROW, plugin.lang().text("shared.back"), null),
                 () -> new DashboardMenu(plugin, viewer).open());

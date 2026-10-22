@@ -10,10 +10,16 @@ val modern = versionDir == "v121"
 
 group = "me.everyone.oculusai"
 // The real version, not a placeholder: the plugin asks the service whether a
-// newer build exists and compares against this, so a jar reporting
-// 1.0-SNAPSHOT forever can never know it is out of date. Override per build
-// with -PpluginVersion=1.1.1.
-version = (project.findProperty("pluginVersion") as String? ?: "1.1.1")
+// newer build exists and compares against this, so a jar reporting the wrong
+// number can never know it is out of date.
+//
+// It comes from gradle.properties and from nowhere else. The previous arrangement
+// - a command-line property with a literal fallback - meant a build without the
+// flag stamped whatever number was hard-coded here months ago, and that number
+// was still 1.1.1 at version 1.8.1. Failing is better than stamping a lie.
+version = (project.findProperty("pluginVersion") as String?)
+    ?.takeIf { it.isNotBlank() }
+    ?: error("pluginVersion is not set - it belongs in gradle.properties")
 
 repositories {
     mavenCentral()

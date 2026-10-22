@@ -76,3 +76,8 @@
 - Панель и тарифы — [oculusai.space](https://oculusai.space/)
 - Состояние сервиса — [oculusai.space/stats](https://oculusai.space/stats)
 - Документация — [oculusai.space/guide](https://oculusai.space/guide)
+
+## Версии
+
+Номер живёт в `gradle.properties`, выпуск делает `./tools/release.sh`.
+Что считается патчем, минором и мажором — в [VERSIONING.md](VERSIONING.md).

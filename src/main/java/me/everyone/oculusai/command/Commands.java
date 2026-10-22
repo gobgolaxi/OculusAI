@@ -10,6 +10,7 @@ import java.util.Map;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.command.SubCommand;
 import me.everyone.oculusai.command.sub.BypassCommand;
+import me.everyone.oculusai.command.sub.AnimationsCommand;
 import me.everyone.oculusai.command.sub.ChecksCommand;
 import me.everyone.oculusai.command.sub.ConnectCommand;
 import me.everyone.oculusai.command.sub.DashboardCommand;
@@ -64,6 +65,7 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
         subCommands.add(new ConnectCommand(plugin));
         subCommands.add(new DashboardCommand(plugin));
         subCommands.add(new ChecksCommand(plugin));
+        subCommands.add(new AnimationsCommand(plugin));
         subCommands.add(new DiagCommand(plugin));
         subCommands.add(new UpdateCommand(plugin));
         subCommands.add(new ReloadCommand(plugin));

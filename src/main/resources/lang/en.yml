@@ -391,6 +391,11 @@ kickanim:
   firework: "Firework"
   wither: "Wither"
   random: "Random"
+animations:
+  current: "<gray>Punishment effect: <white>%value%<gray>."
+  list: "Available:"
+  set: "<green>Punishment effect: <white>%value%<green>."
+  unknown: "<red>No such effect: <white>%value%<red>."
 checks-menu:
   title: "Checks"
   header: "<aqua>Checks"

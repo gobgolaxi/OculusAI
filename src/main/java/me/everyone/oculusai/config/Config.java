@@ -53,7 +53,7 @@ public final class Config implements Service {
     private boolean punishmentStrip = false;
     private int punishmentBanAfter = 0;
     private String punishmentBanCommand = "";
-    private String punishmentAnimation = "none";
+    private String punishmentAnimation = "lightning";
 
     private int progressSeconds = 15;
     private int monitorPvpSeconds = 5;
@@ -166,7 +166,7 @@ public final class Config implements Service {
         punishmentStrip = config.getBoolean("punishment.strip", false);
         punishmentBanAfter = Math.max(0, config.getInt("punishment.ban-after", 0));
         punishmentBanCommand = config.getString("punishment.ban-command", "");
-        punishmentAnimation = Animations.normalise(config.getString("punishment.animation", "none"));
+        punishmentAnimation = Animations.normalise(config.getString("punishment.animation", "lightning"));
 
         progressSeconds = config.getInt("recording.progress-seconds", 15);
         monitorPvpSeconds = Math.max(1, config.getInt("monitor.pvp-seconds", 5));

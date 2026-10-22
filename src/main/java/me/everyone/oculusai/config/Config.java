@@ -48,6 +48,7 @@ public final class Config implements Service {
     private String punishmentCommand = "";
     private String punishmentBroadcast = "";
     private long punishmentCooldownMs = 60_000L;
+    private boolean punishmentSkipWhileRecording = true;
 
     private int progressSeconds = 15;
     private int monitorPvpSeconds = 5;
@@ -155,6 +156,8 @@ public final class Config implements Service {
         punishmentBroadcast = config.getString("punishment.broadcast", "");
         punishmentCooldownMs = Math.max(0L,
                 config.getLong("punishment.cooldown-ms", 60_000L));
+        punishmentSkipWhileRecording =
+                config.getBoolean("punishment.skip-while-recording", true);
 
         progressSeconds = config.getInt("recording.progress-seconds", 15);
         monitorPvpSeconds = Math.max(1, config.getInt("monitor.pvp-seconds", 5));
@@ -379,6 +382,12 @@ public final class Config implements Service {
 
     public long punishmentCooldownMs() {
         return punishmentCooldownMs;
+    }
+
+    /** Whether a player being recorded into a dataset is exempt from the
+     *  punishment. Analysis, readings and alerts are unaffected. */
+    public boolean punishmentSkipWhileRecording() {
+        return punishmentSkipWhileRecording;
     }
 
     public String actionBarFormat() {

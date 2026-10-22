@@ -38,6 +38,14 @@ public final class Punishments implements Service {
                 || plugin.bypass().isBypassed(data.player())) {
             return;
         }
+        // A capture that ends in a kick is a capture cut short: the windows
+        // after the threshold are the ones worth having, and the recorded
+        // player is on the roster on purpose - they are meant to be cheating.
+        // Analysis, readings and alerts carry on; only the punishment waits
+        // until the recording is committed.
+        if (data.recording() && plugin.config().punishmentSkipWhileRecording()) {
+            return;
+        }
         long now = System.currentTimeMillis();
         long cooldown = plugin.config().punishmentCooldownMs();
         Long previous = lastPunished.get(data.uuid());

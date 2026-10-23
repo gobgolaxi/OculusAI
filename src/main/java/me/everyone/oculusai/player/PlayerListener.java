@@ -39,6 +39,13 @@ public final class PlayerListener implements Listener {
         plugin.worker().execute(() -> plugin.history().preload(
                 joining.getUniqueId(), joining.getName()));
 
+        // One line to the service: this name, from this address. It is what
+        // makes /oai reputation able to say anything at all, and it is the
+        // only moment the address is read - the plugin never stores one.
+        plugin.reputation().seen(joining);
+        // Folia samples replays per player, like the entity tracker.
+        plugin.replays().follow(joining);
+
         // Holograms are packet entities in the viewer's client, and a client
         // that has just connected has none of them. Both directions matter:
         // this player may be a viewer whose AlwaysProb has to come back, and
@@ -93,6 +100,7 @@ public final class PlayerListener implements Listener {
 
         plugin.tracker().unfollow(player);
         plugin.tracker().forget(player);
+        plugin.replays().unfollow(player);
         plugin.displays().forget(player.getUniqueId());
         plugin.monitors().forget(player.getUniqueId());
         plugin.punishments().forget(player.getUniqueId());
@@ -102,6 +110,11 @@ public final class PlayerListener implements Listener {
             if (leaving != null) {
                 leaving.resetBuffer();
             }
+            // The buffered frames go with the session. A replay that mattered
+            // was already frozen and uploaded by the punishment path; what is
+            // left here is seconds of a fight nobody was punished for.
+            plugin.replays().forget(player.getUniqueId());
+            plugin.reputation().forget(player.getUniqueId());
             plugin.data().remove(player.getUniqueId());
         }
     }

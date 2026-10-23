@@ -348,6 +348,46 @@ public final class ApiClient implements Service {
         return send(builder(path, plugin.config().apiKey()).GET().build(), false);
     }
 
+    /** Hands up one join: this name, from this address, on this server.
+     *
+     *  <p>The address travels raw and is not kept raw: the service hashes it
+     *  under a secret of its own and stores the hash plus the first half of
+     *  the address, which is what makes "how many addresses does this name
+     *  use" answerable without a table of who plays from where. Does not vote
+     *  on reachability - a join report failing says nothing about whether the
+     *  model can answer. */
+    public CompletableFuture<JsonObject> reputationSeen(String player, String uuid,
+                                                        String address) {
+        JsonObject body = new JsonObject();
+        body.addProperty("player", player);
+        body.addProperty("uuid", uuid);
+        body.addProperty("address", address);
+        return post("/reputation/seen", body);
+    }
+
+    /** What the service has on a name across every server it answers for. */
+    public CompletableFuture<JsonObject> reputation(String player) {
+        String path = "/reputation/" + java.net.URLEncoder.encode(player,
+                java.nio.charset.StandardCharsets.UTF_8);
+        return get(path);
+    }
+
+    /** Sends one replay up for the panel to play back.
+     *
+     *  <p>On the dataset timeout rather than the ordinary one. A replay is a
+     *  few hundred kilobytes that the service has to write to disk before it
+     *  answers, and the ordinary timeout is a second and a half: sending this
+     *  on it would time out on a slow link, and a timeout on the predict path
+     *  is what marks the service unreachable. This one does not vote. */
+    public CompletableFuture<JsonObject> uploadReplay(JsonObject replay) {
+        HttpRequest.Builder builder = builder("/replays", plugin.config().apiKey())
+                .timeout(Duration.ofMillis(Math.max(plugin.config().apiTimeoutMs(),
+                        DATASET_TIMEOUT_MS)))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(replay.toString()));
+        return send(builder.build(), false);
+    }
+
     public CompletableFuture<JsonObject> status() {
         return get("/status");
     }

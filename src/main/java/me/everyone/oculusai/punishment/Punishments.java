@@ -112,6 +112,14 @@ public final class Punishments implements Service {
         plugin.history().note(uuid, name, "punish",
                 (ban ? "manual ban by " : "manual kick by ") + by + ": " + reason);
 
+        // An operator who just watched somebody cheat wants the same thing
+        // the plugin keeps for itself: the seconds before the kick, playable
+        // in the panel. Frozen before the send-off, as on the automatic path.
+        PlayerData suspect = plugin.data().get(player);
+        if (suspect != null) {
+            plugin.replays().capture(suspect, ban ? "manual-ban" : "manual-kick");
+        }
+
         boolean shown = true;
         boolean strip = plugin.config().punishmentStrip();
         if (ban) {
@@ -156,6 +164,12 @@ public final class Punishments implements Service {
         }
         plugin.history().note(data.uuid(), data.name(), "punish",
                 "buffer " + Msg.round(data.buffer(), 1) + ", p " + Msg.percent(data.probability()));
+
+        // Before anything else happens to them. The send-off strips the
+        // inventory, kills the player and disconnects them, so a replay taken
+        // after it would be a recording of the punishment rather than of the
+        // thing that caused it.
+        plugin.replays().capture(data, "punish");
 
         // Counted only while banning is switched on, and counted by
         // BanCounter rather than by the history: turning ban-after on must

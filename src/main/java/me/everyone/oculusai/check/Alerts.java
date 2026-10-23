@@ -97,6 +97,29 @@ public final class Alerts implements Service {
         send(message, false);
     }
 
+    /** A staff message with a sound of its own.
+     *
+     *  <p>The check alerts all share one bell, which is right: they are the
+     *  same kind of event. A player with a record walking in is not, and a
+     *  moderator should be able to tell the two apart without reading - so
+     *  the caller brings the sound rather than borrowing {@code
+     *  buffer.alert-sound}. */
+    public void announce(String message, org.bukkit.Sound sound, float volume, float pitch) {
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (!online.hasPermission(PERMISSION)) {
+                continue;
+            }
+            online.sendMessage(message);
+            if (sound == null) {
+                continue;
+            }
+            // A sound is played at a location, so it belongs to whichever
+            // thread owns the listener; chat does not.
+            plugin.platform().onEntity(online,
+                    () -> online.playSound(online.getLocation(), sound, volume, pitch));
+        }
+    }
+
     private void deliver(PlayerData data, Check check, CheckResult result, boolean test) {
         String detail = Msg.strip(result.detail());
         String checkName = plugin.lang().textOr("check.name." + check.id(), check.id());

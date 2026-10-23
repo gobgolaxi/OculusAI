@@ -40,6 +40,9 @@ public final class ForgetCommand extends SubCommand {
         // уходить и оттуда: иначе он остаётся в списке подозрительных с
         // буфером, которого у него больше нет.
         plugin.journal().forget(data.uuid());
+        // И записанные секунды тоже: реплей это доказательство подозрения, а
+        // снятое подозрение не должно оставлять за собой записей.
+        plugin.replays().forget(data.uuid());
         data.recording(false, null);
         data.clearRecorded();
         data.clearWindow();

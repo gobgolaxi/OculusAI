@@ -29,6 +29,8 @@ import me.everyone.oculusai.player.Players;
 import me.everyone.oculusai.player.SetupNotifier;
 import me.everyone.oculusai.punishment.BanCounter;
 import me.everyone.oculusai.punishment.Punishments;
+import me.everyone.oculusai.replay.ReplayRecorder;
+import me.everyone.oculusai.reputation.Reputation;
 import me.everyone.oculusai.storage.DatasetStore;
 import me.everyone.oculusai.storage.HistoryStore;
 import me.everyone.oculusai.storage.JournalStore;
@@ -62,6 +64,8 @@ public final class OculusAI extends JavaPlugin {
     private PacketBridge packets;
     private Commands commands;
     private Npcs npcs;
+    private ReplayRecorder replays;
+    private Reputation reputation;
     private TestServer testServer;
     private Updater updater;
 
@@ -99,6 +103,10 @@ public final class OculusAI extends JavaPlugin {
         packets = register(new PacketBridge(this));
         commands = register(new Commands(this));
         npcs = register(new Npcs(this));
+        // After the punishment service, which is what asks it to freeze, and
+        // after the player registry, whose tracked players it samples.
+        replays = register(new ReplayRecorder(this));
+        reputation = register(new Reputation(this));
         testServer = register(new TestServer(this));
         readBuild();
         updater = register(new Updater(this));
@@ -169,6 +177,16 @@ public final class OculusAI extends JavaPlugin {
         }
         buildVersion = properties.getProperty("version", getDescription().getVersion()).trim();
         buildFlavour = properties.getProperty("flavour", "").trim();
+    }
+
+    /** The ring buffer of the last few seconds before a punishment. */
+    public ReplayRecorder replays() {
+        return replays;
+    }
+
+    /** Cross-server reputation for a name and the addresses behind it. */
+    public Reputation reputation() {
+        return reputation;
     }
 
     public TickLoop ticks() {

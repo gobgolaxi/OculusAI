@@ -99,6 +99,21 @@ public final class Config implements Service {
     private boolean checkAimResetAfterCombat = true;
     private long checkAimResetAfterMs = 8000L;
 
+    private boolean replayEnabled = true;
+    private int replaySeconds = 8;
+    private int replayRadius = 10;
+    private long replayCombatMs = 4000L;
+    private int replayMaxKb = 1024;
+
+    private boolean reputationEnabled = true;
+    private boolean reputationJoinAlert = true;
+    private double reputationJoinAlertScore = 0.5D;
+    private boolean reputationJoinAlertOtherServersOnly = true;
+    private long reputationJoinAlertCooldownMs = 300_000L;
+    private String reputationJoinAlertSound = "BLOCK_NOTE_BLOCK_PLING";
+    private float reputationJoinAlertVolume = 1.0F;
+    private float reputationJoinAlertPitch = 0.6F;
+
     public Config(OculusAI plugin) {
         this.plugin = plugin;
     }
@@ -229,6 +244,37 @@ public final class Config implements Service {
         // exists to fix.
         checkAimResetAfterMs = Math.max(combatMs(),
                 config.getLong("checks.aim.reset-after-ms", 8000L));
+
+        replayEnabled = config.getBoolean("replay.enabled", true);
+        // A second is the floor because a replay shorter than that shows
+        // nothing, and thirty is the ceiling because the buffer is memory per
+        // suspect: at twenty frames a second, thirty is six hundred frames
+        // each holding a couple of dozen actors.
+        replaySeconds = Math.max(1, Math.min(30, config.getInt("replay.seconds", 8)));
+        // The radius is the scene and the entity scan at once, so it is
+        // capped: 32 blocks is a 65-block cube, a quarter of a million
+        // blocks, which is not a replay but a world download.
+        replayRadius = Math.max(2, Math.min(32, config.getInt("replay.radius", 10)));
+        replayCombatMs = Math.max(1000L, config.getLong("replay.combat-ms", 4000L));
+        replayMaxKb = Math.max(64, Math.min(8192, config.getInt("replay.max-kb", 1024)));
+
+        reputationEnabled = config.getBoolean("reputation.enabled", true);
+        reputationJoinAlert = config.getBoolean("reputation.join-alert.enabled", true);
+        // Clamped into the range a score can actually take, because a
+        // threshold outside it means either every join or none, and both look
+        // like the feature is broken rather than misconfigured.
+        reputationJoinAlertScore = Math.max(0.0D, Math.min(1.0D,
+                config.getDouble("reputation.join-alert.min-score", 0.5D)));
+        reputationJoinAlertOtherServersOnly =
+                config.getBoolean("reputation.join-alert.other-servers-only", true);
+        reputationJoinAlertCooldownMs = Math.max(0L,
+                config.getLong("reputation.join-alert.cooldown-ms", 300_000L));
+        reputationJoinAlertSound = config.getString("reputation.join-alert.sound",
+                "BLOCK_NOTE_BLOCK_PLING");
+        reputationJoinAlertVolume = (float) config.getDouble(
+                "reputation.join-alert.sound-volume", 1.0D);
+        reputationJoinAlertPitch = (float) config.getDouble(
+                "reputation.join-alert.sound-pitch", 0.6D);
     }
 
     private String stripTrailingSlash(String url) {
@@ -598,6 +644,84 @@ public final class Config implements Service {
 
     public boolean checkAimResetAfterCombat() {
         return checkAimResetAfterCombat;
+    }
+
+    /** Whether the last few seconds before a punishment are kept for the
+     *  panel to play back. */
+    public boolean replayEnabled() {
+        return replayEnabled;
+    }
+
+    /** How many seconds the ring buffer holds. */
+    public int replaySeconds() {
+        return replaySeconds;
+    }
+
+    /** Blocks in every direction: the scene cube and the entity scan. */
+    public int replayRadius() {
+        return replayRadius;
+    }
+
+    /** How recently a player must have fought to be recorded at all. Nothing
+     *  outside a fight is ever punished, so nothing outside a fight is kept. */
+    public long replayCombatMs() {
+        return replayCombatMs;
+    }
+
+    /** The hard ceiling on one replay. Over it the terrain is dropped and
+     *  then the oldest frames, because the end is the evidence. */
+    public int replayMaxKb() {
+        return replayMaxKb;
+    }
+
+    /** Whether a joining player with a record is announced to staff. */
+    public boolean reputationJoinAlert() {
+        return reputationJoinAlert;
+    }
+
+    /** How bad the record has to be before anybody is interrupted. */
+    public double reputationJoinAlertScore() {
+        return reputationJoinAlertScore;
+    }
+
+    /** True to judge only on what happened on other servers.
+     *
+     *  <p>On by default, because this server's own kicks are already in its
+     *  own journal: announcing a player to the staff who banned them
+     *  yesterday is noise, and noise is what gets a notice switched off. */
+    public boolean reputationJoinAlertOtherServersOnly() {
+        return reputationJoinAlertOtherServersOnly;
+    }
+
+    /** How long before the same player may be announced again. A player
+     *  reconnecting six times must not produce six notices. */
+    public long reputationJoinAlertCooldownMs() {
+        return reputationJoinAlertCooldownMs;
+    }
+
+    public String reputationJoinAlertSoundName() {
+        return reputationJoinAlertSound;
+    }
+
+    /** The sound for the join notice. Deliberately not the check bell: a
+     *  moderator should be able to tell the two apart without reading. */
+    public Sound reputationJoinAlertSound() {
+        return parseSound(reputationJoinAlertSound, Sound.BLOCK_NOTE_BLOCK_PLING);
+    }
+
+    public float reputationJoinAlertVolume() {
+        return reputationJoinAlertVolume;
+    }
+
+    public float reputationJoinAlertPitch() {
+        return reputationJoinAlertPitch;
+    }
+
+    /** Whether joins are reported to the service for cross-server reputation.
+     *  Off means {@code /oai reputation} has nothing to read and nothing about
+     *  this server's players reaches the shared index. */
+    public boolean reputationEnabled() {
+        return reputationEnabled;
     }
 
     private Sound parseSound(String value, Sound fallback) {

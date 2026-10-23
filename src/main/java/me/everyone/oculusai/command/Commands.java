@@ -29,6 +29,7 @@ import me.everyone.oculusai.command.sub.ProbCommand;
 import me.everyone.oculusai.command.sub.PunishCommand;
 import me.everyone.oculusai.command.sub.ReloadCommand;
 import me.everyone.oculusai.command.sub.ReportCommand;
+import me.everyone.oculusai.command.sub.ReputationCommand;
 import me.everyone.oculusai.command.sub.UpdateCommand;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -64,6 +65,7 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
         subCommands.add(PunishCommand.ban(plugin));
         subCommands.add(new DataCommand(plugin));
         subCommands.add(new ReportCommand(plugin));
+        subCommands.add(new ReputationCommand(plugin));
         subCommands.add(new NpcCommand(plugin));
         subCommands.add(new ConnectCommand(plugin));
         subCommands.add(new DashboardCommand(plugin));

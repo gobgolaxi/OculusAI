@@ -26,6 +26,7 @@ import me.everyone.oculusai.command.sub.MonitorCommand;
 import me.everyone.oculusai.command.sub.NpcCommand;
 import me.everyone.oculusai.command.sub.PlayerCommand;
 import me.everyone.oculusai.command.sub.ProbCommand;
+import me.everyone.oculusai.command.sub.PunishCommand;
 import me.everyone.oculusai.command.sub.ReloadCommand;
 import me.everyone.oculusai.command.sub.ReportCommand;
 import me.everyone.oculusai.command.sub.UpdateCommand;
@@ -59,6 +60,8 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
         subCommands.add(new MonitorCommand(plugin));
         subCommands.add(new PlayerCommand(plugin));
         subCommands.add(new ForgetCommand(plugin));
+        subCommands.add(PunishCommand.kick(plugin));
+        subCommands.add(PunishCommand.ban(plugin));
         subCommands.add(new DataCommand(plugin));
         subCommands.add(new ReportCommand(plugin));
         subCommands.add(new NpcCommand(plugin));

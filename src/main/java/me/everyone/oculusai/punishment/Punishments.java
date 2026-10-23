@@ -81,6 +81,67 @@ public final class Punishments implements Service {
         execute(data);
     }
 
+    /** A kick or a ban an operator asked for by hand.
+     *
+     *  <p>Goes through the same send-off as a detection: the show, the
+     *  stripping and the ordering are the punishment, and an admin kicking
+     *  somebody they just watched cheat wants exactly what the plugin would
+     *  have done on its own. What it skips is everything that belongs to the
+     *  model - the buffer, the cooldown and the detection report - because
+     *  nothing here was detected.
+     *
+     *  <p>{@code punishment.enabled} is not consulted either. That switch
+     *  says whether the plugin may punish by itself; a person typing the
+     *  command has already decided.
+     *
+     *  <p>Bypass is not consulted: it decides who the model looks at, not
+     *  who an admin may remove.
+     *
+     *  @return false if the target left before the command landed */
+    public boolean manual(Player player, boolean ban, String reason, String by) {
+        if (!player.isOnline()) {
+            return false;
+        }
+        UUID uuid = player.getUniqueId();
+        String name = player.getName();
+        Map<String, String> placeholders = Map.of(
+                "player", name,
+                "reason", reason,
+                "by", by);
+
+        plugin.history().note(uuid, name, "punish",
+                (ban ? "manual ban by " : "manual kick by ") + by + ": " + reason);
+
+        boolean shown = true;
+        boolean strip = plugin.config().punishmentStrip();
+        if (ban) {
+            String configured = Msg.fill(plugin.config().punishmentBanCommand(), placeholders).trim();
+            boolean vanilla = configured.isBlank();
+            String banCommand = vanilla ? "ban " + name + " " + reason : configured;
+            if (vanilla) {
+                show(player, strip, () -> run(banCommand));
+            } else {
+                // A named ban command owns the punishment, show included -
+                // the same rule the automatic path follows.
+                shown = false;
+                run(banCommand);
+            }
+            plugin.banCounter().banned(uuid);
+        } else {
+            show(player, strip, () -> plugin.platform().onEntity(player, () -> kick(player, reason)));
+        }
+
+        plugin.getLogger().info(by + " " + (ban ? "banned " : "kicked ") + name
+                + (shown && strip ? " with the send-off" : "") + ": " + reason);
+
+        String broadcast = plugin.lang().text(ban ? "manual.broadcast-ban" : "manual.broadcast-kick",
+                placeholders);
+        if (!broadcast.isBlank()) {
+            plugin.alerts().announce(plugin.config().prefix() + broadcast);
+        }
+        return true;
+    }
+
     public void forget(UUID uuid) {
         lastPunished.remove(uuid);
         // A player who left in the middle of their own send-off must not stay
@@ -303,8 +364,12 @@ public final class Punishments implements Service {
 
     /** Disconnects a player who may already have left on their own. */
     private void kick(Player player) {
+        kick(player, "Cheat detected");
+    }
+
+    private void kick(Player player, String reason) {
         if (player.isOnline()) {
-            player.kickPlayer(Msg.parse("Cheat detected"));
+            player.kickPlayer(Msg.parse(reason));
         }
     }
 

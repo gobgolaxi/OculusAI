@@ -29,6 +29,9 @@ permissions:
   oculusai.data:
     description: Record and label training data.
     default: false
+  oculusai.punish:
+    description: Kick and ban by hand through the anticheat's send-off.
+    default: op
   oculusai.bypass:
     description: Never analysed.
     default: false

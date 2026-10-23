@@ -73,13 +73,39 @@ public final class ReputationCommand extends SubCommand {
             // the 1.16.5 jar compiles against the older Gson that Paper
             // bundled there. One source tree, two Gsons.
             if (candidates.size() == 0) {
-                replyKey(sender, "reputation.unknown", Map.of("player", typed));
+                unknown(sender, typed);
                 return;
             }
             shortlist(sender, typed, candidates);
             return;
         }
         identity(sender, answer);
+    }
+
+    /** Nothing known - and why, which is the part that was missing.
+     *
+     *  <p>An empty answer has three ordinary causes and no way for somebody
+     *  reading one line of chat to tell them apart: the service is not
+     *  recording at all (an unbound key), the index simply has not seen this
+     *  player yet because it only learns about somebody when they join, or
+     *  the name belongs to nobody. Saying "the service knows nothing" and
+     *  stopping there sent an operator looking for a bug in the wrong half of
+     *  the system. */
+    private void unknown(CommandSender sender, String typed) {
+        replyKey(sender, "reputation.unknown", Map.of("player", typed));
+
+        String refusal = plugin.reputation().refusal();
+        if (!refusal.isBlank()) {
+            sender.sendMessage(plugin.lang().text("reputation.not-recording",
+                    Map.of("reason", refusal)));
+            return;
+        }
+        // Online and still unknown means the index started after they were
+        // already here - which is every player on the server at the moment
+        // the anticheat was updated.
+        if (plugin.getServer().getPlayerExact(typed) != null) {
+            replyKey(sender, "reputation.unknown-online");
+        }
     }
 
     /** Several identities under one name. Printed rather than guessed

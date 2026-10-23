@@ -351,6 +351,8 @@ reputation:
   alt: "    <white>%player% <dark_gray>(%short%, %kind%) <gray>%score% <dark_gray>| <gray>кики <white>%kicks%<gray> · баны <white>%bans%"
   join-alert: "<red>⚠ <white>%player%<gray> зашёл на сервер с плохой репутацией: <white>%kicks%<gray> кик(ов) и <white>%bans%<gray> бан(ов) от античита на <white>%servers%<gray> других серверах <dark_gray>(репутация <white>%score%<dark_gray>)"
   join-alert-weak: "  <gold>Сервер offline-режима: запись привязана к нику, а не к аккаунту - её мог оставить другой человек с тем же ником."
+  not-recording: "  <red>Сервис ничего не записывает: <white>%reason%<red>. Предсказания и наказания это не затрагивает; для межсерверной репутации ключ должен быть привязан к аккаунту - это делает <white>/oai connect<red>."
+  unknown-online: "  <gray>Игрок сейчас в сети, но записи о нём нет: индекс узнаёт о человеке при входе, а этот вход был до обновления. Запись появится после его следующего захода; прошлые кики в неё не попадут."
   kind:
     premium: "лицензия"
     offline: "offline"

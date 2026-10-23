@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.core.Service;
 import me.everyone.oculusai.util.Msg;
@@ -37,19 +38,62 @@ import org.bukkit.entity.Player;
  */
 public final class Reputation implements Service {
 
+    private static final long REFUSAL_LOG_INTERVAL_MS = 10L * 60L * 1000L;
+
     private final OculusAI plugin;
     /** When each player was last announced, so a player reconnecting six
      *  times does not produce six notices. Keyed on the player rather than on
      *  the identity: the plugin does not need to know which of those it is. */
     private final Map<UUID, Long> announced = new ConcurrentHashMap<>();
+    /** Why the service is not recording joins, if it is not.
+     *
+     *  <p>This used to be invisible. The join report is fire and forget, so a
+     *  service answering "recorded: false - no account behind this key" was
+     *  dropped on the floor: reputation silently recorded nothing, for weeks,
+     *  on a server whose kicks were working perfectly. The refusal is kept
+     *  here so the log can say it and so {@code /oai reputation} can explain
+     *  an empty answer instead of just giving one. */
+    private volatile String refusal = "";
+    private final AtomicLong refusalLoggedAt = new AtomicLong(0L);
 
     public Reputation(OculusAI plugin) {
         this.plugin = plugin;
     }
 
     @Override
+    public void enable() {
+        if (!plugin.config().reputationEnabled()) {
+            return;
+        }
+        // Everybody already here.
+        //
+        // The report rides on the join event, which means a player who was
+        // online when the plugin started - every player, after a restart or
+        // an update - was never reported at all. They would stay unknown to
+        // the service until they happened to reconnect, and in the meantime
+        // every kick they collected was dropped for want of an identity to
+        // attach it to. This is also the only moment that gap can be closed
+        // from.
+        int reported = 0;
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            seen(player);
+            reported++;
+        }
+        if (reported > 0) {
+            plugin.getLogger().info("Reported " + reported
+                    + " player(s) already online to the reputation index");
+        }
+    }
+
+    @Override
     public void disable() {
         announced.clear();
+        refusal = "";
+    }
+
+    /** Why joins are not being recorded, or empty when they are. */
+    public String refusal() {
+        return refusal;
     }
 
     @Override
@@ -82,7 +126,10 @@ public final class Reputation implements Service {
         String name = player.getName();
         UUID uuid = player.getUniqueId();
         plugin.api().reputationSeen(name, uuid.toString(), address)
-                .thenAccept(answer -> consider(uuid, name, answer));
+                .thenAccept(answer -> {
+                    noteRefusal(answer);
+                    consider(uuid, name, answer);
+                });
     }
 
     /** Everything the service has on a player: a UUID, or a name that may
@@ -92,6 +139,36 @@ public final class Reputation implements Service {
             return CompletableFuture.completedFuture(null);
         }
         return plugin.api().reputation(query);
+    }
+
+    /** Says out loud when the service is not recording anything.
+     *
+     *  <p>A key with no account behind it is the usual reason: it predicts
+     *  and it kicks, because neither needs an account, but a reputation row
+     *  has to belong to a server and an unattached key gives it nothing to
+     *  belong to. Bind the server with {@code /oai connect} and it starts
+     *  working. Logged at most once every ten minutes - every join would
+     *  otherwise print it. */
+    private void noteRefusal(JsonObject answer) {
+        if (answer == null) {
+            return;
+        }
+        boolean recorded = answer.has("recorded") && answer.get("recorded").getAsBoolean();
+        if (recorded) {
+            refusal = "";
+            return;
+        }
+        String note = answer.has("note") ? answer.get("note").getAsString() : "";
+        refusal = note.isBlank() ? "the service did not record this join" : note;
+
+        long now = System.currentTimeMillis();
+        long last = refusalLoggedAt.get();
+        if (now - last < REFUSAL_LOG_INTERVAL_MS || !refusalLoggedAt.compareAndSet(last, now)) {
+            return;
+        }
+        plugin.getLogger().warning("Reputation is recording nothing: " + refusal
+                + ". Predictions and punishments are unaffected; cross-server reputation"
+                + " needs the key bound to an account - /oai connect does that.");
     }
 
     /** Decides whether this arrival is worth interrupting a moderator over.

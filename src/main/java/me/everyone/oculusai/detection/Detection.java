@@ -142,10 +142,25 @@ public final class Detection implements Service {
             return;
         }
 
-        if (data.recording()) {
-            data.record(new ArrayList<>(features.keySet()), toArray(features));
-            return;
-        }
+        // A window being recorded is written down first and analysed anyway.
+        //
+        // Recording used to return here, which meant a player on the dataset
+        // roster was not analysed at all: no readings, no buffer, no alerts -
+        // while config.yml promised the opposite, and while the upload format
+        // had carried a score and a buffer per window from the start and had
+        // been sending them empty. Somebody recording a cheater could not see
+        // what the model made of them, which is most of the reason to record
+        // one.
+        //
+        // The row goes down before the request rather than after the answer,
+        // on purpose: a capture must not depend on the network. A window
+        // measured while the service is unreachable is still a window, and it
+        // is kept with an empty score instead of being lost.
+        int epoch = data.recordedEpoch();
+        int row = data.recording()
+                ? data.record(new ArrayList<>(features.keySet()), toArray(features))
+                : -1;
+
         if (!plugin.api().reachable()) {
             return;
         }
@@ -162,6 +177,17 @@ public final class Detection implements Service {
                     data.recordScale(scale);
                 }
                 accept(data, probability);
+                // After accept(), so the buffer on the row is the buffer this
+                // window produced rather than the one it started from. The
+                // service derives peak_buffer from this column: taken before,
+                // the peak of every session would be short by one step, and
+                // the last window - the one that got somebody punished -
+                // would show the buffer it was about to leave behind.
+                //
+                // The probability is the model's raw answer for this window,
+                // not the smoothed value the buffer integrates. Smoothing is
+                // a property of the sequence; a row describes one window.
+                data.scoreRecorded(epoch, row, probability, data.buffer());
             });
         }).whenComplete((ignored, throwable) -> inFlight.remove(data.uuid()));
     }

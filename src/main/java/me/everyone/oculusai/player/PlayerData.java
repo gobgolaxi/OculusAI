@@ -337,18 +337,59 @@ public final class PlayerData {
     }
 
     private final List<double[]> recordedContext = new ArrayList<>();
+    /** Bumped every time the capture is thrown away or committed.
+     *
+     *  <p>A window is written down the moment it is measured, and the model's
+     *  answer for it arrives a round trip later. The answer is filled in by
+     *  index, and between those two moments the capture may have been
+     *  committed and cleared - so the index alone is not enough to say which
+     *  row it belongs to. A score carrying the wrong epoch is dropped rather
+     *  than written into whatever row now sits at that index. */
+    private volatile int recordedEpoch;
 
-    public void record(List<String> names, double[] values) {
-        record(names, values, Double.NaN, Double.NaN);
+    /** Writes one measured window down.
+     *
+     *  @return the row's index, for {@link #scoreRecorded} to fill in once the
+     *          model has answered for it */
+    public int record(List<String> names, double[] values) {
+        return record(names, values, Double.NaN, Double.NaN);
     }
 
-    public void record(List<String> names, double[] values, double probability, double buffer) {
+    public int record(List<String> names, double[] values, double probability, double buffer) {
         synchronized (recorded) {
             if (recordedNames.isEmpty()) {
                 recordedNames.addAll(names);
             }
             recorded.add(values);
             recordedContext.add(new double[]{probability, buffer});
+            return recorded.size() - 1;
+        }
+    }
+
+    /** The epoch a row index is only valid within. */
+    public int recordedEpoch() {
+        return recordedEpoch;
+    }
+
+    /** Attaches the model's answer to a window that was already written down.
+     *
+     *  <p>What the dataset carries in its score and buffer columns: what the
+     *  model said about this exact window at the time it was captured. The
+     *  columns have been in the upload format from the start and have been
+     *  going out empty, because analysis used to stop while recording.
+     *
+     *  <p>Silently does nothing for a stale epoch or an index that is no
+     *  longer there. Both mean the capture was committed or dropped while the
+     *  answer was in flight, which is ordinary, not an error. */
+    public void scoreRecorded(int epoch, int index, double probability, double buffer) {
+        if (index < 0) {
+            return;
+        }
+        synchronized (recorded) {
+            if (epoch != recordedEpoch || index >= recordedContext.size()) {
+                return;
+            }
+            recordedContext.set(index, new double[]{probability, buffer});
         }
     }
 
@@ -381,6 +422,8 @@ public final class PlayerData {
             recorded.clear();
             recordedContext.clear();
             recordedNames.clear();
+            // Any score still in flight belongs to rows that no longer exist.
+            recordedEpoch++;
         }
     }
 

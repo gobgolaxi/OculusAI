@@ -203,7 +203,8 @@ public final class Detection implements Service {
                 plugin.config().gain(),
                 plugin.config().decay(),
                 plugin.config().bufferLeak(),
-                plugin.config().bufferMax());
+                plugin.config().bufferMax(),
+                plugin.config().bufferMaxStep());
         plugin.history().record(data);
         plugin.journal().record(data);
 

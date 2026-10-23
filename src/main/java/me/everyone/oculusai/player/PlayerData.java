@@ -245,13 +245,13 @@ public final class PlayerData {
     }
 
     public void applyProbability(double value, double suspicion, double gain, double decay,
-                                 double leak, double max) {
+                                 double leak, double max, double maxStep) {
         long now = System.currentTimeMillis();
         probability = value;
         lastProbabilityMs = now;
         windowsAnalysed++;
 
-        buffer = SuspicionBuffer.add(buffer, value, suspicion, gain, decay, leak, max);
+        buffer = SuspicionBuffer.add(buffer, value, suspicion, gain, decay, leak, max, maxStep);
 
         synchronized (bufferHistory) {
             bufferHistory.addLast(buffer);

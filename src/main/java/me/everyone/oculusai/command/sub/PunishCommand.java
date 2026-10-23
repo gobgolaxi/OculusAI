@@ -56,9 +56,12 @@ public final class PunishCommand extends SubCommand {
             return;
         }
 
+        // No reason typed means the one the plugin uses on its own, so a
+        // server that worded punishment.kick-message gets that wording here
+        // too rather than a second hardcoded string.
         String reason = args.length > 1
                 ? String.join(" ", Arrays.copyOfRange(args, 1, args.length)).trim()
-                : plugin.lang().text(ban ? "manual.default-reason-ban" : "manual.default-reason-kick");
+                : plugin.config().punishmentKickMessage();
 
         if (!plugin.punishments().manual(target, ban, reason, sender.getName())) {
             replyKey(sender, "shared.player-offline");

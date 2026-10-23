@@ -112,6 +112,8 @@ public final class CheckSettingsMenu extends Menu {
                             plugin.config().decay(), 0.1D, 10.0D, 0.1D, false),
                     Option.number("leak", Material.SNOWBALL, "buffer.leak",
                             plugin.config().bufferLeak(), 0.0D, 0.9D, 0.1D, false),
+                    Option.number("max-step", Material.LEAD, "buffer.max-step",
+                            plugin.config().bufferMaxStep(), 0.0D, 20.0D, 0.1D, false),
                     Option.toggle("reset-after-combat", Material.WATER_BUCKET,
                             "checks.aim.reset-after-combat", true),
                     Option.number("confirmations", Material.REPEATER, "checks.aim.confirmations",

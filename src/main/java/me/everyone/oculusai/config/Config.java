@@ -37,6 +37,7 @@ public final class Config implements Service {
     private double decay = 1.4D;
     private double bufferLeak = 0.4D;
     private double bufferMax = 10.0D;
+    private double bufferMaxStep = 0.0D;
     private double alertAt = 1.7D;
     private double punishAt = 5.0D;
     private long alertCooldownMs = 10000L;
@@ -53,6 +54,7 @@ public final class Config implements Service {
     private boolean punishmentStrip = false;
     private int punishmentBanAfter = 0;
     private String punishmentBanCommand = "";
+    private String punishmentKickMessage = "Cheat detected";
     private String punishmentAnimation = Animations.DEFAULT;
 
     private int progressSeconds = 15;
@@ -149,6 +151,7 @@ public final class Config implements Service {
         decay = Math.max(0.01D, config.getDouble("buffer.decay", 1.4D));
         bufferLeak = clamp(config.getDouble("buffer.leak", 0.4D), 0.0D, 0.95D);
         bufferMax = Math.max(0.1D, config.getDouble("buffer.max", 10.0D));
+        bufferMaxStep = Math.max(0.0D, config.getDouble("buffer.max-step", 0.0D));
         alertAt = Math.max(0.0D, config.getDouble("buffer.alert-at", 1.7D));
         punishAt = Math.max(alertAt, config.getDouble("buffer.punish-at", 5.0D));
         alertCooldownMs = Math.max(0L, config.getLong("buffer.alert-cooldown-ms", 10000L));
@@ -167,6 +170,7 @@ public final class Config implements Service {
         punishmentStrip = config.getBoolean("punishment.strip", false);
         punishmentBanAfter = Math.max(0, config.getInt("punishment.ban-after", 0));
         punishmentBanCommand = config.getString("punishment.ban-command", "");
+        punishmentKickMessage = config.getString("punishment.kick-message", "Cheat detected");
         punishmentAnimation = Animations.normalise(config.getString("punishment.animation", Animations.DEFAULT));
 
         progressSeconds = config.getInt("recording.progress-seconds", 15);
@@ -351,6 +355,11 @@ public final class Config implements Service {
         return bufferMax;
     }
 
+    /** The most one reading may add to the buffer; 0 for no limit. */
+    public double bufferMaxStep() {
+        return bufferMaxStep;
+    }
+
     public double alertAt() {
         return alertAt;
     }
@@ -385,6 +394,12 @@ public final class Config implements Service {
 
     public boolean punishmentEnabled() {
         return punishmentEnabled;
+    }
+
+    /** What the punished player is shown on their way out, and the reason
+     *  the plugin's own ban is recorded with. */
+    public String punishmentKickMessage() {
+        return punishmentKickMessage;
     }
 
     public String punishmentCommand() {

@@ -366,8 +366,6 @@ forget:
 manual:
   usage: "<red>Использование: <white>%value%"
   self: "<red>Себя наказать нельзя."
-  default-reason-kick: "Cheat detected"
-  default-reason-ban: "Cheat detected"
   kicked: "<gray>Кикнут <white>%player%<gray>: <white>%reason%"
   banned: "<gray>Забанен <white>%player%<gray>: <white>%reason%"
   broadcast-kick: "<red>%player% <gray>кикнут <dark_gray>- <white>%reason%"
@@ -479,6 +477,9 @@ check-settings:
     leak:
       name: "<aqua>Утечка буфера"
       hint: "<gray>Доля буфера, которая теряется на показании ниже порога. Не даёт короткому читу висеть в буфере после того, как он закончился."
+    max-step:
+      name: "<aqua>Потолок шага"
+      hint: "<gray>Сколько максимум может прибавить одно показание. Требует от чита серии высоких окон вместо одного всплеска, из-за которого честный игрок ловил алерт. 0 - без потолка."
     reset-after-combat:
       name: "<aqua>Сброс вне боя"
       hint: "<gray>Обнулять буфер, когда новые показания не приходят дольше времени боя."

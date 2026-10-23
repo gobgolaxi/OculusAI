@@ -182,7 +182,8 @@ public final class Punishments implements Service {
             // APIs whose ban types differ, and because a server running a ban
             // plugin has it on /ban - taking that over is what an operator who
             // installed one expects.
-            String banCommand = vanilla ? "ban " + data.name() + " Cheat detected" : configured;
+            String banCommand = vanilla
+                    ? "ban " + data.name() + " " + reason(placeholders) : configured;
             // The ban is the kick escalated, so it gets the same send-off -
             // but only when the plugin is the one banning. A named command
             // owns the punishment, show included.
@@ -197,7 +198,8 @@ public final class Punishments implements Service {
                     + data.name() + " after " + punishments + " punishment(s): " + banCommand);
         } else if (command.isBlank()) {
             boolean strip = plugin.config().punishmentStrip();
-            show(player, strip, () -> plugin.platform().onEntity(player, () -> kick(player)));
+            show(player, strip,
+                    () -> plugin.platform().onEntity(player, () -> kick(player, placeholders)));
             plugin.getLogger().info((strip ? "Stripped, killed and kicked " : "Kicked ")
                     + data.name());
         } else {
@@ -363,8 +365,16 @@ public final class Punishments implements Service {
     }
 
     /** Disconnects a player who may already have left on their own. */
-    private void kick(Player player) {
-        kick(player, "Cheat detected");
+    private void kick(Player player, Map<String, String> placeholders) {
+        kick(player, reason(placeholders));
+    }
+
+    /** What the punished player is shown, with the same placeholders the
+     *  broadcast gets. Blank falls back rather than disconnecting somebody
+     *  with an empty screen. */
+    private String reason(Map<String, String> placeholders) {
+        String configured = Msg.fill(plugin.config().punishmentKickMessage(), placeholders).trim();
+        return configured.isBlank() ? "Cheat detected" : configured;
     }
 
     private void kick(Player player, String reason) {

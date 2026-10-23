@@ -368,8 +368,6 @@ forget:
 manual:
   usage: "<red>Usage: <white>%value%"
   self: "<red>You cannot punish yourself."
-  default-reason-kick: "Cheat detected"
-  default-reason-ban: "Cheat detected"
   kicked: "<gray>Kicked <white>%player%<gray>: <white>%reason%"
   banned: "<gray>Banned <white>%player%<gray>: <white>%reason%"
   broadcast-kick: "<red>%player% <gray>kicked <dark_gray>- <white>%reason%"
@@ -481,6 +479,9 @@ check-settings:
     leak:
       name: "<aqua>Buffer leak"
       hint: "<gray>Share of the buffer lost on a reading below the threshold. Stops a short cheat burst from staying in the buffer after it ends."
+    max-step:
+      name: "<aqua>Step cap"
+      hint: "<gray>The most one reading may add. Makes a cheat prove itself over several windows instead of one spike, which is what alerted honest players. 0 for no cap."
     reset-after-combat:
       name: "<aqua>Reset out of combat"
       hint: "<gray>Clear the buffer when no new readings arrive for longer than the combat window."

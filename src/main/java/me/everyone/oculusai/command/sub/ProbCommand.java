@@ -39,7 +39,7 @@ public final class ProbCommand extends SubCommand {
         replyKey(sender, "prob.watching", Map.of(
                 "player", target.name(),
                 "buffer", Msg.round(target.buffer(), 1),
-                "probability", Msg.percent(shownProbability(target)),
+                "probability", Msg.probability(shownProbability(target)),
                 "windows", Integer.toString(target.windowsAnalysed())));
         if (target.windowsAnalysed() == 0) {
             replyKey(sender, "prob.no-data");

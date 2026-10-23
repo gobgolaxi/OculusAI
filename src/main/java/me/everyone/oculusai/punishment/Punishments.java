@@ -163,7 +163,7 @@ public final class Punishments implements Service {
             return;
         }
         plugin.history().note(data.uuid(), data.name(), "punish",
-                "buffer " + Msg.round(data.buffer(), 1) + ", p " + Msg.percent(data.probability()));
+                "buffer " + Msg.round(data.buffer(), 1) + ", p " + Msg.probability(data.probability()));
 
         // Before anything else happens to them. The send-off strips the
         // inventory, kills the player and disconnects them, so a replay taken
@@ -183,7 +183,7 @@ public final class Punishments implements Service {
 
         Map<String, String> placeholders = Map.of(
                 "player", data.name(),
-                "probability", Msg.percent(data.probability()),
+                "probability", Msg.probability(data.probability()),
                 "buffer", Msg.round(data.buffer(), 1),
                 "punishments", Integer.toString(punishments));
 

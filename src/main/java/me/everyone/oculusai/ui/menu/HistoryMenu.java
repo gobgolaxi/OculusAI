@@ -127,7 +127,7 @@ public final class HistoryMenu extends Menu {
         // то, что написано, а не «столько влезло в ленту».
         HistoryStore.Tally tally = plugin.history().tally(targetId);
         lore.add(plugin.lang().text("history.target.peak-prob",
-                Map.of("value", Msg.percent(tally.peakProbability()))));
+                Map.of("value", Msg.probability(tally.peakProbability()))));
         lore.add(plugin.lang().text("history.target.alerts",
                 Map.of("value", Integer.toString(tally.alerts()))));
         if (tally.punishments() > 0) {
@@ -297,7 +297,7 @@ public final class HistoryMenu extends Menu {
         List<String> lore = new ArrayList<>();
         lore.add(plugin.lang().text("history.reading.time", Map.of("value", ago(reading.capturedAt()))));
         lore.add(plugin.lang().text("history.reading.probability",
-                Map.of("value", Msg.percent(reading.probability()))));
+                Map.of("value", Msg.probability(reading.probability()))));
         lore.add(plugin.lang().text("history.reading.buffer", Map.of(
                 "value", Msg.round(reading.buffer(), 1),
                 "max", Msg.round(max, 0))));
@@ -313,7 +313,7 @@ public final class HistoryMenu extends Menu {
                 levelPlaceholders(level)));
         if (flagged(reading)) {
             lore.add(plugin.lang().text("history.reading.flagged",
-                    Map.of("value", Msg.percent(plugin.config().suspicion()))));
+                    Map.of("value", Msg.probability(plugin.config().suspicion()))));
         }
         return lore;
     }
@@ -336,7 +336,7 @@ public final class HistoryMenu extends Menu {
                 "max", Msg.round(max, 0))));
         lore.add(Msg.parse(Msg.bar(data.buffer() / max, 12)));
         lore.add(plugin.lang().text("history.reading.probability",
-                Map.of("value", Msg.percent(data.probability()))));
+                Map.of("value", Msg.probability(data.probability()))));
         lore.add(plugin.lang().text("history.target.peak", Map.of("value", Msg.round(peak, 1))));
         lore.add(plugin.lang().text("history.target.windows",
                 Map.of("value", Integer.toString(data.windowsAnalysed()))));

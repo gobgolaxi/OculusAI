@@ -29,7 +29,7 @@ public final class Values {
         }
         // Bold: in a chat full of grey the number is the thing being read.
         // The tag that follows it in inline() clears the bold again.
-        return "<" + colour + "><bold>" + Msg.percent(probability);
+        return "<" + colour + "><bold>" + Msg.probability(probability);
     }
 
     public static String buffer(Config config, double buffer) {

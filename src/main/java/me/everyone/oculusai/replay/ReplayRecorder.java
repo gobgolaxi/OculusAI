@@ -338,8 +338,20 @@ public final class ReplayRecorder implements Service {
         out.addProperty("self_id", player.getEntityId());
 
         try {
-            out.add("terrain", SceneCapture.terrain(player.getLocation(),
-                    plugin.config().replayRadius()));
+            // Every position the suspect was in, so the ground is captured
+            // along the whole path rather than around the one spot they
+            // happened to be standing on when the punishment fired.
+            List<double[]> path = new ArrayList<>(frames.size());
+            for (ReplayFrame frame : frames) {
+                path.add(new double[]{frame.x(), frame.y(), frame.z()});
+            }
+            path.add(new double[]{player.getLocation().getX(),
+                    player.getLocation().getY(), player.getLocation().getZ()});
+            JsonObject terrain = SceneCapture.terrain(player.getWorld(), path,
+                    plugin.config().replayRadius());
+            if (terrain != null) {
+                out.add("terrain", terrain);
+            }
         } catch (RuntimeException unreadable) {
             // A region boundary on Folia, or a world unloaded between the
             // punishment and this call. The frames are still worth having.

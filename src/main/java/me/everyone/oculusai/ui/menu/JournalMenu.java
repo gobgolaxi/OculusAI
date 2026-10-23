@@ -69,7 +69,7 @@ public final class JournalMenu extends Menu {
         lore.add(plugin.lang().text("journal.entry.peak-buffer",
                 Map.of("value", Msg.round(entry.peakBuffer(), 1))));
         lore.add(plugin.lang().text("journal.entry.last-prob",
-                Map.of("value", Msg.percent(entry.lastProbability()))));
+                Map.of("value", Msg.probability(entry.lastProbability()))));
         lore.add(plugin.lang().text("journal.entry.windows",
                 Map.of("value", Integer.toString(entry.windowsAnalysed()))));
         lore.add(plugin.lang().text("journal.entry.first-seen",
@@ -81,7 +81,7 @@ public final class JournalMenu extends Menu {
         for (JournalStore.Snapshot snapshot : entry.history()) {
             lore.add(plugin.lang().text("journal.entry.history-line", Map.of(
                     "age", ago(snapshot.capturedAt()),
-                    "probability", Msg.percent(snapshot.probability()),
+                    "probability", Msg.probability(snapshot.probability()),
                     "buffer", Msg.round(snapshot.buffer(), 1))));
         }
         lore.add("");

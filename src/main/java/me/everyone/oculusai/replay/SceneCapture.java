@@ -3,7 +3,6 @@ package me.everyone.oculusai.replay;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.lang.reflect.Method;
-import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 
@@ -52,26 +51,78 @@ final class SceneCapture {
         }
     }
 
-    /** The cube around {@code centre}, as the replay format carries it.
+    /** How many blocks one capture may read.
      *
-     *  @param radius blocks in every direction, so the cube is
-     *                {@code 2 * radius + 1} on a side */
-    static JsonObject terrain(Location centre, int radius) {
-        World world = centre.getWorld();
-        int size = radius * 2 + 1;
-        int originX = centre.getBlockX() - radius;
-        int originZ = centre.getBlockZ() - radius;
+     *  <p>This is a main-thread read, once per punishment, and the figure is
+     *  what keeps a fight that crossed half a continent from stalling the
+     *  server. A quarter of a million blocks is a box of roughly 60 by 60 by
+     *  60, which covers any fight that was actually a fight. */
+    private static final int MAX_BLOCKS = 250_000;
+
+    /** The ground the suspect fought over, as the replay format carries it.
+     *
+     *  <p>Not a cube around one point. The capture used to be taken around
+     *  wherever the player happened to be standing when the punishment fired,
+     *  so a fight that moved - which is every fight - was replayed against
+     *  the scenery of its last second, with the first six played out over
+     *  empty air. The box is the whole path the suspect took during the
+     *  recording, grown by the radius in every direction, so the ground is
+     *  under them the whole way.
+     *
+     *  @param points every position in the recording, as {x, y, z}
+     *  @param radius how far around the path to take */
+    static JsonObject terrain(World world, java.util.List<double[]> points, int radius) {
+        if (points.isEmpty()) {
+            return null;
+        }
+        double minX = Double.MAX_VALUE, minY = Double.MAX_VALUE, minZ = Double.MAX_VALUE;
+        double maxX = -Double.MAX_VALUE, maxY = -Double.MAX_VALUE, maxZ = -Double.MAX_VALUE;
+        for (double[] point : points) {
+            minX = Math.min(minX, point[0]);
+            minY = Math.min(minY, point[1]);
+            minZ = Math.min(minZ, point[2]);
+            maxX = Math.max(maxX, point[0]);
+            maxY = Math.max(maxY, point[1]);
+            maxZ = Math.max(maxZ, point[2]);
+        }
+
         int floor = minHeight(world);
         int ceiling = world.getMaxHeight();
-        int originY = Math.max(floor, centre.getBlockY() - radius);
+        int originX = (int) Math.floor(minX) - radius;
+        int originZ = (int) Math.floor(minZ) - radius;
+        // One extra below: a player standing on a block is at its top face,
+        // and without this the floor they were standing on is outside the box.
+        int originY = Math.max(floor, (int) Math.floor(minY) - radius - 1);
+
+        int sizeX = (int) Math.floor(maxX) + radius - originX + 1;
+        int sizeY = Math.min(ceiling - originY, (int) Math.floor(maxY) + radius - originY + 2);
+        int sizeZ = (int) Math.floor(maxZ) + radius - originZ + 1;
+        sizeX = Math.max(1, sizeX);
+        sizeY = Math.max(1, sizeY);
+        sizeZ = Math.max(1, sizeZ);
+
+        // A teleport, a fall down a shaft or an hour-long chase can make the
+        // path box enormous. Rather than refuse to capture, the box is pulled
+        // back towards the last position the suspect was in - the end of a
+        // recording is the part that got them punished.
+        if ((long) sizeX * sizeY * sizeZ > MAX_BLOCKS) {
+            double[] last = points.get(points.size() - 1);
+            int side = Math.max(radius * 2 + 1, (int) Math.cbrt(MAX_BLOCKS));
+            originX = (int) Math.floor(last[0]) - side / 2;
+            originZ = (int) Math.floor(last[2]) - side / 2;
+            originY = Math.max(floor, (int) Math.floor(last[1]) - side / 2);
+            sizeX = side;
+            sizeZ = side;
+            sizeY = Math.max(1, Math.min(side, ceiling - originY));
+        }
 
         Palette palette = new Palette();
         Runs runs = new Runs();
         // x, then y, then z: the viewer walks the runs in this order, so the
         // two sides have to agree on it and nothing else about the layout.
-        for (int dx = 0; dx < size; dx++) {
-            for (int dy = 0; dy < size; dy++) {
-                for (int dz = 0; dz < size; dz++) {
+        for (int dx = 0; dx < sizeX; dx++) {
+            for (int dy = 0; dy < sizeY; dy++) {
+                for (int dz = 0; dz < sizeZ; dz++) {
                     int x = originX + dx;
                     int y = originY + dy;
                     int z = originZ + dz;
@@ -83,9 +134,9 @@ final class SceneCapture {
 
         JsonObject out = new JsonObject();
         JsonArray dimensions = new JsonArray();
-        dimensions.add(size);
-        dimensions.add(size);
-        dimensions.add(size);
+        dimensions.add(sizeX);
+        dimensions.add(sizeY);
+        dimensions.add(sizeZ);
         out.add("size", dimensions);
         JsonObject origin = new JsonObject();
         origin.addProperty("x", originX);

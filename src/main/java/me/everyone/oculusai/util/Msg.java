@@ -233,8 +233,19 @@ public final class Msg {
         return String.format(Locale.ROOT, "%." + decimals + "f", value);
     }
 
-    public static String percent(double fraction) {
-        return Math.round(fraction * 100.0D) + "%";
+    /** A model probability, printed as the number the model actually produced.
+     *
+     *  <p>This used to be a percentage, which rounded 0.954 and 0.9999 to the
+     *  same "95%" and 0.004 to "0%" - and those are the readings somebody is
+     *  comparing when they watch a buffer climb. Three decimals is the
+     *  resolution the thresholds are written in: suspicion, alert and punish
+     *  are all set as fractions in config.yml, so the display and the setting
+     *  are now in the same units. */
+    public static String probability(double fraction) {
+        if (Double.isNaN(fraction)) {
+            return "-";
+        }
+        return String.format(Locale.ROOT, "%.3f", fraction);
     }
 
     public static String heatColour(double fraction) {

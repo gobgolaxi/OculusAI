@@ -469,7 +469,7 @@ public final class Hud implements Service {
             if (!target.analysing(plugin.hudConfig().staleMs())) {
                 builder.append("&cno analysing");
             } else {
-                builder.append("<gray>").append(Msg.percent(shownProbability(target)));
+                builder.append("<gray>").append(Msg.probability(shownProbability(target)));
                 builder.append("<dark_gray>/<white>").append(Msg.round(target.buffer(), 1));
             }
             first = false;
@@ -860,7 +860,7 @@ public final class Hud implements Service {
         Map<String, String> placeholders = new HashMap<>();
         placeholders.put("bar", Msg.bar(fraction, barWidth));
         placeholders.put("arrow", arrow(target));
-        placeholders.put("probability", Msg.percent(shownProbability(target)));
+        placeholders.put("probability", Msg.probability(shownProbability(target)));
         placeholders.put("buffer", Msg.round(target.buffer(), 1));
         placeholders.put("max_buffer", Msg.round(plugin.config().bufferMax(), 0));
         placeholders.put("player", target.name());

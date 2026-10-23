@@ -37,7 +37,7 @@ public final class PlayerCommand extends SubCommand {
                 "value", Msg.round(data.buffer(), 1),
                 "max", Msg.round(max, 0)));
         replyKey(sender, "player-cmd.probability", Map.of(
-                "value", Msg.percent(data.displayProbability(
+                "value", Msg.probability(data.displayProbability(
                         !plugin.detection().mathEnabled()))));
         replyKey(sender, "player-cmd.windows", Map.of(
                 "value", Integer.toString(data.windowsAnalysed())));
@@ -80,7 +80,7 @@ public final class PlayerCommand extends SubCommand {
                             ? age + "s"
                             : (age < 3600 ? (age / 60) + "m" : (age / 3600) + "h");
                     reply(sender, "<dark_gray>- <gray>" + ageStr
-                            + " <dark_gray>| <white>" + Msg.percent(snap.probability())
+                            + " <dark_gray>| <white>" + Msg.probability(snap.probability())
                             + " <dark_gray>| <gray>buf <white>" + Msg.round(snap.buffer(), 1));
                 }
             }

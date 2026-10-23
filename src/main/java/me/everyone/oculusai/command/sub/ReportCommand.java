@@ -17,7 +17,7 @@ public final class ReportCommand extends SubCommand {
     @Override
     public void execute(CommandSender sender, String[] args) {
         if (args.length == 0) {
-            replyKey(sender, "report.usage", Map.of("value", usage()));
+            replyKey(sender, "report.usage", Map.of("value", usageText()));
             return;
         }
         Player target = plugin.getServer().getPlayerExact(args[0]);

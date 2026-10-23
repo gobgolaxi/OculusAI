@@ -37,7 +37,7 @@ public final class NpcCommand extends SubCommand {
                 try {
                     health = Double.parseDouble(arg.substring(3));
                 } catch (NumberFormatException ignored) {
-                    replyKey(sender, "npc.usage", Map.of("value", usage()));
+                    replyKey(sender, "npc.usage", Map.of("value", usageText()));
                     return;
                 }
                 continue;
@@ -53,7 +53,7 @@ public final class NpcCommand extends SubCommand {
             try {
                 requested = Integer.parseInt(arg);
             } catch (NumberFormatException ignored) {
-                replyKey(sender, "npc.usage", Map.of("value", usage()));
+                replyKey(sender, "npc.usage", Map.of("value", usageText()));
                 return;
             }
         }

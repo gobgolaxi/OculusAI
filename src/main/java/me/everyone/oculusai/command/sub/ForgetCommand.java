@@ -18,7 +18,7 @@ public final class ForgetCommand extends SubCommand {
     @Override
     public void execute(CommandSender sender, String[] args) {
         if (args.length == 0) {
-            replyKey(sender, "forget.usage", Map.of("value", usage()));
+            replyKey(sender, "forget.usage", Map.of("value", usageText()));
             return;
         }
 

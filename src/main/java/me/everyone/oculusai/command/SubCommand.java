@@ -84,6 +84,18 @@ public abstract class SubCommand {
         return usage;
     }
 
+    /** The usage line, safe to hand to the message parser.
+     *
+     *  <p>{@code Msg.parse} treats every {@code <...>} as a tag and replaces
+     *  an unknown one with nothing, so printing a usage line through it ate
+     *  the placeholders: {@code /oai report <name> [reason]} arrived as
+     *  {@code /oai report  [reason]} on every one of these commands. The
+     *  escapes are turned back into angle brackets at the end of parsing, so
+     *  this is the form to interpolate - never {@link #usage()} itself. */
+    public String usageText() {
+        return usage.replace("<", "&lt;").replace(">", "&gt;");
+    }
+
     public String description() {
         return description;
     }

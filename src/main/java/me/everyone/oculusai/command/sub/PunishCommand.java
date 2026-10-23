@@ -40,7 +40,7 @@ public final class PunishCommand extends SubCommand {
     @Override
     public void execute(CommandSender sender, String[] args) {
         if (args.length == 0) {
-            replyKey(sender, "manual.usage", Map.of("value", usage()));
+            replyKey(sender, "manual.usage", Map.of("value", usageText()));
             return;
         }
 

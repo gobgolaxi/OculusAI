@@ -27,14 +27,10 @@ public final class HelpCommand extends SubCommand {
             if (command.permission() != null && !sender.hasPermission(command.permission())) {
                 continue;
             }
-            sender.sendMessage(Msg.parse("<aqua>" + escapeTags(command.usage())
+            sender.sendMessage(Msg.parse("<aqua>" + command.usageText()
                     + " <dark_gray>- <gray>"
                     + plugin.lang().textOr("help.command." + command.name(), command.description())));
         }
         sender.sendMessage(plugin.lang().text("help.divider"));
-    }
-
-    private static String escapeTags(String usage) {
-        return usage.replace("<", "&lt;").replace(">", "&gt;");
     }
 }

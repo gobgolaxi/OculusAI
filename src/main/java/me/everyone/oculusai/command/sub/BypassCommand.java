@@ -26,7 +26,7 @@ public final class BypassCommand extends SubCommand {
     @Override
     public void execute(CommandSender sender, String[] args) {
         if (args.length != 1) {
-            replyKey(sender, "bypass.usage", Map.of("value", usage()));
+            replyKey(sender, "bypass.usage", Map.of("value", usageText()));
             return;
         }
 

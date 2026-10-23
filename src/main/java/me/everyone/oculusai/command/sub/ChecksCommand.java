@@ -47,13 +47,13 @@ public final class ChecksCommand extends SubCommand {
         }
 
         if (!KEYS.contains(first) || args.length < 2) {
-            replyKey(sender, "checks.usage", Map.of("value", usage()));
+            replyKey(sender, "checks.usage", Map.of("value", usageText()));
             return;
         }
 
         String state = args[1].toLowerCase(Locale.ROOT);
         if (!state.equals("on") && !state.equals("off")) {
-            replyKey(sender, "checks.usage", Map.of("value", usage()));
+            replyKey(sender, "checks.usage", Map.of("value", usageText()));
             return;
         }
         apply(sender, first, state.equals("on"));

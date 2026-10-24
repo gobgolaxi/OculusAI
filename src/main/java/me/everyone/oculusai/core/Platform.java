@@ -5,7 +5,9 @@ import java.lang.reflect.Method;
 import java.util.function.Consumer;
 import me.everyone.oculusai.OculusAI;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 
 /** Which server this is running on, and how to get onto the right thread.
  *
@@ -15,6 +17,14 @@ import org.bukkit.entity.Entity;
  * that currently owns it; there is no thread from which all of them are legal.
  * Code that wants to touch a player therefore has to say so, and this class is
  * the only place that knows which server it is talking to.
+ *
+ * <p>Three places to be, then, and every feature here has to name one: the
+ * global region, which owns no entity and no block; an entity's own region,
+ * which owns that entity and whatever it is standing in; and a location's
+ * region, which owns the blocks and the entities of an area. Anything that
+ * needs two of them at once has to pass a snapshot between them rather than
+ * reach across - which is what the holograms, the manikin and the spectator
+ * follow now do, and why they used to be switched off here instead.
  *
  * <p>Folia's schedulers are reached by reflection rather than by compiling
  * against them. The plugin ships one jar per Minecraft generation, not one per
@@ -119,6 +129,113 @@ public final class Platform {
                 invoke(task, "cancel", null);
             }
         };
+    }
+
+    /** Runs an action on the thread that owns this place in the world.
+     *
+     * <p>The missing third scheduler, and the reason several features were
+     * simply off on Folia. {@link #globalRepeating} runs where no entity is
+     * legal and {@link #onEntity} runs where exactly one is; neither can read
+     * a block, an arbitrary chunk, or the entities standing in an area. Folia
+     * ties all of those to the region that owns the location, which is what
+     * this hands the work to.
+     *
+     * <p>On Paper it is the main thread, like everything else. */
+    public void onRegion(Location where, Runnable action) {
+        if (where == null || where.getWorld() == null) {
+            return;
+        }
+        if (!folia) {
+            plugin.mainThread().run(action);
+            return;
+        }
+        Object scheduler = invoke(Bukkit.class, "getRegionScheduler", null);
+        invoke(scheduler, "execute",
+                new Class<?>[] {org.bukkit.plugin.Plugin.class, org.bukkit.World.class,
+                        int.class, int.class, Runnable.class},
+                plugin, where.getWorld(), where.getBlockX() >> 4, where.getBlockZ() >> 4,
+                action);
+    }
+
+    /** Runs an action every {@code periodTicks} on the thread owning this
+     *  place. Used for upkeep of a fixed area - the test arena's mobs and
+     *  scoreboards - which belongs to one region however many players walk
+     *  through it. */
+    public Cancellable regionRepeating(Location where, long initialDelayTicks,
+                                       long periodTicks, Runnable action) {
+        long delay = Math.max(1L, initialDelayTicks);
+        long period = Math.max(1L, periodTicks);
+        if (where == null || where.getWorld() == null) {
+            return () -> { };
+        }
+        if (!folia) {
+            var task = plugin.getServer().getScheduler()
+                    .runTaskTimer(plugin, action, delay, period);
+            return task::cancel;
+        }
+        Object scheduler = invoke(Bukkit.class, "getRegionScheduler", null);
+        Object task = invoke(scheduler, "runAtFixedRate",
+                new Class<?>[] {org.bukkit.plugin.Plugin.class, Location.class, Consumer.class,
+                        long.class, long.class},
+                plugin, where, (Consumer<Object>) ignored -> action.run(), delay, period);
+        return () -> {
+            if (task != null) {
+                invoke(task, "cancel", null);
+            }
+        };
+    }
+
+    /** Whether the caller's thread owns this entity right now.
+     *
+     * <p>Always true on Paper, where one thread owns everything. On Folia it
+     * is the question anything touching a second entity has to ask, and the
+     * only honest way to ask it: region ownership is not a property of the
+     * entity, it is a property of the entity *and* the asking thread. */
+    public boolean owns(Entity entity) {
+        if (entity == null) {
+            return false;
+        }
+        if (!folia) {
+            return plugin.mainThread().isCurrent();
+        }
+        Object answer = invoke(Bukkit.getServer(), "isOwnedByCurrentRegion",
+                new Class<?>[] {Entity.class}, entity);
+        return answer instanceof Boolean owned && owned;
+    }
+
+    /** Whether the caller's thread owns this chunk right now. Same question
+     *  as {@link #owns(Entity)}, asked of a place: a block read is only legal
+     *  from the region that owns the chunk it is in. */
+    public boolean owns(org.bukkit.World world, int chunkX, int chunkZ) {
+        if (world == null) {
+            return false;
+        }
+        if (!folia) {
+            return plugin.mainThread().isCurrent();
+        }
+        Object answer = invoke(Bukkit.getServer(), "isOwnedByCurrentRegion",
+                new Class<?>[] {org.bukkit.World.class, int.class, int.class},
+                world, chunkX, chunkZ);
+        return answer instanceof Boolean owned && owned;
+    }
+
+    /** Moves a player, and runs something once they have arrived.
+     *
+     * <p>Always the asynchronous teleport, on both servers. On Folia a plain
+     * {@code teleport} across a region boundary is refused outright; on Paper
+     * the asynchronous one is the same teleport with the chunk load waited on
+     * rather than forced, which is what anybody wants anyway. The callback
+     * lands on the thread that owns the player at their destination, which is
+     * exactly where a caller wanting to touch them next has to be. */
+    public void teleport(Player player, Location destination, Runnable arrived) {
+        if (player == null || destination == null) {
+            return;
+        }
+        player.teleportAsync(destination).thenAccept(moved -> {
+            if (moved && arrived != null) {
+                onEntity(player, arrived);
+            }
+        });
     }
 
     /** Calls a method that only exists on Folia.

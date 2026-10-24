@@ -70,6 +70,12 @@ public final class WallCheck implements CombatCheck {
         return plugin.config().checkWallCooldownMs();
     }
 
+    /** Reads blocks: the whole check is a ray through them. */
+    @Override
+    public boolean readsBlocks() {
+        return true;
+    }
+
     @Override
     public CheckResult test(Player attacker, PlayerData data, int targetEntityId) {
         if (!plugin.config().wallCheckEnabled()) {

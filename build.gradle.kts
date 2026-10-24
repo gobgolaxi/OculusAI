@@ -59,6 +59,18 @@ java {
     toolchain.languageVersion = JavaLanguageVersion.of(21)
 }
 
+// Folia as a second test server, next to `runServer`.
+//
+// The plugin's Folia support is all scheduler work - per entity, per region,
+// per the thread that owns the thing being touched - and none of it can be
+// proven by compiling. It needs the fork itself, so `./gradlew runFolia`
+// brings one up with this jar in it.
+runPaper {
+    folia {
+        registerTask()
+    }
+}
+
 configurations.compileClasspath {
     attributes {
         attribute(org.gradle.api.attributes.java.TargetJvmVersion.TARGET_JVM_VERSION_ATTRIBUTE, 21)
@@ -85,6 +97,27 @@ tasks {
         // адресу, так что половина запросов получала бы 001.
         jvmArgs("-Xms2G", "-Xmx2G", "-Djava.net.preferIPv4Stack=true")
         minecraftVersion(mcVersion)
+    }
+
+    named<xyz.jpenilla.runpaper.task.RunServer>("runFolia") {
+        jvmArgs("-Xms2G", "-Xmx2G", "-Djava.net.preferIPv4Stack=true")
+        minecraftVersion(mcVersion)
+        // Своя папка, не общая с `runServer`: у Folia другой формат данных
+        // региона, и мир, который тикал на Paper, ей отдавать нечестно - потом
+        // не разберёшь, падение это плагина или смешанных данных.
+        runDirectory.set(layout.projectDirectory.dir("run-folia"))
+        // ProtocolLib - жёсткая зависимость, и своя папка начинается пустой.
+        // Версия та же, что в compileOnly; её plugin.yml объявляет
+        // folia-supported, иначе Folia не загрузила бы и наш плагин.
+        downloadPlugins {
+            hangar("ProtocolLib", "5.4.0")
+        }
+        doFirst {
+            if (!modern) {
+                error("Folia существует только для 1.20+, а эта сборка - $mcVersion."
+                        + " Запускать так: ./gradlew runFolia -PmcVersion=1.21.11")
+            }
+        }
     }
 
     processResources {

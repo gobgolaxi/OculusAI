@@ -25,6 +25,7 @@ import me.everyone.oculusai.npc.Npc;
 import me.everyone.oculusai.npc.NpcPackets;
 import me.everyone.oculusai.npc.NpcProtocol;
 import me.everyone.oculusai.packet.UseActions;
+import me.everyone.oculusai.player.EntityTracker;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -56,6 +57,10 @@ public final class Npcs implements Service, Listener {
     private static final double KNOCKBACK = 0.35D;
     private static final long DEATH_LINGER_TICKS = 20L;
     private static final double EYE_HEIGHT = 1.62D;
+    /** How old a position sample may be before its player is ignored. The
+     *  tracker takes one every tick, so this only ever excludes somebody on
+     *  their way out. */
+    private static final long SAMPLE_MAX_AGE_MS = 1_000L;
 
     private final OculusAI plugin;
     private final Map<UUID, Npc> npcs = new ConcurrentHashMap<>();
@@ -95,10 +100,40 @@ public final class Npcs implements Service, Listener {
         task = plugin.ticks().every(1L, this::tick);
     }
 
-    /** False on Folia: the manikin chases a player and damages them, so its
-     *  tick touches an entity owned by whatever region it has walked into. */
+    /** Whether this server can run a manikin at all.
+     *
+     *  <p>True on both now. It used to be false on Folia, because the tick
+     *  chased a player and hit them, and both of those read an entity owned by
+     *  whatever region it had walked into. The manikin itself is not an entity
+     *  - it is a few packets and a position this class keeps - so what it
+     *  needed was to stop reading players: it takes their positions from the
+     *  tracker's samples, and hands the one thing it does to a player, damage,
+     *  to that player's own thread. */
     public boolean supported() {
-        return !plugin.platform().folia();
+        return true;
+    }
+
+    /** Where a player is, read from wherever that is legal.
+     *
+     *  <p>On Paper, from the player. On Folia, from the sample their own
+     *  region thread took - the manikin's tick runs on the global region,
+     *  which owns nobody. Null when nobody has sampled them recently, which
+     *  means the manikin ignores them: a target it cannot locate is a target
+     *  it cannot chase. */
+    private Location positionOf(Player player) {
+        if (player == null || !player.isOnline()) {
+            return null;
+        }
+        if (!plugin.platform().folia()) {
+            return player.getLocation();
+        }
+        EntityTracker.Tracked sample = plugin.tracker().get(player.getEntityId());
+        if (sample == null || System.currentTimeMillis() - sample.at() > SAMPLE_MAX_AGE_MS) {
+            return null;
+        }
+        org.bukkit.World world = plugin.getServer().getWorld(sample.worldId());
+        return world == null ? null
+                : new Location(world, sample.x(), sample.y(), sample.z());
     }
 
     @Override
@@ -205,10 +240,11 @@ public final class Npcs implements Service, Listener {
             }
             refreshViewers(npc);
             Player target = npc.options().stationary() ? null : target(npc);
-            if (target != null) {
-                face(npc, target);
-                step(npc, target);
-                attack(npc, target);
+            Location at = target == null ? null : positionOf(target);
+            if (target != null && at != null) {
+                face(npc, target, at);
+                step(npc, at);
+                attack(npc, target, at);
             }
             broadcastLook(npc);
             plugin.tracker().track(npc.entityId(), npc.x(), npc.y(), npc.z(),
@@ -220,11 +256,15 @@ public final class Npcs implements Service, Listener {
         Player closest = null;
         double best = TARGET_RANGE_SQUARED;
         for (Player player : npc.world().getPlayers()) {
+            Location at = positionOf(player);
+            if (at == null || !npc.world().equals(at.getWorld())) {
+                continue;
+            }
             if (player.isDead() || player.getGameMode() == GameMode.CREATIVE
                     || player.getGameMode() == GameMode.SPECTATOR) {
                 continue;
             }
-            double distance = player.getLocation().distanceSquared(npc.location());
+            double distance = at.distanceSquared(npc.location());
             if (distance < best) {
                 best = distance;
                 closest = player;
@@ -233,18 +273,17 @@ public final class Npcs implements Service, Listener {
         return closest;
     }
 
-    private void face(Npc npc, Player target) {
-        double dx = target.getLocation().getX() - npc.x();
-        double dy = (target.getLocation().getY() + target.getEyeHeight()) - (npc.y() + EYE_HEIGHT);
-        double dz = target.getLocation().getZ() - npc.z();
+    private void face(Npc npc, Player target, Location at) {
+        double dx = at.getX() - npc.x();
+        double dy = (at.getY() + target.getEyeHeight()) - (npc.y() + EYE_HEIGHT);
+        double dz = at.getZ() - npc.z();
         double flat = Math.sqrt(dx * dx + dz * dz);
         float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
         float pitch = (float) -Math.toDegrees(Math.atan2(dy, Math.max(0.01D, flat)));
         npc.rotation(yaw, pitch);
     }
 
-    private void step(Npc npc, Player target) {
-        Location at = target.getLocation();
+    private void step(Npc npc, Location at) {
         double dx = at.getX() - npc.x();
         double dz = at.getZ() - npc.z();
         double distance = Math.sqrt(dx * dx + dz * dz);
@@ -280,18 +319,20 @@ public final class Npcs implements Service, Listener {
         return Math.round(blocks * 4096.0D) / 4096.0D;
     }
 
-    private void attack(Npc npc, Player target) {
+    private void attack(Npc npc, Player target, Location at) {
         if (ticks - npc.lastAttackTick() < ATTACK_COOLDOWN_TICKS) {
             return;
         }
-        if (target.getLocation().distance(npc.location()) > REACH) {
+        if (at.distance(npc.location()) > REACH) {
             return;
         }
         npc.lastAttackTick(ticks);
         for (Player viewer : viewersOf(npc)) {
             protocol.swing(viewer, npc);
         }
-        target.damage(ATTACK_DAMAGE);
+        // The one thing the manikin does to a player, and the only part of
+        // this that has to be on the player's own thread.
+        plugin.platform().onEntity(target, () -> target.damage(ATTACK_DAMAGE));
     }
 
     private void broadcastLook(Npc npc) {
@@ -313,8 +354,9 @@ public final class Npcs implements Service, Listener {
 
     private void refreshViewers(Npc npc) {
         for (Player player : Bukkit.getOnlinePlayers()) {
-            boolean shouldSee = player.getWorld().equals(npc.world())
-                    && player.getLocation().distanceSquared(npc.location()) <= VIEW_DISTANCE_SQUARED;
+            Location at = positionOf(player);
+            boolean shouldSee = at != null && npc.world().equals(at.getWorld())
+                    && at.distanceSquared(npc.location()) <= VIEW_DISTANCE_SQUARED;
             boolean sees = npc.viewers().contains(player.getUniqueId());
             if (shouldSee && !sees) {
                 npc.viewers().add(player.getUniqueId());
@@ -384,13 +426,25 @@ public final class Npcs implements Service, Listener {
         String action = UseActions.of(event.getPacket());
         Player player = event.getPlayer();
 
+        // Onto the attacker's own thread, not the main one: everything either
+        // branch touches is this player - a sound, their position, their
+        // inventory screen - and on Folia the global region may touch none of
+        // it.
         if ("ATTACK".equals(action)) {
-            plugin.mainThread().run(() -> hit(npc, player));
+            // Two threads, in order. Where the attacker is standing and the
+            // sound they hear are theirs to read and theirs to be sent; the
+            // manikin's own position, health and viewer packets belong to the
+            // tick that owns them, or two threads would be moving one manikin.
+            plugin.platform().onEntity(player, () -> {
+                Location from = player.getLocation();
+                player.playSound(from, hitSound(), 1.0F, 1.0F);
+                plugin.mainThread().run(() -> hit(npc, player, from));
+            });
             return;
         }
         if (player.isSneaking() && player.hasPermission("oculusai.npc")) {
             event.setCancelled(true);
-            plugin.mainThread().run(() -> new DummyMenu(plugin, player, npc.uuid()).open());
+            plugin.platform().onEntity(player, () -> new DummyMenu(plugin, player, npc.uuid()).open());
         }
     }
 
@@ -413,17 +467,18 @@ public final class Npcs implements Service, Listener {
         return null;
     }
 
-    private void hit(Npc npc, Player attacker) {
+    /** A blow landing on the manikin, from an attacker standing at
+     *  {@code from}. Runs where the manikin is ticked. */
+    private void hit(Npc npc, Player attacker, Location from) {
         if (npc.dying() || !npcs.containsKey(npc.uuid())) {
             return;
         }
         for (Player viewer : viewersOf(npc)) {
             protocol.hurt(viewer, npc);
         }
-        attacker.playSound(attacker.getLocation(), hitSound(), 1.0F, 1.0F);
 
-        double dx = npc.x() - attacker.getLocation().getX();
-        double dz = npc.z() - attacker.getLocation().getZ();
+        double dx = npc.x() - from.getX();
+        double dz = npc.z() - from.getZ();
         double flat = Math.sqrt(dx * dx + dz * dz);
         if (flat > 0.0001D) {
             move(npc, dx / flat * KNOCKBACK, 0.0D, dz / flat * KNOCKBACK);

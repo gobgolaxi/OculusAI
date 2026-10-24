@@ -46,7 +46,11 @@ public final class TestServer implements Service, Listener {
     private World world;
     private TickLoop.Handle scoreboardTask;
     private TickLoop.Handle modelTask;
-    private TickLoop.Handle dummyTask;
+    private me.everyone.oculusai.core.Platform.Cancellable mobSweep;
+    /** How far around the arena's spawn the mob sweep reaches on Folia. One
+     *  region's worth; the arena is a flat square and nothing lives outside
+     *  it. */
+    private static final double PURGE_RADIUS = 96.0D;
     private volatile String modelLine = "loading...";
 
     public TestServer(OculusAI plugin) {
@@ -55,13 +59,23 @@ public final class TestServer implements Service, Listener {
 
     @Override
     public void enable() {
-        if (!plugin.config().testServerEnabled() || plugin.platform().folia()) {
+        if (!plugin.config().testServerEnabled()) {
             return;
         }
 
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
         world = flatWorld();
-        purgeMobs();
+        if (world == null) {
+            // Folia with no arena world present. Said once, plainly: this is a
+            // thing the admin can fix in a minute, and silence here reads as
+            // the arena being broken.
+            plugin.getLogger().warning("The test arena is on but world \""
+                    + plugin.config().testServerWorld() + "\" does not exist, and Folia"
+                    + " cannot create a world while running. Create it once (any flat"
+                    + " world of that name in the server folder) and restart, or set"
+                    + " test-server.enabled: false.");
+            return;
+        }
         refreshModelLine();
 
         int ticks = plugin.config().testServerScoreboardTicks();
@@ -70,7 +84,14 @@ public final class TestServer implements Service, Listener {
         long modelTicks = plugin.config().testServerModelRefreshSeconds() * 20L;
         modelTask = plugin.ticks().every(modelTicks, this::refreshModelLine);
 
-        dummyTask = plugin.ticks().every(20L, this::purgeMobs);
+        // The mobs are swept where they stand. On Paper that is the one thread
+        // that owns the world; on Folia it is the arena's own region, and the
+        // sweep is bounded to the ring around spawn that a region may legally
+        // read. Spawning is cancelled outright anyway - this is for whatever
+        // was already standing there.
+        Location at = spawnLocation();
+        plugin.platform().onRegion(at, () -> purge(at));
+        mobSweep = plugin.platform().regionRepeating(at, 20L, 20L, () -> purge(at));
     }
 
     @Override
@@ -83,9 +104,9 @@ public final class TestServer implements Service, Listener {
             modelTask.cancel();
             modelTask = null;
         }
-        if (dummyTask != null) {
-            dummyTask.cancel();
-            dummyTask = null;
+        if (mobSweep != null) {
+            mobSweep.cancel();
+            mobSweep = null;
         }
         clearDummies();
     }
@@ -132,7 +153,13 @@ public final class TestServer implements Service, Listener {
     private static final int REGEN_AMPLIFIER = 254;
 
     private void resetPlayer(Player player) {
-        player.teleport(spawnLocation());
+        // Asynchronous teleport on both servers: the arena is another world
+        // than the one a player joins into, and on Folia a plain teleport
+        // between them is refused outright.
+        plugin.platform().teleport(player, spawnLocation(), () -> kitOut(player));
+    }
+
+    private void kitOut(Player player) {
         player.setGameMode(GameMode.SURVIVAL);
         player.setHealth(player.getMaxHealth());
         player.setFoodLevel(20);
@@ -160,6 +187,12 @@ public final class TestServer implements Service, Listener {
             existing.setSpawnFlags(false, false);
             return existing;
         }
+        if (plugin.platform().folia()) {
+            // Folia loads its worlds at startup and refuses to make one after
+            // that: every region thread would have to be told about it mid-tick.
+            // The caller says so and leaves the arena off.
+            return null;
+        }
 
         World created = new WorldCreator(name)
                 .type(WorldType.FLAT)
@@ -175,12 +208,26 @@ public final class TestServer implements Service, Listener {
         return created;
     }
 
-    private void purgeMobs() {
-        if (world == null) {
+    /** Clears mobs out of the arena. Runs on the thread that owns
+     *  {@code around}, and reads no further than it may from there. */
+    private void purge(Location around) {
+        if (world == null || around == null) {
             return;
         }
-        for (LivingEntity entity : world.getLivingEntities()) {
-            if (!(entity instanceof Player)) {
+        if (!plugin.platform().folia()) {
+            for (LivingEntity entity : world.getLivingEntities()) {
+                if (!(entity instanceof Player)) {
+                    entity.remove();
+                }
+            }
+            return;
+        }
+        // One region's worth around spawn. Asking the world for every living
+        // entity is a read across every region there is, which is exactly what
+        // Folia refuses - and an arena is one small flat place anyway.
+        for (org.bukkit.entity.Entity entity
+                : world.getNearbyEntities(around, PURGE_RADIUS, PURGE_RADIUS, PURGE_RADIUS)) {
+            if (entity instanceof LivingEntity && !(entity instanceof Player)) {
                 entity.remove();
             }
         }
@@ -263,10 +310,15 @@ public final class TestServer implements Service, Listener {
 
     private void refreshAll() {
         for (Player player : plugin.getServer().getOnlinePlayers()) {
-            if (!player.hasPotionEffect(PotionEffectType.REGENERATION)) {
-                applyEternalRegen(player);
-            }
-            applyScoreboard(player);
+            // Each player's effects and scoreboard are that player's own, so
+            // each goes to the thread that owns them. On Paper that is this
+            // thread and the work runs inline, exactly as before.
+            plugin.platform().onEntity(player, () -> {
+                if (!player.hasPotionEffect(PotionEffectType.REGENERATION)) {
+                    applyEternalRegen(player);
+                }
+                applyScoreboard(player);
+            });
         }
     }
 

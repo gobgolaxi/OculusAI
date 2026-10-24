@@ -1,6 +1,7 @@
 package me.everyone.oculusai.ui;
 
 
+import me.everyone.oculusai.core.Platform;
 import me.everyone.oculusai.core.Service;
 import me.everyone.oculusai.core.TickLoop;
 import com.comphenix.protocol.PacketType;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import me.everyone.oculusai.OculusAI;
+import me.everyone.oculusai.player.EntityTracker;
 import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.util.Msg;
 import org.bukkit.Location;
@@ -188,10 +190,23 @@ public final class Hud implements Service {
 
     private static final double PASSENGER_ATTACH_HEIGHT = 1.8D;
 
+    /** How old a position sample may be before the player it describes is
+     *  treated as unlocatable. The tracker samples every tick, so anything
+     *  this old means its sampler has stopped - the player is leaving. */
+    private static final long SIGHT_MAX_AGE_MS = 1_000L;
+
     private final OculusAI plugin;
     private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
     private final Map<UUID, Map<UUID, Watch>> watching = new ConcurrentHashMap<>();
     private final Set<UUID> alwaysProbViewers = ConcurrentHashMap.newKeySet();
+    /** Folia only: one drawing pass per watcher, on the watcher's own thread.
+     *  That is the thread allowed to send them packets and read their world,
+     *  and it is where everything a watcher needs now happens. */
+    private final Map<UUID, Platform.Cancellable> passes = new ConcurrentHashMap<>();
+    /** Folia only: when each watcher's holograms were last re-mounted. A
+     *  per-watcher clock, because each pass now ticks on its own thread and
+     *  one shared counter would be read and written by all of them. */
+    private final Map<UUID, Long> remountedAt = new ConcurrentHashMap<>();
     private TickLoop.Handle task;
     private int ticks;
     private int remountTicks;
@@ -206,14 +221,6 @@ public final class Hud implements Service {
     public void enable() {
         ticks = 0;
         remountTicks = 0;
-        // A hologram is a packet entity mounted on a player and refreshed from
-        // the position of whoever is being watched, so one pass reads a
-        // watcher and a target that Folia may well be ticking on two different
-        // threads. Making that safe means a redesign, not a scheduler swap, so
-        // on Folia the display side stays off and the analysis runs without it.
-        if (plugin.platform().folia()) {
-            return;
-        }
         loadAlwaysProb();
         task = plugin.ticks().every(1L, DISPLAY_UPDATE_TICKS, this::tick);
     }
@@ -224,6 +231,9 @@ public final class Hud implements Service {
             task.cancel();
             task = null;
         }
+        passes.values().forEach(Platform.Cancellable::cancel);
+        passes.clear();
+        remountedAt.clear();
         for (Map.Entry<UUID, Map<UUID, Watch>> entry : watching.entrySet()) {
             Player watcher = plugin.getServer().getPlayer(entry.getKey());
             if (watcher != null) {
@@ -282,10 +292,13 @@ public final class Hud implements Service {
         }
     }
 
-    /** Whether this server build can draw the holograms at all. False on
-     *  1.16, where there is no Display entity to hang text on. */
+    /** Whether this server build can draw the holograms at all.
+     *
+     *  <p>True here: this source set is the one with Display entities. The
+     *  1.16 build answers false, and so did this one on Folia until the
+     *  drawing pass stopped reading two players at once. */
     public boolean supportsAlwaysProb() {
-        return !plugin.platform().folia();
+        return true;
     }
 
     public void watch(Player watcher, PlayerData target) {
@@ -335,14 +348,39 @@ public final class Hud implements Service {
     }
 
     private void watch(Player watcher, PlayerData target, boolean compact, boolean permanent) {
+        watch(watcher, target, compact, permanent, true);
+    }
+
+    private void watch(Player watcher, PlayerData target, boolean compact, boolean permanent,
+                       boolean mayWaitForTarget) {
+        UUID world = worldOf(watcher);
+        UUID targetWorld = worldOf(target.player());
+        if (folia() && targetWorld == null && mayWaitForTarget && target.player().isOnline()) {
+            // Nobody has sampled this player yet - they joined a moment ago.
+            // Take one sample on their own region, which is where that is
+            // legal, and come back: the alternative is a command that silently
+            // does nothing the one time somebody runs it. Once only, so a
+            // player who cannot be sampled at all is dropped rather than
+            // chased round the schedulers forever.
+            Player subject = target.player();
+            plugin.platform().onEntity(subject, () -> {
+                Location at = subject.getLocation();
+                if (at.getWorld() != null) {
+                    plugin.tracker().track(subject.getEntityId(), at.getX(), at.getY(), at.getZ(),
+                            subject.getWidth(), subject.getHeight(), at.getWorld());
+                }
+                plugin.platform().onEntity(watcher,
+                        () -> watch(watcher, target, compact, permanent, false));
+            });
+            return;
+        }
         // A packet-created display entity lives in the viewer's current world.
         // Watching a player elsewhere would spawn text at the same coordinates
         // in the wrong world.
-        if (!watcher.getWorld().equals(target.player().getWorld())) {
+        if (world == null || !world.equals(targetWorld)) {
             return;
         }
         Map<UUID, Watch> watches = watching.computeIfAbsent(watcher.getUniqueId(), ignored -> new ConcurrentHashMap<>());
-        UUID world = watcher.getWorld().getUID();
         Watch previous = watches.get(target.uuid());
         if (previous != null && previous.world().equals(world)
                 && previous.compact() == compact && previous.permanent() == permanent) {
@@ -362,9 +400,13 @@ public final class Hud implements Service {
                 permanent);
         watches.put(target.uuid(), watch);
         spawnHolograms(watcher, target, watch);
+        // On Folia the drawing happens on this watcher's own thread, and this
+        // is the moment it has something to draw.
+        startPass(watcher.getUniqueId());
     }
 
     public void stop(Player watcher) {
+        stopPass(watcher.getUniqueId());
         Map<UUID, Watch> removed = watching.remove(watcher.getUniqueId());
         if (removed != null) {
             for (Watch watch : removed.values()) {
@@ -390,49 +432,163 @@ public final class Hud implements Service {
             ticks = 0;
             syncAlwaysProb();
         }
+        if (folia()) {
+            // The drawing itself is not done here. This task runs on the
+            // global region, which owns no entity and may not send a packet to
+            // one: each watcher is drawn by a task on their own thread, and
+            // this only makes sure every watcher has one.
+            for (UUID watcher : watching.keySet()) {
+                startPass(watcher);
+            }
+            return;
+        }
         watching.entrySet().removeIf(entry -> {
             Player watcher = plugin.getServer().getPlayer(entry.getKey());
-            Map<UUID, Watch> watches = entry.getValue();
-            if (watcher == null || !watcher.isOnline()) {
-                for (Watch watch : watches.values()) {
-                    destroyHolograms(watcher, watch);
-                }
+            return drawWatcher(watcher, entry.getValue(), now, remount);
+        });
+    }
+
+    private boolean folia() {
+        return plugin.platform().folia();
+    }
+
+    /** One watcher's holograms, brought up to date.
+     *
+     *  <p>Both servers run this; the difference is which thread it is on and
+     *  how it got here. On Paper the one global pass calls it for every
+     *  watcher in turn. On Folia each watcher has a task on their own thread
+     *  that calls it for themselves, because that is the only thread allowed
+     *  to read their world and send them packets.
+     *
+     *  @return true when this watcher is finished with and should be dropped.
+     */
+    private boolean drawWatcher(Player watcher, Map<UUID, Watch> watches,
+                                long now, boolean remount) {
+        if (watcher == null || !watcher.isOnline()) {
+            for (Watch watch : watches.values()) {
+                destroyHolograms(watcher, watch);
+            }
+            return true;
+        }
+
+        UUID world = worldOf(watcher);
+        watches.entrySet().removeIf(watchEntry -> {
+            Watch watch = watchEntry.getValue();
+            PlayerData target = plugin.data().get(watch.target());
+            if (target == null
+                    || !target.player().isOnline()
+                    // The client discards entities when it changes world.
+                    // An old watch would keep sending metadata to ids the
+                    // client no longer knows, so drop it and let the
+                    // AlwaysProb sync spawn a fresh set in the new world.
+                    || world == null
+                    || !watch.world().equals(world)
+                    || !canKeepWatch(watcher, target.player(), watch.permanent())
+                    || (!watch.permanent() && now > watch.expiresAt())) {
+                destroyHolograms(watcher, watch);
                 return true;
             }
-
-            UUID world = watcher.getWorld().getUID();
-            watches.entrySet().removeIf(watchEntry -> {
-                Watch watch = watchEntry.getValue();
-                PlayerData target = plugin.data().get(watch.target());
-                if (target == null
-                        || !target.player().isOnline()
-                        // The client discards entities when it changes world.
-                        // An old watch would keep sending metadata to ids the
-                        // client no longer knows, so drop it and let the
-                        // AlwaysProb sync spawn a fresh set in the new world.
-                        || !watch.world().equals(world)
-                        || !canKeepWatch(watcher, target.player(), watch.permanent())
-                        || (!watch.permanent() && now > watch.expiresAt())) {
-                    destroyHolograms(watcher, watch);
-                    return true;
-                }
-                updateMetadata(watcher, target, watch);
-                if (remount) {
-                    sendMount(watcher, target.player(), watch.holograms());
-                }
-                return false;
-            });
-
-            if (watches.isEmpty()) {
-                watcher.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                        net.md_5.bungee.api.chat.TextComponent.fromLegacyText(""));
-                return true;
+            updateMetadata(watcher, target, watch);
+            if (remount) {
+                sendMount(watcher, target.player(), watch.holograms());
             }
-
-            watcher.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
-                    net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBar(watches)));
             return false;
         });
+
+        if (watches.isEmpty()) {
+            watcher.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                    net.md_5.bungee.api.chat.TextComponent.fromLegacyText(""));
+            return true;
+        }
+
+        watcher.spigot().sendMessage(net.md_5.bungee.api.ChatMessageType.ACTION_BAR,
+                net.md_5.bungee.api.chat.TextComponent.fromLegacyText(actionBar(watches)));
+        return false;
+    }
+
+    /** Folia only: gives this watcher a drawing pass on their own thread, if
+     *  they have not got one. Idempotent - the global tick calls it for every
+     *  watcher it finds, and a watch starting calls it directly so the first
+     *  holograms do not wait half a second. */
+    private void startPass(UUID watcherId) {
+        if (!folia() || passes.containsKey(watcherId)) {
+            return;
+        }
+        Player watcher = plugin.getServer().getPlayer(watcherId);
+        if (watcher == null || !watcher.isOnline()) {
+            return;
+        }
+        passes.put(watcherId, plugin.platform().entityRepeating(watcher, 1L, DISPLAY_UPDATE_TICKS,
+                () -> {
+                    Map<UUID, Watch> watches = watching.get(watcherId);
+                    Player self = plugin.getServer().getPlayer(watcherId);
+                    long now = System.currentTimeMillis();
+                    long last = remountedAt.getOrDefault(watcherId, 0L);
+                    boolean remount = now - last >= REMOUNT_TICKS * 50L;
+                    if (remount) {
+                        remountedAt.put(watcherId, now);
+                    }
+                    if (watches == null || watches.isEmpty()
+                            || drawWatcher(self, watches, now, remount)) {
+                        watching.remove(watcherId);
+                        stopPass(watcherId);
+                    }
+                }));
+    }
+
+    private void stopPass(UUID watcherId) {
+        Platform.Cancellable pass = passes.remove(watcherId);
+        if (pass != null) {
+            pass.cancel();
+        }
+        remountedAt.remove(watcherId);
+    }
+
+    /** Where a player was last sampled, or null if that is too long ago to
+     *  use.
+     *
+     *  <p>From the entity tracker rather than from the player, and that is the
+     *  whole Folia fix. A hologram pass reads a watcher and a target, which on
+     *  Folia are two entities two threads may own: there is no thread on which
+     *  both are legal. The tracker already samples every player once a tick on
+     *  the thread that owns them - it has to, the checks are fed from it - so
+     *  the pass reads the sample and never reaches across. */
+    private EntityTracker.Tracked sightOf(Player player) {
+        EntityTracker.Tracked sight = plugin.tracker().get(player.getEntityId());
+        return sight == null || System.currentTimeMillis() - sight.at() > SIGHT_MAX_AGE_MS
+                ? null : sight;
+    }
+
+    /** Which world a player is in, read from wherever that is legal: the
+     *  player on Paper, their own region's last note on Folia. Null means
+     *  nobody can say right now, which every caller treats as "do not draw". */
+    private UUID worldOf(Player player) {
+        if (player == null || !player.isOnline()) {
+            return null;
+        }
+        if (!folia()) {
+            return player.getWorld().getUID();
+        }
+        EntityTracker.Tracked sight = sightOf(player);
+        return sight == null ? null : sight.worldId();
+    }
+
+    /** Where to spawn a hologram, read from wherever that is legal. Only has
+     *  to be right for one tick: the text is mounted on the player as a
+     *  passenger, and from then on their client carries it. */
+    private Location positionOf(Player player) {
+        if (player == null || !player.isOnline()) {
+            return null;
+        }
+        if (!folia()) {
+            return player.getLocation();
+        }
+        EntityTracker.Tracked sight = sightOf(player);
+        if (sight == null) {
+            return null;
+        }
+        org.bukkit.World world = plugin.getServer().getWorld(sight.worldId());
+        return world == null ? null : new Location(world, sight.x(), sight.y(), sight.z());
     }
 
     private String actionBar(Map<UUID, Watch> watches) {
@@ -506,7 +662,10 @@ public final class Hud implements Service {
 
     private void spawnHolograms(Player watcher, PlayerData target, Watch watch) {
         List<String> lines = hologramLines(target, watch.compact());
-        Location base = target.player().getLocation();
+        Location base = positionOf(target.player());
+        if (base == null) {
+            return;
+        }
         int count = watch.holograms().size();
         for (int i = 0; i < count; i++) {
             Line line = watch.holograms().get(i);
@@ -756,7 +915,11 @@ public final class Hud implements Service {
                 saveAlwaysProb();
                 continue;
             }
-            syncAlwaysProb(viewer);
+            // On Folia, on the viewer's own thread - the same thread their
+            // drawing pass runs on. Two threads both deciding which holograms
+            // this viewer should have would race over one watch list and the
+            // packets that follow from it.
+            plugin.platform().onEntity(viewer, () -> syncAlwaysProb(viewer));
         }
     }
 
@@ -800,7 +963,7 @@ public final class Hud implements Service {
                 return false;
             }
             Player target = plugin.getServer().getPlayer(entry.getKey());
-            if (target != null && watch.world().equals(viewer.getWorld().getUID())
+            if (target != null && watch.world().equals(worldOf(viewer))
                     && isVisibleTo(viewer, target)) {
                 return false;
             }
@@ -826,9 +989,12 @@ public final class Hud implements Service {
         // in another world would put a hologram in the wrong place or nowhere
         // at all. World transfers also recreate the client's entity store, so
         // this check is what makes AlwaysProb rebuild itself afterwards.
-        if (!viewer.getWorld().equals(target.getWorld())) {
+        UUID world = worldOf(viewer);
+        if (world == null || !world.equals(worldOf(target))) {
             return false;
         }
+        // The viewer's own hiding list, so it is theirs to read wherever this
+        // runs: a vanished player must not collect holograms.
         return viewer.canSee(target);
     }
 
@@ -842,7 +1008,8 @@ public final class Hud implements Service {
         if (watcher.getUniqueId().equals(target.getUniqueId())) {
             return !permanent;
         }
-        if (!watcher.getWorld().equals(target.getWorld())) {
+        UUID world = worldOf(watcher);
+        if (world == null || !world.equals(worldOf(target))) {
             return false;
         }
         return watcher.canSee(target);
@@ -906,6 +1073,7 @@ public final class Hud implements Service {
     }
 
     public void forget(UUID uuid) {
+        stopPass(uuid);
         Map<UUID, Watch> removed = watching.remove(uuid);
         if (removed != null) {
             Player watcher = plugin.getServer().getPlayer(uuid);

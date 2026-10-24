@@ -19,6 +19,7 @@ import me.everyone.oculusai.player.PlayerData;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 /** The last few seconds before a punishment, kept so somebody can watch them.
@@ -347,8 +348,14 @@ public final class ReplayRecorder implements Service {
             }
             path.add(new double[]{player.getLocation().getX(),
                     player.getLocation().getY(), player.getLocation().getZ()});
-            JsonObject terrain = SceneCapture.terrain(player.getWorld(), path,
-                    plugin.config().replayRadius());
+            // On Folia, whatever of the path this thread owns. Off it, every
+            // loaded chunk, which is what the filter answering null means.
+            World world = player.getWorld();
+            SceneCapture.ChunkFilter readable = plugin.platform().folia()
+                    ? (chunkX, chunkZ) -> plugin.platform().owns(world, chunkX, chunkZ)
+                    : null;
+            JsonObject terrain = SceneCapture.terrain(world, path,
+                    plugin.config().replayRadius(), readable);
             if (terrain != null) {
                 out.add("terrain", terrain);
             }

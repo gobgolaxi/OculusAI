@@ -82,10 +82,14 @@ public final class OculusAI extends JavaPlugin {
         mainThread = new MainThread(this);
         platform = new Platform(this);
         if (platform.folia()) {
-            getLogger().info("Folia detected: analysis, alerts and punishments run per region."
-                    + " Holograms, the sparring manikin and the test arena are off - each of"
-                    + " them reads entities across region boundaries, which Folia does not"
-                    + " allow from one thread.");
+            getLogger().info("Folia detected: everything runs, per region."
+                    + " Holograms, the manikin, the test arena and staff spectating are"
+                    + " scheduled per entity and per region instead of reading across"
+                    + " boundaries. Two things differ by necessity: a wall-check verdict"
+                    + " arrives a tick after the hit instead of cancelling it, and replay"
+                    + " terrain stops at the suspect's own region. The arena needs its"
+                    + " world to exist before startup, because Folia cannot create one"
+                    + " while running.");
         }
 
         ticks = register(new TickLoop(this));

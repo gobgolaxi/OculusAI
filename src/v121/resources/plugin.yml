@@ -3,10 +3,10 @@ version: '${version}'
 
 main: me.everyone.oculusai.OculusAI
 api-version: '1.21'
-# Folia runs the analysis, alerts and punishments; holograms, the sparring
-# manikin and the test arena switch themselves off there. Without this flag
-# Folia refuses to load the plugin at all, which is worse than loading it
-# with the three display features missing.
+# Folia runs all of it: the analysis, alerts, punishments, holograms, the
+# sparring manikin, the test arena and staff spectating are each scheduled on
+# the thread that owns what they touch. Without this flag Folia refuses to
+# load the plugin at all.
 folia-supported: true
 load: POSTWORLD
 author: everyone

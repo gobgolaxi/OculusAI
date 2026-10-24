@@ -1,6 +1,7 @@
 build/
 .gradle/
 run/
+run-folia/
 *.log
 *.rar
 *.zip

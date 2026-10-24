@@ -322,19 +322,44 @@ public final class JournalStore implements Service {
         if (data == null || !data.player().isOnline()) {
             return false;
         }
-        // Spectating reads the target's position and teleports the watcher to
-        // it. On Folia those are two entities two region threads may own, and
-        // the read happens on the watcher's thread, so it is not ours to make.
+        Player target = data.player();
         if (plugin.platform().folia()) {
-            return false;
+            // Two entities, and on Folia two threads may own them. So the
+            // target's position is read where that is legal - the target's own
+            // thread - and everything done to the watcher happens after they
+            // have arrived, on the thread that owns them there.
+            plugin.platform().onEntity(target, () -> {
+                Location where = target.getLocation();
+                plugin.platform().onEntity(watcher, () -> {
+                    enterVanish(watcher);
+                    watcher.setGameMode(GameMode.SPECTATOR);
+                    plugin.platform().teleport(watcher, where,
+                            () -> attachCamera(watcher, target, data));
+                });
+            });
+            return true;
         }
         enterVanish(watcher);
-        Player target = data.player();
         watcher.setGameMode(GameMode.SPECTATOR);
         watcher.teleport(target.getLocation());
         watcher.setSpectatorTarget(target);
         plugin.displays().watch(watcher, data);
         return true;
+    }
+
+    /** Locks the watcher's camera to the suspect, if this thread may.
+     *
+     *  <p>Called once the watcher has been teleported to the suspect, which is
+     *  normally enough to put the two in the same region and make the camera
+     *  attachable. When it is not - the suspect moved across a boundary in the
+     *  meantime - the watcher stays an ordinary spectator standing where the
+     *  suspect was, which is the same view a moment later rather than nothing
+     *  at all. The hologram over the suspect's head says the rest. */
+    private void attachCamera(Player watcher, Player target, PlayerData data) {
+        if (target.isOnline() && plugin.platform().owns(target)) {
+            watcher.setSpectatorTarget(target);
+        }
+        plugin.displays().watch(watcher, data);
     }
 
     public boolean enterVanish(Player watcher) {
@@ -357,8 +382,13 @@ public final class JournalStore implements Service {
         if (watcher.getGameMode() == GameMode.SPECTATOR) {
             watcher.setSpectatorTarget(null);
         }
-        watcher.teleport(state.location());
-        watcher.setGameMode(state.gameMode());
+        // Asynchronous on both servers: the way back can be a different world,
+        // and on Folia a plain teleport across a region boundary is refused.
+        // The game mode is restored on arrival, because setting it before the
+        // teleport lands leaves a spectator falling through the floor of the
+        // place they came from.
+        plugin.platform().teleport(watcher, state.location(),
+                () -> watcher.setGameMode(state.gameMode()));
         showToOthers(watcher);
         plugin.displays().stop(watcher);
         return true;
@@ -372,7 +402,7 @@ public final class JournalStore implements Service {
         for (UUID vanishedId : vanished.keySet()) {
             Player hidden = plugin.getServer().getPlayer(vanishedId);
             if (hidden != null && !Objects.equals(hidden.getUniqueId(), viewer.getUniqueId())) {
-                viewer.hidePlayer(plugin, hidden);
+                plugin.platform().onEntity(viewer, () -> viewer.hidePlayer(plugin, hidden));
             }
         }
     }
@@ -399,12 +429,17 @@ public final class JournalStore implements Service {
         vanished.remove(uuid);
     }
 
+    /** Hides a vanished staff member from everybody else.
+     *
+     *  <p>Each player's visibility list is that player's own, so each change
+     *  goes to that player's own thread. On Paper that is the main thread and
+     *  the loop runs exactly as it always did. */
     private void hideFromOthers(Player watcher) {
         for (Player online : plugin.getServer().getOnlinePlayers()) {
             if (online.getUniqueId().equals(watcher.getUniqueId())) {
                 continue;
             }
-            online.hidePlayer(plugin, watcher);
+            plugin.platform().onEntity(online, () -> online.hidePlayer(plugin, watcher));
         }
     }
 
@@ -413,7 +448,7 @@ public final class JournalStore implements Service {
             if (online.getUniqueId().equals(watcher.getUniqueId())) {
                 continue;
             }
-            online.showPlayer(plugin, watcher);
+            plugin.platform().onEntity(online, () -> online.showPlayer(plugin, watcher));
         }
     }
 }

@@ -71,6 +71,16 @@ public final class Checks implements Service {
         }
 
         for (CombatCheck check : combatChecks) {
+            // On Folia a check that reads blocks may not run here: an attack
+            // arrives on a network thread and the chunks belong to the
+            // attacker's region. It is handed over instead, and answers a
+            // moment later - which is too late to cancel this hit and in good
+            // time for everything else a finding leads to.
+            if (check.readsBlocks() && plugin.platform().folia()) {
+                plugin.platform().onEntity(attacker,
+                        () -> judge(check, attacker, data, targetEntityId));
+                continue;
+            }
             CheckResult result = test(check, attacker, data, targetEntityId);
             if (result == null || !result.failed()) {
                 if (result != null) {
@@ -86,6 +96,25 @@ public final class Checks implements Service {
             return !test && result.cancel();
         }
         return false;
+    }
+
+    /** One check's verdict, acted on where it was reached. The hit it was
+     *  about has already happened by the time this runs, so there is nothing
+     *  left to cancel - the alert, the history and the punishment path are
+     *  the same as ever. */
+    private void judge(CombatCheck check, Player attacker, PlayerData data, int targetEntityId) {
+        if (!attacker.isOnline()) {
+            return;
+        }
+        CheckResult result = test(check, attacker, data, targetEntityId);
+        if (result == null || !result.failed()) {
+            if (result != null) {
+                plugin.alerts().reset(data.uuid(), check.id());
+            }
+            return;
+        }
+        plugin.alerts().raise(data, check, result,
+                check.testOnly() && plugin.config().checkTestMode());
     }
 
     /** Tests the checks that read the model's output. Returns whether a real

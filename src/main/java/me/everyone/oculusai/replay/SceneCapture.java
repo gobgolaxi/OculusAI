@@ -20,7 +20,13 @@ import org.bukkit.block.Block;
  *  already loaded: pulling a chunk off disk to draw the scenery would stall
  *  the server for a picture nobody has asked to see yet. A missing chunk is
  *  written as air, which is what the viewer should show - we genuinely do not
- *  know what was there. */
+ *  know what was there.
+ *
+ *  <p>On Folia the same applies to a chunk belonging to another region: the
+ *  thread that owns the suspect may not read it. A fight that crossed a
+ *  region boundary is therefore captured as far as the suspect's own region
+ *  reaches, which for any fight that was a fight is all of it - and the
+ *  frames, which are the evidence, are complete regardless. */
 final class SceneCapture {
 
     /** Resolved once. 1.16's Bukkit has no getMinHeight: the API arrived in
@@ -72,6 +78,20 @@ final class SceneCapture {
      *  @param points every position in the recording, as {x, y, z}
      *  @param radius how far around the path to take */
     static JsonObject terrain(World world, java.util.List<double[]> points, int radius) {
+        return terrain(world, points, radius, null);
+    }
+
+    /** The same, told which chunks the calling thread may read.
+     *
+     *  @param readable answers whether a chunk is this thread's to read, or
+     *                  null when every loaded chunk is - which is Paper, and
+     *                  was the only case this used to handle. On Folia the
+     *                  path can cross a region boundary, and the capture used
+     *                  to throw there and be dropped whole: a fight is now
+     *                  captured as far as this thread owns it and the rest is
+     *                  written as air, the same as an unloaded chunk. */
+    static JsonObject terrain(World world, java.util.List<double[]> points, int radius,
+                              ChunkFilter readable) {
         if (points.isEmpty()) {
             return null;
         }
@@ -126,7 +146,8 @@ final class SceneCapture {
                     int x = originX + dx;
                     int y = originY + dy;
                     int z = originZ + dz;
-                    runs.add(y >= ceiling ? 0 : palette.index(materialAt(world, x, y, z)));
+                    runs.add(y >= ceiling ? 0
+                            : palette.index(materialAt(world, x, y, z, readable)));
                 }
             }
         }
@@ -148,12 +169,20 @@ final class SceneCapture {
         return out;
     }
 
-    private static String materialAt(World world, int x, int y, int z) {
+    private static String materialAt(World world, int x, int y, int z, ChunkFilter readable) {
         if (!world.isChunkLoaded(x >> 4, z >> 4)) {
+            return "AIR";
+        }
+        if (readable != null && !readable.readable(x >> 4, z >> 4)) {
             return "AIR";
         }
         Block block = world.getBlockAt(x, y, z);
         return block.getType().name();
+    }
+
+    /** Whether one chunk is the calling thread's to read. */
+    interface ChunkFilter {
+        boolean readable(int chunkX, int chunkZ);
     }
 
     /** Material names in first-seen order, with air pinned at zero so an

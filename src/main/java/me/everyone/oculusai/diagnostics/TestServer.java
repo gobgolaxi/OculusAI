@@ -47,6 +47,10 @@ public final class TestServer implements Service, Listener {
     private TickLoop.Handle scoreboardTask;
     private TickLoop.Handle modelTask;
     private me.everyone.oculusai.core.Platform.Cancellable mobSweep;
+    /** So the "no scoreboards here" line is logged once rather than per
+     *  player per refresh. */
+    private final java.util.concurrent.atomic.AtomicBoolean scoreboardWarned =
+            new java.util.concurrent.atomic.AtomicBoolean();
     /** How far around the arena's spawn the mob sweep reaches on Folia. One
      *  region's worth; the arena is a flat square and nothing lives outside
      *  it. */
@@ -328,7 +332,24 @@ public final class TestServer implements Service, Listener {
         }
     }
 
+    /** The arena's sidebar.
+     *
+     *  <p>Not on Folia: the whole scoreboard API is unsupported there, and
+     *  {@code getScoreboardManager().getNewScoreboard()} throws rather than
+     *  degrading - which it did, on every player, every five seconds, from
+     *  inside the per-player refresh. Nothing is drawn instead: the action bar
+     *  is where {@code /oai monitor} and the hologram readout already live,
+     *  and the arena's sidebar is a convenience, not a finding. Said once in
+     *  the log so an operator who misses it knows why. */
     private void applyScoreboard(Player player) {
+        if (plugin.platform().folia()) {
+            if (scoreboardWarned.compareAndSet(false, true)) {
+                plugin.getLogger().info("Folia has no scoreboards, so the test arena runs"
+                        + " without its sidebar. Everything else in the arena works;"
+                        + " /oai prob and /oai monitor say the same things.");
+            }
+            return;
+        }
         boolean recording = plugin.datasets().collecting();
         Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
         Objective objective = board.registerNewObjective("oai_test", "dummy",

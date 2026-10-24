@@ -2,6 +2,7 @@ package me.everyone.oculusai.core;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.function.Consumer;
 import me.everyone.oculusai.OculusAI;
 import org.bukkit.Bukkit;
@@ -238,6 +239,67 @@ public final class Platform {
         });
     }
 
+    /** Finds a method that can actually be called.
+     *
+     * <p>Not the same thing as finding a method. Folia's schedulers hand back
+     * implementations whose classes are not public -
+     * {@code FoliaEntityScheduler$EntityScheduledTask} is the one that
+     * mattered - and a public method on a non-public class cannot be invoked
+     * reflectively at all: the lookup succeeds and the call fails with
+     * IllegalAccessException. Every {@code cancel()} on this server went that
+     * way, which meant no scheduled task could be stopped: the punishment
+     * show cancelled its frame task, threw instead, never reached the line
+     * that disconnects, and left the cheater frozen in mid-air rather than
+     * kicked. The animation ran, the kick never came, and nothing in the
+     * plugin said why.
+     *
+     * <p>So the method is taken from the public interface that declares it,
+     * which is the thing the server actually promises. Opening up the
+     * implementation is the last resort and works only because Paper is on
+     * the class path rather than in a module of its own. */
+    private static Method lookup(Class<?> owner, String name, Class<?>[] signature)
+            throws NoSuchMethodException {
+        Method direct = signature == null ? owner.getMethod(name) : owner.getMethod(name, signature);
+        if (Modifier.isPublic(direct.getDeclaringClass().getModifiers())) {
+            return direct;
+        }
+        for (Class<?> type : supertypes(owner)) {
+            if (!Modifier.isPublic(type.getModifiers())) {
+                continue;
+            }
+            try {
+                return signature == null ? type.getMethod(name) : type.getMethod(name, signature);
+            } catch (NoSuchMethodException notHere) {
+                // A supertype that does not declare it; keep looking.
+            }
+        }
+        direct.setAccessible(true);
+        return direct;
+    }
+
+    /** Every interface and superclass of a type, nearest first. */
+    private static java.util.Set<Class<?>> supertypes(Class<?> type) {
+        // A set, because add() is also the "have I seen this already" test
+        // here: a type reached through two different interfaces must not be
+        // queued twice.
+        java.util.Set<Class<?>> found = new java.util.LinkedHashSet<>();
+        java.util.Deque<Class<?>> queue = new java.util.ArrayDeque<>();
+        queue.add(type);
+        while (!queue.isEmpty()) {
+            Class<?> next = queue.poll();
+            for (Class<?> parent : next.getInterfaces()) {
+                if (found.add(parent)) {
+                    queue.add(parent);
+                }
+            }
+            Class<?> superclass = next.getSuperclass();
+            if (superclass != null && superclass != Object.class && found.add(superclass)) {
+                queue.add(superclass);
+            }
+        }
+        return found;
+    }
+
     /** Calls a method that only exists on Folia.
      *
      * <p>Anything going wrong here is a mismatch between this code and the
@@ -248,11 +310,9 @@ public final class Platform {
         boolean isStatic = target instanceof Class<?>;
         Class<?> owner = isStatic ? (Class<?>) target : target.getClass();
         try {
-            Method method = signature == null
-                    ? owner.getMethod(name)
-                    : owner.getMethod(name, signature);
+            Method method = lookup(owner, name, signature);
             return method.invoke(isStatic ? null : target, args);
-        } catch (NoSuchMethodException | IllegalAccessException failure) {
+        } catch (NoSuchMethodException | IllegalAccessException | SecurityException failure) {
             throw new IllegalStateException(
                     "This server's " + name + " does not look like Folia's", failure);
         } catch (InvocationTargetException failure) {

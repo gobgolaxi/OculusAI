@@ -111,6 +111,11 @@ tasks {
         // folia-supported, иначе Folia не загрузила бы и наш плагин.
         downloadPlugins {
             hangar("ProtocolLib", "5.4.0")
+            // Права. Половина нод плагина - `default: false`, то есть их не даёт
+            // даже op: без плагина прав на стенде нельзя ни вызвать /oai, ни
+            // открыть журнал, ни позвать манекен. LuckPerms из тех версий, что
+            // объявляют folia-supported - более ранние Folia просто не грузит.
+            url("https://download.luckperms.net/1675/bukkit/loader/LuckPerms-Bukkit-5.5.88.jar")
         }
         doFirst {
             if (!modern) {

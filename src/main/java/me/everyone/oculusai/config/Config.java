@@ -106,6 +106,7 @@ public final class Config implements Service {
     private int replayMaxKb = 1024;
 
     private boolean reputationEnabled = true;
+    private boolean reputationClientTraits = true;
     private boolean reputationJoinAlert = true;
     private double reputationJoinAlertScore = 0.5D;
     private boolean reputationJoinAlertOtherServersOnly = true;
@@ -259,6 +260,7 @@ public final class Config implements Service {
         replayMaxKb = Math.max(64, Math.min(8192, config.getInt("replay.max-kb", 1024)));
 
         reputationEnabled = config.getBoolean("reputation.enabled", true);
+        reputationClientTraits = config.getBoolean("reputation.client-traits", true);
         reputationJoinAlert = config.getBoolean("reputation.join-alert.enabled", true);
         // Clamped into the range a score can actually take, because a
         // threshold outside it means either every join or none, and both look
@@ -722,6 +724,17 @@ public final class Config implements Service {
      *  this server's players reaches the shared index. */
     public boolean reputationEnabled() {
         return reputationEnabled;
+    }
+
+    /** Whether the plugin also reports what a joining player is playing on.
+     *
+     *  <p>What the server already knows - client brand, protocol, locale,
+     *  render distance, main hand, Bedrock id when there is one - and nothing
+     *  the client is asked for. It matters on offline-mode servers, where the
+     *  identity is otherwise the nickname and a nickname is free to change;
+     *  off means a returning player under a new name is a stranger. */
+    public boolean reputationClientTraits() {
+        return reputationClientTraits;
     }
 
     private Sound parseSound(String value, Sound fallback) {

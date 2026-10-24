@@ -186,6 +186,22 @@ public final class ReputationCommand extends SubCommand {
                             "seen", text(row, "last_seen", ""))));
         }
 
+        // What the player arrives *on*, which on an offline-mode server is the
+        // only line here that is about a person rather than about a name.
+        for (JsonElement element : array(answer, "clients")) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            JsonObject row = element.getAsJsonObject();
+            Map<String, String> values = Map.of(
+                    "client", text(row, "label", "?"),
+                    "fingerprint", text(row, "fingerprint", ""),
+                    "joins", Integer.toString((int) number(row, "joins")),
+                    "seen", text(row, "last_seen", ""));
+            sender.sendMessage(plugin.lang().text(bool(row, "common")
+                    ? "reputation.client-common" : "reputation.client", values));
+        }
+
         JsonArray alts = array(answer, "alts");
         if (alts.size() > 0) {
             sender.sendMessage(plugin.lang().text("reputation.alts",
@@ -199,11 +215,21 @@ public final class ReputationCommand extends SubCommand {
                         Map.of("player", text(alt, "player", "?"),
                                 "short", text(alt, "short", ""),
                                 "kind", kind(alt),
+                                "via", via(alt),
                                 "score", bar(number(alt, "score")),
                                 "kicks", Integer.toString((int) number(alt, "kicks")),
                                 "bans", Integer.toString((int) number(alt, "bans")))));
             }
         }
+    }
+
+    /** What ties this alt to the player being looked up - the address, the
+     *  client, or both. "Both" is the one worth reading: two names on one
+     *  address can be two people in one house, two names on one address and
+     *  one client is one person. */
+    private String via(JsonObject row) {
+        String via = text(row, "via", "address");
+        return plugin.lang().textOr("reputation.via." + via, via);
     }
 
     /** "premium" or "offline", in the reader's language: the difference

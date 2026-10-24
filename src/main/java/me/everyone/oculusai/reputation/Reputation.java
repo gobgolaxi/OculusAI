@@ -1,5 +1,6 @@
 package me.everyone.oculusai.reputation;
 
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import java.util.Map;
 import java.util.UUID;
@@ -26,6 +27,14 @@ import org.bukkit.entity.Player;
  *  server the UUID is computed from the name, so the record there is about a
  *  name, and a notice says so.
  *
+ *  <p>Which leaves offline-mode servers identifying people by the one thing a
+ *  returning cheater changes first. So a few seconds after the join a second,
+ *  smaller report says what the player is playing *on* - see
+ *  {@link ClientTraits} - and the service keeps that as another edge beside
+ *  the address. It is not an account and is never treated as one: the reply
+ *  names whoever else has been seen on the same client, and that becomes a
+ *  line in chat for a moderator to read, exactly like the address does.
+ *
  *  <p>The address is sent once per join and stored by neither side as given:
  *  the service keeps an HMAC of it under a secret only it has, plus the first
  *  half for display. The plugin keeps nothing at all - it reads the address
@@ -39,6 +48,10 @@ import org.bukkit.entity.Player;
 public final class Reputation implements Service {
 
     private static final long REFUSAL_LOG_INTERVAL_MS = 10L * 60L * 1000L;
+
+    /** How long after the join the client is asked what it is. Past the
+     *  moment the brand arrives, well inside any session worth a look. */
+    private static final long CLIENT_REPORT_DELAY_TICKS = 120L;
 
     private final OculusAI plugin;
     /** When each player was last announced, so a player reconnecting six
@@ -130,6 +143,105 @@ public final class Reputation implements Service {
                     noteRefusal(answer);
                     consider(uuid, name, answer);
                 });
+        describeClient(player);
+    }
+
+    /** Reports what this player is playing on, once they have been in the
+     *  world long enough to have said.
+     *
+     *  <p>The delay is the whole reason this is a separate report. The client
+     *  sends its brand over a plugin channel after it is in the world, not
+     *  during the handshake, so a snapshot taken on the join event would read
+     *  "brand unknown" - and a fingerprint of "brand unknown" is a different
+     *  edge from the one every one of that player's later sessions produces,
+     *  which would make the graph worse rather than better. Six seconds is
+     *  comfortably past it and well inside the session of anybody worth
+     *  identifying.
+     *
+     *  <p>Hops onto the player's own thread to read the traits, because on
+     *  Folia the connection state belongs to the player's region and not to
+     *  whoever ran the timer. A player who left in the meantime is simply
+     *  skipped. */
+    private void describeClient(Player player) {
+        if (!plugin.config().reputationClientTraits()) {
+            return;
+        }
+        UUID uuid = player.getUniqueId();
+        plugin.mainThread().after(() -> plugin.platform().onEntity(player, () -> {
+            if (!player.isOnline()) {
+                return;
+            }
+            Map<String, String> traits = ClientTraits.of(player);
+            if (!ClientTraits.usable(traits)) {
+                return;
+            }
+            String name = player.getName();
+            plugin.api().reputationClient(name, uuid.toString(), traits)
+                    .thenAccept(answer -> considerClient(uuid, name, answer));
+        }), CLIENT_REPORT_DELAY_TICKS);
+    }
+
+    /** Says out loud when this client has been here under another name.
+     *
+     *  <p>The one thing the nickname could never tell anybody, and the reason
+     *  the client report exists at all. Held to the same bar as the join
+     *  notice - the same score threshold, the same cooldown - because a line
+     *  that fires on every returning player is a line nobody reads. Never a
+     *  punishment: a shared computer and a sibling produce this honestly. */
+    private void considerClient(UUID uuid, String name, JsonObject answer) {
+        if (answer == null || !plugin.config().reputationJoinAlert()
+                || !answer.has("linked") || !answer.get("linked").isJsonArray()) {
+            return;
+        }
+        double threshold = plugin.config().reputationJoinAlertScore();
+        boolean explained = false;
+        for (JsonElement element : answer.getAsJsonArray("linked")) {
+            if (!element.isJsonObject()) {
+                continue;
+            }
+            JsonObject other = element.getAsJsonObject();
+            double score = number(other, "score");
+            if (score < threshold) {
+                // The list is sorted worst first, so the first one under the
+                // threshold ends it.
+                break;
+            }
+            String line = plugin.config().prefix() + plugin.lang().text("reputation.same-client",
+                    Map.of("player", name,
+                            "other", text(other, "player"),
+                            "short", text(other, "short"),
+                            "client", text(other, "client"),
+                            "score", Msg.round(score, 2),
+                            "kicks", Integer.toString((int) number(other, "kicks")),
+                            "bans", Integer.toString((int) number(other, "bans"))));
+            boolean first = !explained;
+            explained = true;
+            plugin.mainThread().run(() -> {
+                plugin.alerts().announce(line,
+                        plugin.config().reputationJoinAlertSound(),
+                        plugin.config().reputationJoinAlertVolume(),
+                        plugin.config().reputationJoinAlertPitch());
+                if (first) {
+                    // Once per notice, not once per linked name: what this
+                    // line is and is not worth is the same sentence either way.
+                    plugin.alerts().announce(plugin.lang().text("reputation.same-client-note"));
+                }
+            });
+            plugin.getLogger().info("Reputation: " + name + " shares a client with "
+                    + text(other, "player") + " (score " + Msg.round(score, 2) + ")");
+            plugin.history().note(uuid, name, "reputation",
+                    "same client as " + text(other, "player")
+                            + " (score " + Msg.round(score, 2) + ")");
+        }
+    }
+
+    private static String text(JsonObject object, String key) {
+        try {
+            return object.has(key) && !object.get(key).isJsonNull()
+                    ? object.get(key).getAsString() : "";
+        } catch (RuntimeException notAString) {
+            return "";
+        }
     }
 
     /** Everything the service has on a player: a UUID, or a name that may

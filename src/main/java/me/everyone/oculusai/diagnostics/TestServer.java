@@ -70,9 +70,13 @@ public final class TestServer implements Service, Listener {
             // thing the admin can fix in a minute, and silence here reads as
             // the arena being broken.
             plugin.getLogger().warning("The test arena is on but world \""
-                    + plugin.config().testServerWorld() + "\" does not exist, and Folia"
-                    + " cannot create a world while running. Create it once (any flat"
-                    + " world of that name in the server folder) and restart, or set"
+                    + plugin.config().testServerWorld() + "\" is not loaded, and Folia"
+                    + " cannot create a world while running. Folia loads the world named"
+                    + " by level-name in server.properties and its nether and end, and"
+                    + " nothing else - a world folder sitting in the server directory is"
+                    + " never picked up. So either make the arena that world"
+                    + " (level-name=" + plugin.config().testServerWorld() + ", which is"
+                    + " what a dedicated test box wants anyway), or set"
                     + " test-server.enabled: false.");
             return;
         }
@@ -188,9 +192,11 @@ public final class TestServer implements Service, Listener {
             return existing;
         }
         if (plugin.platform().folia()) {
-            // Folia loads its worlds at startup and refuses to make one after
-            // that: every region thread would have to be told about it mid-tick.
-            // The caller says so and leaves the arena off.
+            // Folia refuses to make a world after startup: every region thread
+            // would have to be told about it mid-tick. And it loads only
+            // level-name plus that world's nether and end, so there is no
+            // "put the folder there and it appears" either - the arena has to
+            // *be* the server's world. The caller says so and leaves it off.
             return null;
         }
 

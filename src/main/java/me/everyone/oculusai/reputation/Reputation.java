@@ -185,9 +185,15 @@ public final class Reputation implements Service {
      *
      *  <p>The one thing the nickname could never tell anybody, and the reason
      *  the client report exists at all. Held to the same bar as the join
-     *  notice - the same score threshold, the same cooldown - because a line
-     *  that fires on every returning player is a line nobody reads. Never a
-     *  punishment: a shared computer and a sibling produce this honestly. */
+     *  notice - the same score threshold - because a line that fires on every
+     *  returning player is a line nobody reads.
+     *
+     *  <p>What counts as a link is the service's decision and deliberately a
+     *  narrow one: the same address as well, or a Bedrock account. A bare
+     *  match of brand, protocol and locale is a configuration most of a
+     *  server shares, and firing on it announced four unrelated players as
+     *  the same man inside a minute. Never a punishment either way: one
+     *  computer belongs to two brothers often enough. */
     private void considerClient(UUID uuid, String name, JsonObject answer) {
         if (answer == null || !plugin.config().reputationJoinAlert()
                 || !answer.has("linked") || !answer.get("linked").isJsonArray()) {
@@ -206,11 +212,20 @@ public final class Reputation implements Service {
                 // threshold ends it.
                 break;
             }
+            // What actually tied them together, in the reader's language. The
+            // service only sends a link it is prepared to stand behind - the
+            // same address as well, or a Bedrock account - and the line says
+            // which, because "same client" alone is a configuration and the
+            // first version of this announced four strangers as one man.
+            String via = text(other, "via");
+            String link = plugin.lang().textOr("reputation.link."
+                    + (via.isBlank() ? "both" : via), via);
             String line = plugin.config().prefix() + plugin.lang().text("reputation.same-client",
                     Map.of("player", name,
                             "other", text(other, "player"),
                             "short", text(other, "short"),
                             "client", text(other, "client"),
+                            "link", link,
                             "score", Msg.round(score, 2),
                             "kicks", Integer.toString((int) number(other, "kicks")),
                             "bans", Integer.toString((int) number(other, "bans"))));

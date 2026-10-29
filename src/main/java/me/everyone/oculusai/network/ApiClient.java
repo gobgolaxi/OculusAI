@@ -348,53 +348,6 @@ public final class ApiClient implements Service {
         return send(builder(path, plugin.config().apiKey()).GET().build(), false);
     }
 
-    /** Hands up one join: this name, from this address, on this server.
-     *
-     *  <p>The address travels raw and is not kept raw: the service hashes it
-     *  under a secret of its own and stores the hash plus the first half of
-     *  the address, which is what makes "how many addresses does this name
-     *  use" answerable without a table of who plays from where. Does not vote
-     *  on reachability - a join report failing says nothing about whether the
-     *  model can answer. */
-    public CompletableFuture<JsonObject> reputationSeen(String player, String uuid,
-                                                        String address) {
-        JsonObject body = new JsonObject();
-        body.addProperty("player", player);
-        body.addProperty("uuid", uuid);
-        body.addProperty("address", address);
-        return post("/reputation/seen", body);
-    }
-
-    /** Hands up what the player who just joined is playing on.
-     *
-     *  <p>A second report a few seconds after the join rather than a field on
-     *  the join itself, because the client has not said what it is yet at the
-     *  moment it arrives: the brand comes over a plugin channel once the
-     *  player is in the world, and a fingerprint taken before that would be
-     *  the fingerprint of "brand unknown" - a different edge from the one
-     *  every later session produces.
-     *
-     *  <p>The reply says who else has been seen on this client, which on an
-     *  offline-mode server is the only thing that can connect two nicknames.
-     *  Fire and forget: a lost report costs one observation. */
-    public CompletableFuture<JsonObject> reputationClient(String player, String uuid,
-                                                          Map<String, String> traits) {
-        JsonObject client = new JsonObject();
-        traits.forEach(client::addProperty);
-        JsonObject body = new JsonObject();
-        body.addProperty("player", player);
-        body.addProperty("uuid", uuid);
-        body.add("client", client);
-        return post("/reputation/client", body);
-    }
-
-    /** What the service has on a name across every server it answers for. */
-    public CompletableFuture<JsonObject> reputation(String player) {
-        String path = "/reputation/" + java.net.URLEncoder.encode(player,
-                java.nio.charset.StandardCharsets.UTF_8);
-        return get(path);
-    }
-
     /** Sends one replay up for the panel to play back.
      *
      *  <p>On the dataset timeout rather than the ordinary one. A replay is a

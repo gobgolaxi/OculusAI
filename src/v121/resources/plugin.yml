@@ -52,9 +52,6 @@ permissions:
   oculusai.alwaysprob:
     description: See every player's reading over their head, permanently.
     default: op
-  oculusai.reputation:
-    description: Look up the addresses and cross-server reputation of a name.
-    default: op
   oculusai.diag:
     description: Inspect why a player's windows are or are not analysed.
     default: op

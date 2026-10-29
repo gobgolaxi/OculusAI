@@ -105,16 +105,6 @@ public final class Config implements Service {
     private long replayCombatMs = 4000L;
     private int replayMaxKb = 1024;
 
-    private boolean reputationEnabled = true;
-    private boolean reputationClientTraits = true;
-    private boolean reputationJoinAlert = true;
-    private double reputationJoinAlertScore = 0.5D;
-    private boolean reputationJoinAlertOtherServersOnly = true;
-    private long reputationJoinAlertCooldownMs = 300_000L;
-    private String reputationJoinAlertSound = "BLOCK_NOTE_BLOCK_PLING";
-    private float reputationJoinAlertVolume = 1.0F;
-    private float reputationJoinAlertPitch = 0.6F;
-
     public Config(OculusAI plugin) {
         this.plugin = plugin;
     }
@@ -259,24 +249,6 @@ public final class Config implements Service {
         replayCombatMs = Math.max(1000L, config.getLong("replay.combat-ms", 4000L));
         replayMaxKb = Math.max(64, Math.min(8192, config.getInt("replay.max-kb", 1024)));
 
-        reputationEnabled = config.getBoolean("reputation.enabled", true);
-        reputationClientTraits = config.getBoolean("reputation.client-traits", true);
-        reputationJoinAlert = config.getBoolean("reputation.join-alert.enabled", true);
-        // Clamped into the range a score can actually take, because a
-        // threshold outside it means either every join or none, and both look
-        // like the feature is broken rather than misconfigured.
-        reputationJoinAlertScore = Math.max(0.0D, Math.min(1.0D,
-                config.getDouble("reputation.join-alert.min-score", 0.5D)));
-        reputationJoinAlertOtherServersOnly =
-                config.getBoolean("reputation.join-alert.other-servers-only", true);
-        reputationJoinAlertCooldownMs = Math.max(0L,
-                config.getLong("reputation.join-alert.cooldown-ms", 300_000L));
-        reputationJoinAlertSound = config.getString("reputation.join-alert.sound",
-                "BLOCK_NOTE_BLOCK_PLING");
-        reputationJoinAlertVolume = (float) config.getDouble(
-                "reputation.join-alert.sound-volume", 1.0D);
-        reputationJoinAlertPitch = (float) config.getDouble(
-                "reputation.join-alert.sound-pitch", 0.6D);
     }
 
     private String stripTrailingSlash(String url) {
@@ -674,67 +646,6 @@ public final class Config implements Service {
      *  then the oldest frames, because the end is the evidence. */
     public int replayMaxKb() {
         return replayMaxKb;
-    }
-
-    /** Whether a joining player with a record is announced to staff. */
-    public boolean reputationJoinAlert() {
-        return reputationJoinAlert;
-    }
-
-    /** How bad the record has to be before anybody is interrupted. */
-    public double reputationJoinAlertScore() {
-        return reputationJoinAlertScore;
-    }
-
-    /** True to judge only on what happened on other servers.
-     *
-     *  <p>On by default, because this server's own kicks are already in its
-     *  own journal: announcing a player to the staff who banned them
-     *  yesterday is noise, and noise is what gets a notice switched off. */
-    public boolean reputationJoinAlertOtherServersOnly() {
-        return reputationJoinAlertOtherServersOnly;
-    }
-
-    /** How long before the same player may be announced again. A player
-     *  reconnecting six times must not produce six notices. */
-    public long reputationJoinAlertCooldownMs() {
-        return reputationJoinAlertCooldownMs;
-    }
-
-    public String reputationJoinAlertSoundName() {
-        return reputationJoinAlertSound;
-    }
-
-    /** The sound for the join notice. Deliberately not the check bell: a
-     *  moderator should be able to tell the two apart without reading. */
-    public Sound reputationJoinAlertSound() {
-        return parseSound(reputationJoinAlertSound, Sound.BLOCK_NOTE_BLOCK_PLING);
-    }
-
-    public float reputationJoinAlertVolume() {
-        return reputationJoinAlertVolume;
-    }
-
-    public float reputationJoinAlertPitch() {
-        return reputationJoinAlertPitch;
-    }
-
-    /** Whether joins are reported to the service for cross-server reputation.
-     *  Off means {@code /oai reputation} has nothing to read and nothing about
-     *  this server's players reaches the shared index. */
-    public boolean reputationEnabled() {
-        return reputationEnabled;
-    }
-
-    /** Whether the plugin also reports what a joining player is playing on.
-     *
-     *  <p>What the server already knows - client brand, protocol, locale,
-     *  render distance, main hand, Bedrock id when there is one - and nothing
-     *  the client is asked for. It matters on offline-mode servers, where the
-     *  identity is otherwise the nickname and a nickname is free to change;
-     *  off means a returning player under a new name is a stranger. */
-    public boolean reputationClientTraits() {
-        return reputationClientTraits;
     }
 
     private Sound parseSound(String value, Sound fallback) {

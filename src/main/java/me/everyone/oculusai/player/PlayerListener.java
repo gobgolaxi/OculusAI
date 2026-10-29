@@ -39,10 +39,6 @@ public final class PlayerListener implements Listener {
         plugin.worker().execute(() -> plugin.history().preload(
                 joining.getUniqueId(), joining.getName()));
 
-        // One line to the service: this name, from this address. It is what
-        // makes /oai reputation able to say anything at all, and it is the
-        // only moment the address is read - the plugin never stores one.
-        plugin.reputation().seen(joining);
         // Folia samples replays per player, like the entity tracker.
         plugin.replays().follow(joining);
 
@@ -114,7 +110,6 @@ public final class PlayerListener implements Listener {
             // was already frozen and uploaded by the punishment path; what is
             // left here is seconds of a fight nobody was punished for.
             plugin.replays().forget(player.getUniqueId());
-            plugin.reputation().forget(player.getUniqueId());
             plugin.data().remove(player.getUniqueId());
         }
     }

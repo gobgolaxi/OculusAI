@@ -76,14 +76,15 @@ public final class DataCommand extends SubCommand {
     }
 
     private void start(CommandSender sender, String[] args) {
-        // Default is auto: record into the newest schema the service also
-        // knows, so a plugin that updated itself ahead of the service does not
-        // fail the commit after the capture was already made.
-        int schema = DatasetStore.SCHEMA_AUTO;
+        // Умолчание - обе схемы сразу. Схемы различаются не колонками, а тем,
+        // что лежит под строкой, и одна запись годится для обеих: выбирать в
+        // момент записи нечего, а выбрав одну, оператор узнаёт об этом через
+        // полчаса боёв, когда моделям другого вида учиться уже не на чем.
+        int schema = DatasetStore.SCHEMA_BOTH;
         if (args.length > 1) {
             schema = DatasetStore.parseSchema(args[1]);
             if (schema == -1) {
-                reply(sender, "<red>Usage: <white>/oai data train [auto|v2|v3|v4|v5|v6|both]");
+                reply(sender, "<red>Usage: <white>/oai data train [both|old|new|auto]");
                 return;
             }
         }
@@ -101,6 +102,10 @@ public final class DataCommand extends SubCommand {
                 + shown
                 + "<green>. Windows are only taken while they fight - "
                 + "<white>/oai data stop<green> saves everything.");
+        if (schema == DatasetStore.SCHEMA_BOTH) {
+            reply(sender, "<dark_gray>  One capture, two sessions: <white>old<dark_gray> trains"
+                    + " the column models, <white>new<dark_gray> the trajectory one.");
+        }
     }
 
     private void stop(CommandSender sender) {
@@ -218,10 +223,12 @@ public final class DataCommand extends SubCommand {
         reply(sender, "<white>1. <gray>Sign the cast up:");
         reply(sender, "   <white>/oai data add cheater <player>");
         reply(sender, "   <white>/oai data add legit <player>");
-        reply(sender, "<white>2. <gray>Run it: <white>/oai data train [v2|v3|v4|v5|both] <gray>... they fight ... <white>/oai data stop");
+        reply(sender, "<white>2. <gray>Run it: <white>/oai data train <gray>... they fight ... <white>/oai data stop");
         reply(sender, "   <gray>Stopping sends every capture to the service straight away.");
-        reply(sender, "   <gray>v5 (default) adds the hit itself - crits, their timing, the rhythm;");
-        reply(sender, "   <gray>v4 is aim plus the session average; <white>both<gray> saves v4 and v5 at once.");
+        reply(sender, "   <gray>By default one capture becomes two sessions, one per schema:");
+        reply(sender, "   <white>old<gray> is the window columns, which the column models read;");
+        reply(sender, "   <white>new<gray> is those plus the raw ticks, which the trajectory model reads.");
+        reply(sender, "   <gray>Name one - <white>/oai data train old<gray> - only to record just it.");
         reply(sender, "   <gray>Two or three short sessions per player beats one long one.");
         reply(sender, "<gray>Also: <white>list<gray>, <white>rem <player><gray> (off the roster),");
         reply(sender, "<gray><white>delete cheater|legit <player><gray> (drop stored data).");
@@ -237,7 +244,7 @@ public final class DataCommand extends SubCommand {
         }
 
         if (args.length == 2 && (args[0].equalsIgnoreCase("train") || args[0].equalsIgnoreCase("start"))) {
-            List<String> versions = new ArrayList<>(List.of("v2", "v3", "v4", "v5", "both"));
+            List<String> versions = new ArrayList<>(List.of("both", "old", "new", "auto"));
             versions.removeIf(version -> !version.startsWith(args[1].toLowerCase(Locale.ROOT)));
             return versions;
         }

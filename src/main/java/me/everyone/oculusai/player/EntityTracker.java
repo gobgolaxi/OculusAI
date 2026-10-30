@@ -35,6 +35,10 @@ public final class EntityTracker implements Service {
     /** One second covers a client that is a few movement packets behind the
      *  server. WallCheck keeps its own shorter window; HitBox needs the wider
      *  one because an attack packet carries no target position of its own. */
+    /** Глаза относительно высоты. Хитбокс игрока 1.8, глаза на 1.62 - для
+     *  сника и для player-shaped NPC другой высоты доля честнее константы. */
+    private static final double EYE_RATIO = 1.62D / 1.8D;
+
     private static final long HISTORY_MS = 1000L;
     private static final int HISTORY_LIMIT = 20;
 
@@ -195,6 +199,80 @@ public final class EntityTracker implements Service {
 
     public Tracked get(int entityId) {
         return tracked.get(entityId);
+    }
+
+    /** Отслеживаемая сущность вместе со своим id. */
+    public record Near(int entityId, Tracked entry, double distance) {
+    }
+
+    /** Ближайший игроко-подобный к этой точке, в её же мире, кроме самого.
+     *
+     *  <p>Нужен затем, что до появления этого метода угол до цели считался
+     *  только в тике удара: по пакету атаки, у которого цель написана. В
+     *  остальных тиках окна цели не было известно вообще, и самый сильный
+     *  признак аимбота - как шла ошибка прицела к хитбоксу - существовал
+     *  одной точкой из тридцати двух.
+     *
+     *  <p>Ближайший, а не «тот, кого ударили»: в тике без удара никто не
+     *  сказал, по кому велась рука, и ближайший - единственная догадка,
+     *  которую можно сделать не заглядывая в будущее окна. На дуэли это тот
+     *  же игрок; в свалке это меняется от тика к тику, и канал смены цели
+     *  говорит об этом прямо, а не прячет. */
+    public Near nearestPlayerLike(Tracked self, int selfId, double maxBlocks) {
+        if (self == null) {
+            return null;
+        }
+        double limit = maxBlocks * maxBlocks;
+        Near best = null;
+        for (Map.Entry<Integer, Tracked> entry : tracked.entrySet()) {
+            if (entry.getKey() == selfId) {
+                continue;
+            }
+            Tracked other = entry.getValue();
+            if (!other.playerLike() || !other.worldId().equals(self.worldId())) {
+                continue;
+            }
+            double dx = other.x() - self.x();
+            double dy = other.centreY() - (self.y() + self.height() * EYE_RATIO);
+            double dz = other.z() - self.z();
+            double squared = dx * dx + dy * dy + dz * dz;
+            if (squared > limit) {
+                continue;
+            }
+            if (best == null || squared < best.distance() * best.distance()) {
+                best = new Near(entry.getKey(), other, Math.sqrt(squared));
+            }
+        }
+        return best;
+    }
+
+    /** Сколько игроко-подобных рядом, кроме самого.
+     *
+     *  <p>Отличает «довёл до единственного» от «выбрал из трёх»: ровная
+     *  доводка на дуэли и та же ровность, когда вокруг четверо, - это разные
+     *  события, и без этого числа они выглядят одинаково. */
+    public int countPlayerLike(Tracked self, int selfId, double maxBlocks) {
+        if (self == null) {
+            return 0;
+        }
+        double limit = maxBlocks * maxBlocks;
+        int count = 0;
+        for (Map.Entry<Integer, Tracked> entry : tracked.entrySet()) {
+            if (entry.getKey() == selfId) {
+                continue;
+            }
+            Tracked other = entry.getValue();
+            if (!other.playerLike() || !other.worldId().equals(self.worldId())) {
+                continue;
+            }
+            double dx = other.x() - self.x();
+            double dy = other.centreY() - (self.y() + self.height() * EYE_RATIO);
+            double dz = other.z() - self.z();
+            if (dx * dx + dy * dy + dz * dz <= limit) {
+                count++;
+            }
+        }
+        return count;
     }
 
     public void forget(Player player) {

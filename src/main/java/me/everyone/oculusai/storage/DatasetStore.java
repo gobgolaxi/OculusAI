@@ -16,6 +16,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import me.everyone.oculusai.OculusAI;
+import me.everyone.oculusai.detection.Detection;
 import me.everyone.oculusai.network.UploadQueue;
 import me.everyone.oculusai.detection.FeatureSchemas;
 import me.everyone.oculusai.player.PlayerData;
@@ -27,24 +28,31 @@ public final class DatasetStore implements Service {
     public static final String CHEATER = "cheater";
     public static final String LEGIT = "legit";
 
+    /** Колонки окна: вход колоночных моделей. */
+    public static final int SCHEMA_V1 = FeatureSchemas.V1;
+    /** Колонки и сырые тики: вход траекторной модели. */
     public static final int SCHEMA_V2 = FeatureSchemas.V2;
-    public static final int SCHEMA_V3 = FeatureSchemas.V3;
-    public static final int SCHEMA_V4 = FeatureSchemas.V4;
-    public static final int SCHEMA_V5 = FeatureSchemas.V5;
+    /** Обе схемы сразу, и это умолчание.
+     *
+     *  <p>Схем две, различаются они не колонками, а тем, что лежит под
+     *  строкой, и одна запись годится для обеих - значит, выбирать между
+     *  ними в момент записи не нужно и вредно: выбрав одну, оператор узнаёт
+     *  о своей ошибке через полчаса боёв, когда модели другого вида учиться
+     *  уже не на чем. Запись уходит двумя сессиями, по одной на схему. */
     public static final int SCHEMA_BOTH = 0;
-    /** Record into the newest schema the service also knows. The default,
-     *  because the plugin and the service are deployed separately and the
-     *  plugin now updates itself: a build that simply assumed the newest
-     *  schema would break recording on every service not yet updated, and it
-     *  would break it as a 422 on commit, after the capture was made. */
+    /** Записывать в ту схему, которую сервис тоже знает.
+     *
+     *  <p>Плагин и сервис разворачиваются отдельно, и плагин обновляет себя
+     *  сам: сборка, просто решившая, что новая схема уже есть, ломала бы
+     *  запись на каждом не обновлённом сервисе - и ломала бы как 422 на
+     *  коммите, уже после того, как бой записан. */
     public static final int SCHEMA_AUTO = -2;
 
-    public static final int SCHEMA_V6 = FeatureSchemas.V6;
-    public static final int FEATURE_VERSION = SCHEMA_V5;
-    /** Newest first. Only schemas a capture can actually be recorded into. */
-    private static final int[] PREFERRED = {SCHEMA_V6, SCHEMA_V5};
+    public static final int FEATURE_VERSION = SCHEMA_V1;
+    /** Новейшая первой. Только то, во что запись действительно может лечь. */
+    private static final int[] PREFERRED = {SCHEMA_V2, SCHEMA_V1};
 
-    private static final int[] BOTH_SCHEMAS = {SCHEMA_V4, SCHEMA_V5};
+    private static final int[] BOTH_SCHEMAS = {SCHEMA_V1, SCHEMA_V2};
 
     public record RosterEntry(UUID uuid, String name, String label, String person) {
     }
@@ -54,7 +62,7 @@ public final class DatasetStore implements Service {
     private volatile boolean collecting;
     private volatile long collectingSinceMs;
     private volatile CommandSender starter;
-    private volatile int schema = SCHEMA_AUTO;
+    private volatile int schema = SCHEMA_BOTH;
     private TickLoop.Handle progressTask;
 
     public DatasetStore(OculusAI plugin) {
@@ -198,7 +206,7 @@ public final class DatasetStore implements Service {
     public void setSchema(int schema) {
         this.schema = schema == SCHEMA_BOTH || schema == SCHEMA_AUTO
                 || FeatureSchemas.known(schema)
-                ? schema : SCHEMA_AUTO;
+                ? schema : SCHEMA_BOTH;
     }
 
     public int schema() {
@@ -208,9 +216,9 @@ public final class DatasetStore implements Service {
     /** The schema a capture will actually be written as.
      *
      * <p>Resolves SCHEMA_AUTO against what the service said it accepts. Before
-     * the first settings fetch lands the set is empty, and then this answers v5
-     * - the schema that has worked on every version of the service - rather
-     * than guessing upward. */
+     * the first settings fetch lands the set is empty, and then this answers
+     * v1 - the columns, which every version of the service has understood -
+     * rather than guessing upward at a schema the other side may not know. */
     public int effectiveSchema() {
         if (schema != SCHEMA_AUTO) {
             return schema;
@@ -226,13 +234,10 @@ public final class DatasetStore implements Service {
 
     public static String schemaName(int schema) {
         return switch (schema) {
-            case SCHEMA_V2 -> "v2";
-            case SCHEMA_V3 -> "v3";
-            case SCHEMA_V4 -> "v4";
-            case SCHEMA_V6 -> "v6";
-            case SCHEMA_BOTH -> "v4 + v5";
+            case SCHEMA_V2 -> "v2 (new)";
+            case SCHEMA_BOTH -> "v1 + v2";
             case SCHEMA_AUTO -> "auto";
-            default -> "v5";
+            default -> "v1 (old)";
         };
     }
 
@@ -241,11 +246,8 @@ public final class DatasetStore implements Service {
             return -1;
         }
         return switch (value.toLowerCase(Locale.ROOT)) {
-            case "v2" -> SCHEMA_V2;
-            case "v3" -> SCHEMA_V3;
-            case "v4" -> SCHEMA_V4;
-            case "v5" -> SCHEMA_V5;
-            case "v6" -> SCHEMA_V6;
+            case "v1", "old" -> SCHEMA_V1;
+            case "v2", "new" -> SCHEMA_V2;
             case "both" -> SCHEMA_BOTH;
             case "auto" -> SCHEMA_AUTO;
             default -> -1;
@@ -304,6 +306,9 @@ public final class DatasetStore implements Service {
 
         List<double[]> sliced = sliced(names, rows, version);
         List<double[]> context = data.recordedContext();
+        // Сырые окна идут строка в строку с колонками: нарезка по схеме
+        // меняет состав колонок, а не число окон.
+        List<double[]> ticks = data.recordedTicks();
         // Cleared up front, because a failed send no longer leaves the rows
         // here: they go to the retry queue, and holding them in both places
         // would send the same capture twice the next time /oai data stop runs.
@@ -311,13 +316,14 @@ public final class DatasetStore implements Service {
 
         UploadQueue.Batch batch = new UploadQueue.Batch(label, data.name(),
                 data.uuid().toString(), FeatureSchemas.names(version), sliced,
-                enabled, source, person, context, version);
+                enabled, source, person, context, version,
+                ticks, Detection.TICK_CHANNELS);
 
         return plugin.api()
                 .addSamples(batch.label(), batch.player(), batch.uuid(),
                         batch.featureNames(), batch.rows(), batch.enabled(),
                         batch.source(), batch.person(), batch.context(),
-                        batch.featureVersion())
+                        batch.featureVersion(), batch.ticks(), batch.tickChannels())
                 .thenApply(response -> {
                     if (response == null) {
                         plugin.uploads().offer(batch);
@@ -335,6 +341,7 @@ public final class DatasetStore implements Service {
         List<double[]> rows = data.recordedSamples();
         List<String> names = data.recordedFeatureNames();
         List<double[]> context = data.recordedContext();
+        List<double[]> ticks = data.recordedTicks();
         data.clearRecorded();
         if (rows.isEmpty() || names.isEmpty()) {
             return CompletableFuture.completedFuture(0);
@@ -342,14 +349,29 @@ public final class DatasetStore implements Service {
 
         List<CompletableFuture<Integer>> sends = new ArrayList<>(BOTH_SCHEMAS.length);
         for (int version : BOTH_SCHEMAS) {
+            // Схема, которой нужны тики, без них не отправляется вовсе.
+            //
+            // Сервис отклонил бы такую запись как 422, а 422 от /samples
+            // неотличим здесь от обрыва связи: батч ушёл бы в очередь
+            // повторов и остался бы в ней навсегда, потому что тики в нём не
+            // появятся. Пропустить половину записи - это потеря одного пула;
+            // отправить её - это вечный цикл.
+            if (FeatureSchemas.needsTicks(version)
+                    && (ticks.isEmpty() || ticks.size() != rows.size())) {
+                plugin.getLogger().warning("Capture of " + data.name() + " has no raw ticks,"
+                        + " so only " + schemaName(SCHEMA_V1) + " was saved."
+                        + " The trajectory model learns from nothing here.");
+                continue;
+            }
             UploadQueue.Batch batch = new UploadQueue.Batch(label, data.name(),
                     data.uuid().toString(), FeatureSchemas.names(version),
-                    sliced(names, rows, version), true, "manual", person, context, version);
+                    sliced(names, rows, version), true, "manual", person, context, version,
+                    ticks, Detection.TICK_CHANNELS);
             sends.add(plugin.api()
                     .addSamples(batch.label(), batch.player(), batch.uuid(),
                             batch.featureNames(), batch.rows(), batch.enabled(),
                             batch.source(), batch.person(), batch.context(),
-                            batch.featureVersion())
+                            batch.featureVersion(), batch.ticks(), batch.tickChannels())
                     .thenApply(response -> {
                         if (response == null) {
                             plugin.uploads().offer(batch);

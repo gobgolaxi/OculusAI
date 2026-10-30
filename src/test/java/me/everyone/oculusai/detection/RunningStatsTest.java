@@ -6,6 +6,7 @@ import java.util.Map;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @DisplayName("running session statistics")
@@ -176,37 +177,45 @@ class RunningStatsTest {
     }
 
     @Test
-    @DisplayName("every schema names the columns the service expects")
+    @DisplayName("both schemas name the same columns, in the order the service expects")
     void schemasMatchTheService() {
-        assertEquals(17, FeatureSchemas.names(FeatureSchemas.V2).size());
-        assertEquals(26, FeatureSchemas.names(FeatureSchemas.V3).size());
-        assertEquals(51, FeatureSchemas.names(FeatureSchemas.V4).size());
+        List<String> v1 = FeatureSchemas.names(FeatureSchemas.V1);
+        // 16 колонок вращения, 14 удара, затем бегущие среднее и разброс по
+        // колонкам вращения - по 16 каждое.
+        assertEquals(62, v1.size());
+        assertEquals("scale_vs_baseline", v1.get(0));
+        assertEquals("crit_rate", v1.get(16));
+        assertEquals("scale_vs_baseline_run_mean", v1.get(30));
+        assertEquals("aim_error_min_run_std", v1.get(61));
 
-        List<String> v4 = FeatureSchemas.names(FeatureSchemas.V4);
-        assertEquals(FeatureSchemas.names(FeatureSchemas.V2), v4.subList(0, 17));
-        assertEquals("scale_vs_baseline_run_mean", v4.get(17));
-        assertEquals("aim_error_min_run_std", v4.get(50));
+        // Схемы различаются не колонками, а тем, что лежит под строкой:
+        // v2 требует сырых тиков, v1 - нет.
+        assertEquals(v1, FeatureSchemas.names(FeatureSchemas.V2));
+        assertFalse(FeatureSchemas.needsTicks(FeatureSchemas.V1));
+        assertTrue(FeatureSchemas.needsTicks(FeatureSchemas.V2));
+        assertTrue(FeatureSchemas.known(FeatureSchemas.V1));
+        assertTrue(FeatureSchemas.known(FeatureSchemas.V2));
+        assertFalse(FeatureSchemas.known(6));
     }
 
     @Test
-    @DisplayName("slicing takes columns by name, and v4 is not a prefix")
+    @DisplayName("slicing takes columns by name, not by position")
     void slicingIsByName() {
         Map<String, Double> everything = new LinkedHashMap<>();
-        for (String name : FeatureSchemas.names(FeatureSchemas.V3)) {
+        for (String name : FeatureSchemas.names(FeatureSchemas.V1)) {
             everything.put(name, 1.0D);
         }
-        for (String name : FeatureSchemas.names(FeatureSchemas.V4)) {
-            everything.putIfAbsent(name, 2.0D);
-        }
+        everything.put("attacks_per_second", 9.0D);
 
-        Map<String, Double> v4 = FeatureSchemas.slice(everything, FeatureSchemas.V4);
-        assertEquals(51, v4.size());
-        assertEquals(1.0D, v4.get("scale_vs_baseline"));
-        assertEquals(2.0D, v4.get("scale_vs_baseline_run_mean"));
-        assertEquals(null, v4.get("crit_rate"));
+        Map<String, Double> sliced = FeatureSchemas.slice(everything, FeatureSchemas.V1);
+        assertEquals(62, sliced.size());
+        assertEquals(1.0D, sliced.get("scale_vs_baseline"));
+        assertEquals(1.0D, sliced.get("scale_vs_baseline_run_mean"));
+        // Выброшенная колонка не возвращается, даже если её кто-то прислал.
+        assertEquals(null, sliced.get("attacks_per_second"));
 
-        Map<String, Double> missing = FeatureSchemas.slice(Map.of(), FeatureSchemas.V2);
-        assertEquals(17, missing.size());
+        Map<String, Double> missing = FeatureSchemas.slice(Map.of(), FeatureSchemas.V1);
+        assertEquals(62, missing.size());
         assertEquals(0.0D, missing.get("smoothness"));
     }
 }

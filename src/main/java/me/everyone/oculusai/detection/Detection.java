@@ -8,6 +8,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.detection.CritTiming;
@@ -103,6 +104,78 @@ public final class Detection implements Service {
         }
     }
 
+    /** Имена каналов сырого окна, в том порядке, в каком их кладёт
+     *  {@link #ticksOf}. Уходит в запись рядом с числами: формат должен
+     *  читаться без знания этого файла. */
+    public static final List<String> TICK_CHANNELS =
+            List.of("yaw", "pitch", "attacked", "aim_error",
+                    "ticks_since_attack", "teleport",
+                    // Геометрия цели. Самый сильный признак доводки прицела -
+                    // не вращение само по себе, а как шла ошибка до хитбокса;
+                    // до этих каналов она существовала одним числом в тике
+                    // удара, а в остальных тридцати одном тике окна её не
+                    // было вовсе.
+                    "target_angle", "target_edge_angle", "target_distance",
+                    "target_id", "targets_near",
+                    // Контекст движения: без него страйф-флик бегущего боком
+                    // легита и ровная доводка выглядят одинаково.
+                    "swung_empty", "on_ground", "sprinting", "speed",
+                    // Настоящее время между тиками. Ровность интервала - сама
+                    // по себе признак, а серверный тик её сглаживает.
+                    "since_last_ms");
+
+    /** Окно как последовательность, а не как сводка.
+     *
+     *  <p>Колонки, которые считает {@link FeatureExtractor}, - это среднее,
+     *  разброс и ещё десяток чисел о двадцати тиках. Здесь те же тики как
+     *  есть, подряд по каналам: это вход траекторного кандидата на сервисе
+     *  (trajectory.py), который сам решает, что из них считать - скорость,
+     *  ускорение, расстановку ударов. Поэтому и пишутся сырыми: переопредели
+     *  производный канал, и ни одна записанная сессия не обесценится. */
+    /** Чем записывается «этого числа в тике не было».
+     *
+     *  <p>Не NaN. {@code JsonObject.toString()} у Gson пишет NaN голым словом,
+     *  а это невалидный JSON: он доезжал только потому, что разбор на стороне
+     *  Python такое слово принимает как расширение формата. Пока NaN был
+     *  только у {@code aim_error}, это было незаметной мелочью; с геометрией
+     *  цели отсутствующих значений стало большинство - цели рядом нет почти
+     *  всегда, - и держать формат на случайности нельзя.
+     *
+     *  <p>Минус единица однозначна: все величины, которые могут отсутствовать,
+     *  неотрицательны - углы, расстояние, промах прицела. А то, что значение
+     *  отсутствует, модель читает не по самому числу, а по соседнему каналу:
+     *  {@code target_id} равен -1, когда цели нет, {@code attacked} равен
+     *  нулю, когда удара не было. */
+    public static final double NO_VALUE = -1.0D;
+
+    private static double finite(double value) {
+        return Double.isFinite(value) ? value : NO_VALUE;
+    }
+
+    private static double[] ticksOf(List<RotationSample> window) {
+        double[] flat = new double[window.size() * TICK_CHANNELS.size()];
+        int at = 0;
+        for (RotationSample sample : window) {
+            flat[at++] = sample.yaw();
+            flat[at++] = sample.pitch();
+            flat[at++] = sample.attacked() ? 1.0D : 0.0D;
+            flat[at++] = finite(sample.aimError());
+            flat[at++] = sample.ticksSinceAttack();
+            flat[at++] = sample.teleport() ? 1.0D : 0.0D;
+            flat[at++] = finite(sample.targetAngle());
+            flat[at++] = finite(sample.targetEdgeAngle());
+            flat[at++] = finite(sample.targetDistance());
+            flat[at++] = sample.targetId();
+            flat[at++] = sample.targetsNear();
+            flat[at++] = sample.swungEmpty() ? 1.0D : 0.0D;
+            flat[at++] = sample.onGround() ? 1.0D : 0.0D;
+            flat[at++] = sample.sprinting() ? 1.0D : 0.0D;
+            flat[at++] = finite(sample.speed());
+            flat[at++] = sample.sinceLastMs();
+        }
+        return flat;
+    }
+
     private void analyse(PlayerData data) {
         List<RotationSample> window = data.snapshotWindow(plugin.config().windowTicks());
         if (window == null || !data.inCombat(plugin.config().combatMs())) {
@@ -157,8 +230,13 @@ public final class Detection implements Service {
         // measured while the service is unreachable is still a window, and it
         // is kept with an empty score instead of being lost.
         int epoch = data.recordedEpoch();
+        // Одно и то же сырое окно уходит и в запись, и в запрос: на записи с
+        // него учится траекторная модель, на запросе она же его и читает.
+        // Считается один раз - иначе та же сборка делалась бы дважды за
+        // окно, и ничто не гарантировало бы, что это одни и те же числа.
+        double[] ticks = ticksOf(window);
         int row = data.recording()
-                ? data.record(new ArrayList<>(features.keySet()), toArray(features))
+                ? data.record(new ArrayList<>(features.keySet()), toArray(features), ticks)
                 : -1;
 
         if (!plugin.api().reachable()) {
@@ -168,7 +246,13 @@ public final class Detection implements Service {
             return;
         }
 
-        plugin.api().predict(features).thenAccept(probability -> {
+        // Тики едут только если их читает модель на слоте. Сервис говорит это
+        // в настройках: 512 чисел на запрос, которые колоночная модель не
+        // смотрит, - это трафик раз в секунду на каждого бойца.
+        boolean wantsTicks = plugin.api().predictWantsTicks();
+        CompletableFuture<Double> answer = plugin.api().predict(data.uuid(), features,
+                wantsTicks ? ticks : null, wantsTicks ? TICK_CHANNELS.size() : 0);
+        answer.thenAccept(probability -> {
             if (probability == null || Double.isNaN(probability)) {
                 return;
             }

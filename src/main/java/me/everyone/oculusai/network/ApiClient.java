@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
@@ -64,6 +65,9 @@ public final class ApiClient implements Service {
      *  settings fetch lands, which is why the dataset manager treats empty as
      *  "assume only what has always worked" rather than as "nothing works". */
     private volatile Set<Integer> serviceSchemas = Set.of();
+    /** Читает ли версия на слоте сырые тики. Спрашивается у сервиса, а не
+     *  угадывается: какая версия стоит на слоте, знает только он. */
+    private volatile boolean predictWantsTicks;
     /** What the service last said this key is entitled to. Read from the
      *  settings poll: the plan can lapse between restarts, and until this
      *  arrived the only way to find out which model was answering was to ask
@@ -110,11 +114,41 @@ public final class ApiClient implements Service {
         analysedPlayers = 0;
     }
 
-    public CompletableFuture<Double> predict(Map<String, Double> features) {
+    /** Scores one window.
+     *
+     *  <p>The player's UUID rides along because the service's recurrent
+     *  models read a session rather than a window: each window is judged on
+     *  top of what the model has already seen from this player, and without
+     *  a name there is nothing to attach that state to. A service running a
+     *  window-only model ignores the field, so sending it costs nothing.
+     *
+     *  <p>The raw window rides along for the same reason: the service's
+     *  trajectory model reads the ticks themselves rather than the columns
+     *  computed from them, and there is nothing in the feature map it can be
+     *  reconstructed from - a mean is not a sequence. A service running a
+     *  column model ignores the field. It is the one part of this request
+     *  that is not small - twenty ticks on six channels is a hundred and
+     *  twenty numbers against seventeen columns - so it is sent only when
+     *  there is a window to send. */
+    public CompletableFuture<Double> predict(UUID player, Map<String, Double> features,
+                                             double[] ticks, int tickChannels) {
         JsonObject body = new JsonObject();
         JsonObject values = new JsonObject();
         features.forEach(values::addProperty);
         body.add("features", values);
+        if (player != null) {
+            body.addProperty("uuid", player.toString());
+        }
+        if (ticks != null && ticks.length > 0 && tickChannels > 0) {
+            // Без ёмкости: конструктор с ней появился в Gson 2.8.1, а сборка
+            // под 1.16 несёт тот Gson, который приходит с её сервером.
+            JsonArray window = new JsonArray();
+            for (double value : ticks) {
+                window.add(value);
+            }
+            body.add("ticks", window);
+            body.addProperty("tick_channels", tickChannels);
+        }
 
         return postVoting("/predict", body).thenApply(response -> {
             if (response == null || !response.has("probability")) {
@@ -161,6 +195,18 @@ public final class ApiClient implements Service {
         } catch (ReflectiveOperationException | LinkageError ignored) {
         }
         return false;
+    }
+
+    /** Нужны ли модели на слоте сырые тики окна в каждом предсказании.
+     *
+     *  <p>Окно из 32 тиков на 16 каналов - это 512 чисел, порядка шести
+     *  килобайт JSON, и уходит оно раз в секунду на каждого, кто дрался.
+     *  Колоночная модель их не читает, так что по умолчанию - до первого
+     *  ответа настроек - они не шлются: лишний трафик хуже, чем один лишний
+     *  цикл предсказания без тиков, а траекторная модель на запрос без них
+     *  отвечает понятной ошибкой, а не тихо неверной вероятностью. */
+    public boolean predictWantsTicks() {
+        return predictWantsTicks;
     }
 
     public Set<Integer> serviceSchemas() {
@@ -238,6 +284,8 @@ public final class ApiClient implements Service {
             }
             modelDemoted = response.has("model_demoted")
                     && response.get("model_demoted").getAsBoolean();
+            predictWantsTicks = response.has("predict_wants_ticks")
+                    && response.get("predict_wants_ticks").getAsBoolean();
             if (!response.has("analysis_exclusions")) return;
             List<Exclusion> loaded = new ArrayList<>();
             response.getAsJsonArray("analysis_exclusions").forEach(element -> {
@@ -255,6 +303,22 @@ public final class ApiClient implements Service {
                                                     List<String> featureNames, List<double[]> rows,
                                                     boolean enabled, String source, String person,
                                                     List<double[]> context, int featureVersion) {
+        return addSamples(label, player, uuid, featureNames, rows, enabled, source, person,
+                context, featureVersion, List.of(), List.of());
+    }
+
+    /** То же, плюс сырые окна: тики, из которых посчитаны колонки.
+     *
+     *  <p>Сервис их сейчас только складывает - модели, которая читает
+     *  траекторию, ещё нет. Записи копятся заранее, потому что набрать их
+     *  нельзя задним числом: когда такая модель появится, учить её будет
+     *  не на чем, если начать собирать в тот же день. */
+    public CompletableFuture<JsonObject> addSamples(String label, String player, String uuid,
+                                                    List<String> featureNames, List<double[]> rows,
+                                                    boolean enabled, String source, String person,
+                                                    List<double[]> context, int featureVersion,
+                                                    List<double[]> ticks,
+                                                    List<String> tickChannels) {
         JsonObject body = new JsonObject();
         body.addProperty("label", label);
         body.addProperty("player", player);
@@ -282,6 +346,21 @@ public final class ApiClient implements Service {
             samples.add(sample);
         }
         body.add("samples", samples);
+
+        if (ticks != null && !ticks.isEmpty() && ticks.size() == rows.size()) {
+            JsonArray windows = new JsonArray();
+            for (double[] window : ticks) {
+                JsonArray flat = new JsonArray();
+                for (double value : window) {
+                    flat.add(value);
+                }
+                windows.add(flat);
+            }
+            body.add("ticks", windows);
+            JsonArray channels = new JsonArray();
+            tickChannels.forEach(channels::add);
+            body.add("tick_channels", channels);
+        }
 
         return postDataset("/samples", body);
     }

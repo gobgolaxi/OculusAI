@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.UUID;
 import me.everyone.oculusai.detection.AttackMoment;
 import me.everyone.oculusai.detection.FeatureSchemas;
+import me.everyone.oculusai.detection.AimGeometry;
 import me.everyone.oculusai.detection.RotationSample;
 import me.everyone.oculusai.detection.MedianWindow;
 import me.everyone.oculusai.detection.RunningStats;
@@ -54,11 +55,29 @@ public final class PlayerData {
     private volatile boolean recording;
     private volatile String recordingLabel;
     private final List<double[]> recorded = new ArrayList<>();
+    /** Сырое окно под каждой записанной строкой: тики, из которых посчитаны
+     *  колонки, сплющенные подряд. Пустой список - запись без тиков, так
+     *  ведёт себя всё, что писалось до их появления. */
+    private final List<double[]> recordedTicks = new ArrayList<>();
     private final List<String> recordedNames = new ArrayList<>();
 
     private volatile boolean attackedThisTick;
     private volatile double aimErrorThisTick = Double.NaN;
     private volatile AttackMoment momentThisTick;
+    /** The server just told this client where it is: the next movement packet
+     *  applies the teleport, and its rotation delta is the server's, not the
+     *  player's. */
+    private volatile boolean teleportPending;
+    /** Ticks since the last attack, saturating at 255, 255 before any attack.
+     *  A raw tick channel for the trajectory models: how the hits were spaced
+     *  is a signal a window summary cannot carry. */
+    private volatile int ticksSinceAttack = 255;
+    /** Махнул рукой, никого не ударив. Килоаура обычно машет только по цели,
+     *  человек промахивается и бьёт по воздуху. */
+    private volatile boolean swungEmptyThisTick;
+    /** Настоящие часы предыдущего тика: между пакетами движения не ровно 50
+     *  мс, и ровность этого интервала сама по себе признак. */
+    private volatile long lastSampleAtMs;
     private volatile long airborneSinceMs;
     private volatile long sprintDroppedAtMs;
     private volatile boolean sprinting;
@@ -106,11 +125,69 @@ public final class PlayerData {
         return lastPitch;
     }
 
+    /** Called when the server sends a position or rotation that the client
+     *  must accept: a teleport, a respawn, a plugin moving the player.
+     *
+     *  <p>The next rotation packet the client sends applies the server's
+     *  position, so the delta measured across it is the teleport's, not the
+     *  player's. Leaving it in the window would teach the models that an
+     *  ender pearl throws a 180-degree flick, and every window that crossed
+     *  a teleport would read as one. The shard-2 contract handles exactly
+     *  this: delta zero on the teleport tick, acceleration zero on it and
+     *  the tick after. */
+    public void noteTeleport() {
+        teleportPending = true;
+    }
+
+    public void noteTeleportIfMoved(float yaw, float pitch) {
+        if (Math.abs(yaw - lastYaw) > 0.001F || Math.abs(pitch - lastPitch) > 0.001F) {
+            teleportPending = true;
+        }
+    }
+
+    /** Marks the next sample as teleport-affected and clears the pending flag. */
+    private boolean consumeTeleport() {
+        if (!teleportPending) {
+            return false;
+        }
+        teleportPending = false;
+        return true;
+    }
+
     public void addSample(float yaw, float pitch, int windowSize) {
+        addSample(yaw, pitch, windowSize, AimGeometry.TickAim.NONE, true, false);
+    }
+
+    /** Один тик в окно, вместе со всем, что в нём было видно.
+     *
+     *  <p>Телепорт и счётчик тиков с прошлого удара проставляются здесь, и до
+     *  этого не проставлялись нигде: {@code consumeTeleport} не вызывался, а
+     *  {@code ticksSinceAttack} не увеличивался, так что оба канала уходили в
+     *  запись константами - ноль и 255. Модель от такого канала не падает,
+     *  она просто учится без него, и заметить это по метрикам нельзя. */
+    public void addSample(float yaw, float pitch, int windowSize,
+                          AimGeometry.TickAim aim, boolean onGround, boolean sprintingNow) {
         lastYaw = yaw;
         lastPitch = pitch;
-        RotationSample sample = new RotationSample(yaw, pitch, attackedThisTick,
-                aimErrorThisTick, momentThisTick);
+
+        boolean attacked = attackedThisTick;
+        // Ноль в тике удара, иначе на единицу больше прошлого, с упором в
+        // 255 - тот же контракт, что читает сервис.
+        ticksSinceAttack = attacked ? 0
+                : (ticksSinceAttack >= 255 ? 255 : ticksSinceAttack + 1);
+
+        long now = System.currentTimeMillis();
+        long since = lastSampleAtMs == 0L ? 50L : now - lastSampleAtMs;
+        lastSampleAtMs = now;
+
+        boolean swung = swungEmptyThisTick;
+        swungEmptyThisTick = false;
+
+        RotationSample sample = new RotationSample(yaw, pitch, attacked,
+                aimErrorThisTick, consumeTeleport(), ticksSinceAttack, momentThisTick,
+                aim.centreAngle(), aim.edgeAngle(), aim.distance(),
+                aim.targetId(), aim.targetsNear(),
+                swung, onGround, sprintingNow, aim.speed(), since);
         attackedThisTick = false;
         aimErrorThisTick = Double.NaN;
         momentThisTick = null;
@@ -177,6 +254,17 @@ public final class PlayerData {
         }
         long elapsed = System.currentTimeMillis() - airborneSinceMs;
         return (int) Math.min(1200L, Math.max(0L, elapsed / 50L));
+    }
+
+    /** Пустой свинг: пакет анимации руки, за которым не пришла атака.
+     *
+     *  <p>Ставится флагом, а не пишется сразу: тик закрывается следующим
+     *  пакетом движения, и до него неизвестно, прилетит ли за этим свингом
+     *  удар. Сбрасывается тем же тиком, что его прочитал. */
+    public void noteEmptySwing() {
+        if (!attackedThisTick) {
+            swungEmptyThisTick = true;
+        }
     }
 
     public void markAttack(double aimError) {
@@ -323,6 +411,7 @@ public final class PlayerData {
         }
         synchronized (recorded) {
             recorded.clear();
+            recordedTicks.clear();
             recordedContext.clear();
             recordedNames.clear();
         }
@@ -352,17 +441,30 @@ public final class PlayerData {
      *  @return the row's index, for {@link #scoreRecorded} to fill in once the
      *          model has answered for it */
     public int record(List<String> names, double[] values) {
-        return record(names, values, Double.NaN, Double.NaN);
+        return record(names, values, null, Double.NaN, Double.NaN);
     }
 
-    public int record(List<String> names, double[] values, double probability, double buffer) {
+    public int record(List<String> names, double[] values, double[] ticks) {
+        return record(names, values, ticks, Double.NaN, Double.NaN);
+    }
+
+    public int record(List<String> names, double[] values, double[] ticks,
+                      double probability, double buffer) {
         synchronized (recorded) {
             if (recordedNames.isEmpty()) {
                 recordedNames.addAll(names);
             }
             recorded.add(values);
+            recordedTicks.add(ticks == null ? new double[0] : ticks);
             recordedContext.add(new double[]{probability, buffer});
             return recorded.size() - 1;
+        }
+    }
+
+    /** Сырые окна записи, по одному на строку. */
+    public List<double[]> recordedTicks() {
+        synchronized (recorded) {
+            return new ArrayList<>(recordedTicks);
         }
     }
 
@@ -420,6 +522,7 @@ public final class PlayerData {
     public void clearRecorded() {
         synchronized (recorded) {
             recorded.clear();
+            recordedTicks.clear();
             recordedContext.clear();
             recordedNames.clear();
             // Any score still in flight belongs to rows that no longer exist.

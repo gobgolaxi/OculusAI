@@ -12,14 +12,12 @@ import com.comphenix.protocol.events.PacketListener;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import java.util.logging.Level;
 import me.everyone.oculusai.OculusAI;
-import me.everyone.oculusai.player.EntityTracker;
+import me.everyone.oculusai.detection.AimGeometry;
 import me.everyone.oculusai.player.PlayerData;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffectType;
 
 public final class PacketBridge implements Service {
-
-    private static final double EYE_HEIGHT = 1.62D;
 
     private final OculusAI plugin;
     private final ProtocolManager protocolManager = ProtocolLibrary.getProtocolManager();
@@ -33,6 +31,9 @@ public final class PacketBridge implements Service {
     public void enable() {
         listener = new PacketAdapter(plugin, ListenerPriority.HIGHEST,
                 PacketType.Play.Client.USE_ENTITY,
+                // Махнул рукой, никого не ударив. Килоаура обычно машет
+                // только по цели; человек промахивается и бьёт по воздуху.
+                PacketType.Play.Client.ARM_ANIMATION,
                 PacketType.Play.Client.POSITION,
                 PacketType.Play.Client.POSITION_LOOK,
                 PacketType.Play.Client.LOOK,
@@ -75,6 +76,15 @@ public final class PacketBridge implements Service {
 
         PacketType type = event.getPacketType();
 
+        if (type == PacketType.Play.Client.ARM_ANIMATION) {
+            // Флагом, а не записью: тик закрывается следующим пакетом
+            // движения, и до него неизвестно, прилетит ли за этим свингом
+            // атака. Порядок пакетов у клиента - сначала анимация, потом
+            // USE_ENTITY, поэтому к закрытию тика ответ уже есть.
+            data.noteEmptySwing();
+            return;
+        }
+
         if (type == PacketType.Play.Client.USE_ENTITY) {
             if (event.isCancelled()) {
                 return;
@@ -114,40 +124,29 @@ public final class PacketBridge implements Service {
             data.noteGround(player.isOnGround());
             data.noteSprint(player.isSprinting());
             if (type == PacketType.Play.Client.POSITION || type == PacketType.Play.Client.FLYING) {
-                data.addSample(data.lastYaw(), data.lastPitch(), plugin.config().windowTicks());
+                data.addSample(data.lastYaw(), data.lastPitch(),
+                        plugin.config().windowTicks(),
+                        AimGeometry.of(plugin.tracker(), data.entityId(),
+                                data.lastYaw(), data.lastPitch()),
+                        player.isOnGround(), player.isSprinting());
                 return;
             }
             float yaw = event.getPacket().getFloat().readSafely(0) != null ? event.getPacket().getFloat().read(0) : data.lastYaw();
             float pitch = event.getPacket().getFloat().readSafely(1) != null ? event.getPacket().getFloat().read(1) : data.lastPitch();
-            data.addSample(yaw, pitch, plugin.config().windowTicks());
+            data.addSample(yaw, pitch, plugin.config().windowTicks(),
+                    AimGeometry.of(plugin.tracker(), data.entityId(), yaw, pitch),
+                    player.isOnGround(), player.isSprinting());
         }
     }
 
+    /** Угол до цели в тике удара.
+     *
+     *  <p>Арифметика живёт в {@link AimGeometry}: тот же угол считается
+     *  теперь в каждом тике, и два определения одного числа - это стык, на
+     *  котором модель учится вместо поведения. */
     private double aimError(PlayerData data, int targetEntityId) {
-        EntityTracker.Tracked target = plugin.tracker().get(targetEntityId);
-        EntityTracker.Tracked self = plugin.tracker().get(data.entityId());
-        if (target == null || self == null) {
-            return Double.NaN;
-        }
-
-        double eyeY = self.y() + EYE_HEIGHT;
-        double toX = target.x() - self.x();
-        double toY = target.centreY() - eyeY;
-        double toZ = target.z() - self.z();
-        double length = Math.sqrt(toX * toX + toY * toY + toZ * toZ);
-        if (length < 0.1D) {
-            return Double.NaN;
-        }
-
-        double yaw = Math.toRadians(data.lastYaw());
-        double pitch = Math.toRadians(data.lastPitch());
-        double cosPitch = Math.cos(pitch);
-        double lookX = -cosPitch * Math.sin(yaw);
-        double lookY = -Math.sin(pitch);
-        double lookZ = cosPitch * Math.cos(yaw);
-
-        double dot = (toX * lookX + toY * lookY + toZ * lookZ) / length;
-        return Math.toDegrees(Math.acos(Math.max(-1.0D, Math.min(1.0D, dot))));
+        return AimGeometry.angleTo(plugin.tracker().get(data.entityId()),
+                plugin.tracker().get(targetEntityId), data.lastYaw(), data.lastPitch());
     }
 
     private boolean critBlocked(Player player) {

@@ -61,7 +61,18 @@ public final class UploadQueue implements Service {
     public record Batch(String label, String player, String uuid,
                         List<String> featureNames, List<double[]> rows,
                         boolean enabled, String source, String person,
-                        List<double[]> context, int featureVersion) {
+                        List<double[]> context, int featureVersion,
+                        List<double[]> ticks, List<String> tickChannels) {
+
+        /** Партия без сырых окон - так выглядит всё, что писалось до их
+         *  появления, и так же читается с диска старая очередь. */
+        public Batch(String label, String player, String uuid,
+                     List<String> featureNames, List<double[]> rows,
+                     boolean enabled, String source, String person,
+                     List<double[]> context, int featureVersion) {
+            this(label, player, uuid, featureNames, rows, enabled, source, person,
+                    context, featureVersion, List.of(), List.of());
+        }
     }
 
     /** A batch on its way out and the file that carries it. */
@@ -178,7 +189,7 @@ public final class UploadQueue implements Service {
         plugin.api().addSamples(batch.label(), batch.player(), batch.uuid(),
                         batch.featureNames(), batch.rows(), batch.enabled(),
                         batch.source(), batch.person(), batch.context(),
-                        batch.featureVersion())
+                        batch.featureVersion(), batch.ticks(), batch.tickChannels())
                 .whenComplete((response, failure) -> {
                     try {
                         if (response == null) {
@@ -230,6 +241,12 @@ public final class UploadQueue implements Service {
         json.add("samples", numbers(batch.rows()));
         if (batch.context() != null && batch.context().size() == batch.rows().size()) {
             json.add("context", numbers(batch.context()));
+        }
+        if (batch.ticks() != null && batch.ticks().size() == batch.rows().size()) {
+            json.add("ticks", numbers(batch.ticks()));
+            JsonArray channels = new JsonArray();
+            batch.tickChannels().forEach(channels::add);
+            json.add("tick_channels", channels);
         }
         try {
             Files.writeString(file, json.toString(), StandardCharsets.UTF_8);
@@ -283,6 +300,14 @@ public final class UploadQueue implements Service {
             List<double[]> rows = doubles(json.getAsJsonArray("samples"));
             List<double[]> context = json.has("context")
                     ? doubles(json.getAsJsonArray("context")) : List.of();
+            List<double[]> ticks = json.has("ticks")
+                    ? doubles(json.getAsJsonArray("ticks")) : List.of();
+            List<String> channels = new ArrayList<>();
+            if (json.has("tick_channels")) {
+                for (var element : json.getAsJsonArray("tick_channels")) {
+                    channels.add(element.getAsString());
+                }
+            }
             return new Batch(json.get("label").getAsString(),
                     json.get("player").getAsString(),
                     json.has("uuid") ? json.get("uuid").getAsString() : "",
@@ -291,7 +316,8 @@ public final class UploadQueue implements Service {
                     json.has("source") ? json.get("source").getAsString() : "manual",
                     json.has("person") ? json.get("person").getAsString() : "",
                     context,
-                    json.has("feature_version") ? json.get("feature_version").getAsInt() : 5);
+                    json.has("feature_version") ? json.get("feature_version").getAsInt() : 5,
+                    ticks, channels);
         } catch (Exception failure) {
             plugin.getLogger().log(Level.WARNING,
                     "Could not read an unsent capture: " + path.getFileName(), failure);

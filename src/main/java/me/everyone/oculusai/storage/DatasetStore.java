@@ -28,10 +28,10 @@ public final class DatasetStore implements Service {
     public static final String CHEATER = "cheater";
     public static final String LEGIT = "legit";
 
-    /** Колонки окна: вход колоночных моделей. */
-    public static final int SCHEMA_V1 = FeatureSchemas.V1;
-    /** Колонки и сырые тики: вход траекторной модели. */
-    public static final int SCHEMA_V2 = FeatureSchemas.V2;
+    /** Колонки окна: вход колоночных моделей. В панели - OLD. */
+    public static final int SCHEMA_OLD = FeatureSchemas.COLUMNS;
+    /** Колонки и сырые тики: вход траекторной модели. В панели - NEW. */
+    public static final int SCHEMA_NEW = FeatureSchemas.TICKS;
     /** Обе схемы сразу, и это умолчание.
      *
      *  <p>Схем две, различаются они не колонками, а тем, что лежит под
@@ -48,11 +48,11 @@ public final class DatasetStore implements Service {
      *  коммите, уже после того, как бой записан. */
     public static final int SCHEMA_AUTO = -2;
 
-    public static final int FEATURE_VERSION = SCHEMA_V1;
+    public static final int FEATURE_VERSION = SCHEMA_OLD;
     /** Новейшая первой. Только то, во что запись действительно может лечь. */
-    private static final int[] PREFERRED = {SCHEMA_V2, SCHEMA_V1};
+    private static final int[] PREFERRED = {SCHEMA_NEW, SCHEMA_OLD};
 
-    private static final int[] BOTH_SCHEMAS = {SCHEMA_V1, SCHEMA_V2};
+    private static final int[] BOTH_SCHEMAS = {SCHEMA_OLD, SCHEMA_NEW};
 
     public record RosterEntry(UUID uuid, String name, String label, String person) {
     }
@@ -217,8 +217,8 @@ public final class DatasetStore implements Service {
      *
      * <p>Resolves SCHEMA_AUTO against what the service said it accepts. Before
      * the first settings fetch lands the set is empty, and then this answers
-     * v1 - the columns, which every version of the service has understood -
-     * rather than guessing upward at a schema the other side may not know. */
+     * the columns, which every version of the service has understood - rather
+     * than guessing upward at a schema the other side may not know. */
     public int effectiveSchema() {
         if (schema != SCHEMA_AUTO) {
             return schema;
@@ -234,10 +234,10 @@ public final class DatasetStore implements Service {
 
     public static String schemaName(int schema) {
         return switch (schema) {
-            case SCHEMA_V2 -> "v2 (new)";
-            case SCHEMA_BOTH -> "v1 + v2";
+            case SCHEMA_NEW -> "new (v7, with ticks)";
+            case SCHEMA_BOTH -> "old + new";
             case SCHEMA_AUTO -> "auto";
-            default -> "v1 (old)";
+            default -> "old (v6, columns)";
         };
     }
 
@@ -246,8 +246,8 @@ public final class DatasetStore implements Service {
             return -1;
         }
         return switch (value.toLowerCase(Locale.ROOT)) {
-            case "v1", "old" -> SCHEMA_V1;
-            case "v2", "new" -> SCHEMA_V2;
+            case "old", "v6" -> SCHEMA_OLD;
+            case "new", "v7" -> SCHEMA_NEW;
             case "both" -> SCHEMA_BOTH;
             case "auto" -> SCHEMA_AUTO;
             default -> -1;
@@ -349,18 +349,36 @@ public final class DatasetStore implements Service {
 
         List<CompletableFuture<Integer>> sends = new ArrayList<>(BOTH_SCHEMAS.length);
         for (int version : BOTH_SCHEMAS) {
-            // Схема, которой нужны тики, без них не отправляется вовсе.
+            // Схема, которую отправить нельзя, не отправляется вовсе.
             //
-            // Сервис отклонил бы такую запись как 422, а 422 от /samples
-            // неотличим здесь от обрыва связи: батч ушёл бы в очередь
-            // повторов и остался бы в ней навсегда, потому что тики в нём не
-            // появятся. Пропустить половину записи - это потеря одного пула;
-            // отправить её - это вечный цикл.
+            // Обе причины ведут к одному: сервис ответил бы 422, а 422 от
+            // /samples неотличим здесь от обрыва связи - батч ушёл бы в
+            // очередь повторов и остался бы в ней навсегда, потому что
+            // причина отказа сама не исчезнет. Пропустить половину записи -
+            // это потеря одного пула; отправить её - это вечный цикл.
+            //
+            // Первая причина: схеме нужны тики, а их в записи нет.
             if (FeatureSchemas.needsTicks(version)
                     && (ticks.isEmpty() || ticks.size() != rows.size())) {
                 plugin.getLogger().warning("Capture of " + data.name() + " has no raw ticks,"
-                        + " so only " + schemaName(SCHEMA_V1) + " was saved."
+                        + " so only " + schemaName(SCHEMA_OLD) + " was saved."
                         + " The trajectory model learns from nothing here.");
+                continue;
+            }
+            // Вторая: сервис такой схемы не знает. Так выглядит обновлённый
+            // плагин на ещё не обновлённом сервисе, и это нормальное
+            // состояние - они разворачиваются отдельно. Колоночную половину
+            // записи он возьмёт, её понимает любая версия сервиса, а
+            // траекторную просто некуда положить, пока сервис не обновят.
+            //
+            // Пустое множество - это ещё не пришедший ответ настроек, а не
+            // "сервис ничего не умеет": тогда отправляются обе, как раньше.
+            Set<Integer> offered = plugin.api().serviceSchemas();
+            if (!offered.isEmpty() && !offered.contains(version)) {
+                plugin.getLogger().warning("The service does not accept "
+                        + schemaName(version) + " yet, so this capture of " + data.name()
+                        + " was saved without it. Update the service and record again"
+                        + " if you need that pool.");
                 continue;
             }
             UploadQueue.Batch batch = new UploadQueue.Batch(label, data.name(),

@@ -179,42 +179,42 @@ class RunningStatsTest {
     @Test
     @DisplayName("both schemas name the same columns, in the order the service expects")
     void schemasMatchTheService() {
-        List<String> v1 = FeatureSchemas.names(FeatureSchemas.V1);
+        List<String> columns = FeatureSchemas.names(FeatureSchemas.COLUMNS);
         // 16 колонок вращения, 14 удара, затем бегущие среднее и разброс по
         // колонкам вращения - по 16 каждое.
-        assertEquals(62, v1.size());
-        assertEquals("scale_vs_baseline", v1.get(0));
-        assertEquals("crit_rate", v1.get(16));
-        assertEquals("scale_vs_baseline_run_mean", v1.get(30));
-        assertEquals("aim_error_min_run_std", v1.get(61));
+        assertEquals(62, columns.size());
+        assertEquals("scale_vs_baseline", columns.get(0));
+        assertEquals("crit_rate", columns.get(16));
+        assertEquals("scale_vs_baseline_run_mean", columns.get(30));
+        assertEquals("aim_error_min_run_std", columns.get(61));
 
         // Схемы различаются не колонками, а тем, что лежит под строкой:
         // v2 требует сырых тиков, v1 - нет.
-        assertEquals(v1, FeatureSchemas.names(FeatureSchemas.V2));
-        assertFalse(FeatureSchemas.needsTicks(FeatureSchemas.V1));
-        assertTrue(FeatureSchemas.needsTicks(FeatureSchemas.V2));
-        assertTrue(FeatureSchemas.known(FeatureSchemas.V1));
-        assertTrue(FeatureSchemas.known(FeatureSchemas.V2));
-        assertFalse(FeatureSchemas.known(6));
+        assertEquals(columns, FeatureSchemas.names(FeatureSchemas.TICKS));
+        assertFalse(FeatureSchemas.needsTicks(FeatureSchemas.COLUMNS));
+        assertTrue(FeatureSchemas.needsTicks(FeatureSchemas.TICKS));
+        assertTrue(FeatureSchemas.known(FeatureSchemas.COLUMNS));
+        assertTrue(FeatureSchemas.known(FeatureSchemas.TICKS));
+        assertFalse(FeatureSchemas.known(2));
     }
 
     @Test
     @DisplayName("slicing takes columns by name, not by position")
     void slicingIsByName() {
         Map<String, Double> everything = new LinkedHashMap<>();
-        for (String name : FeatureSchemas.names(FeatureSchemas.V1)) {
+        for (String name : FeatureSchemas.names(FeatureSchemas.COLUMNS)) {
             everything.put(name, 1.0D);
         }
         everything.put("attacks_per_second", 9.0D);
 
-        Map<String, Double> sliced = FeatureSchemas.slice(everything, FeatureSchemas.V1);
+        Map<String, Double> sliced = FeatureSchemas.slice(everything, FeatureSchemas.COLUMNS);
         assertEquals(62, sliced.size());
         assertEquals(1.0D, sliced.get("scale_vs_baseline"));
         assertEquals(1.0D, sliced.get("scale_vs_baseline_run_mean"));
         // Выброшенная колонка не возвращается, даже если её кто-то прислал.
         assertEquals(null, sliced.get("attacks_per_second"));
 
-        Map<String, Double> missing = FeatureSchemas.slice(Map.of(), FeatureSchemas.V1);
+        Map<String, Double> missing = FeatureSchemas.slice(Map.of(), FeatureSchemas.COLUMNS);
         assertEquals(62, missing.size());
         assertEquals(0.0D, missing.get("smoothness"));
     }

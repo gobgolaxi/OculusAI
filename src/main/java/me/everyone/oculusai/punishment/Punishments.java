@@ -233,13 +233,27 @@ public final class Punishments implements Service {
     }
 
     /** Runs a configured command from the console, with or without the slash
-     *  the operator may have typed. */
+     *  the operator may have typed.
+     *
+     *  <p>Через global-регион, а не напрямую. На Folia
+     *  {@code dispatchCommand} законен только на потоке, который не владеет
+     *  ни одной сущностью, и с любого другого бросает
+     *  {@code IllegalStateException: Dispatching command async}. Автоматический
+     *  путь это не задевало - он идёт с тик-лупа, а тот и так global, - а
+     *  {@code /oai ban} падал всегда: команда игрока исполняется на потоке его
+     *  региона.
+     *
+     *  <p>Отправка от этого становится отложенной на тик, и это безопасно:
+     *  вызывающий ничего о ней не узнаёт, а вернуть он должен был не её
+     *  результат. Если забрать это назад в прямой вызов, оно сломается только
+     *  на Folia и только на команде оператора - то есть не на тестах. */
     private void run(String command) {
         String withoutSlash = command.startsWith("/") ? command.substring(1) : command;
-        if (!withoutSlash.isBlank()) {
-            plugin.getServer().dispatchCommand(
-                    plugin.getServer().getConsoleSender(), withoutSlash);
+        if (withoutSlash.isBlank()) {
+            return;
         }
+        plugin.platform().onGlobal(() -> plugin.getServer().dispatchCommand(
+                plugin.getServer().getConsoleSender(), withoutSlash));
     }
 
     /** Runs a show on a player: the throw, the frames, the closing burst.

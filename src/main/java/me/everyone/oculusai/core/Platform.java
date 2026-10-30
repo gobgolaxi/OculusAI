@@ -87,6 +87,31 @@ public final class Platform {
         return () -> invoke(task, "cancel", null);
     }
 
+    /** Runs an action once on the thread that owns no entity and no block.
+     *
+     * <p>Нужно тому, что Folia разрешает только там: {@code dispatchCommand}
+     * - именно такой случай, он требует global-поток и бросает
+     * {@code IllegalStateException: Dispatching command async} с любого
+     * другого. Регионального потока при этом достаточно много: команда,
+     * набранная игроком, исполняется на потоке его региона, а не на global.
+     *
+     * <p>Отличается от {@link #globalRepeating} только тем, что выполняется
+     * один раз. На Paper global-региона нет вовсе, и это обычный заход на
+     * главный поток - inline, если мы уже на нём. */
+    public void onGlobal(Runnable action) {
+        if (action == null) {
+            return;
+        }
+        if (!folia) {
+            plugin.mainThread().run(action);
+            return;
+        }
+        Object scheduler = invoke(Bukkit.class, "getGlobalRegionScheduler", null);
+        invoke(scheduler, "run",
+                new Class<?>[] {org.bukkit.plugin.Plugin.class, Consumer.class},
+                plugin, (Consumer<Object>) ignored -> action.run());
+    }
+
     /** Runs an action on the thread that owns this entity, as soon as it can.
      *
      * <p>On Paper that is the main thread, and if the caller is already on it

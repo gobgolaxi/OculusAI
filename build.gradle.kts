@@ -131,8 +131,24 @@ tasks {
         }
     }
 
+    // Ресурспак с логотипом для скорборда. Один и тот же zip едет внутрь jar
+    // (плагин считает по нему SHA-1) и в релиз на GitHub (откуда его качает
+    // клиент), поэтому сборка обязана быть побайтно повторяемой: без
+    // фиксированных дат и порядка у двух сборок разошёлся бы хэш, и клиент
+    // отверг бы пак.
+    val resourcePack by registering(Zip::class) {
+        from("src/main/pack")
+        archiveFileName.set("OculusAI-pack.zip")
+        destinationDirectory.set(layout.buildDirectory.dir("pack"))
+        isPreserveFileTimestamps = false
+        isReproducibleFileOrder = true
+    }
+
     processResources {
         duplicatesStrategy = DuplicatesStrategy.INCLUDE
+        from(resourcePack) {
+            into("pack")
+        }
         // The stamp says which flavour this jar is, and the update check asks
         // the service for a build of that exact flavour. Both are project
         // properties, so Gradle has to be told they are inputs: without this

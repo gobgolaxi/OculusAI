@@ -133,7 +133,7 @@ public final class ApiClient implements Service {
     /** Ответ сервиса на одно окно.
      *
      *  @param flags отклонение каждой группы признаков, имя группы - то, что
-     *               печатается в скобках после Neuro Aim. Что в группу входит,
+     *               печатается в скобках после Neuro. Что в группу входит,
      *               знает только сервис. Пусто - сервис их не считает (старый
      *               или без датасета). */
     public record Prediction(double probability, Map<String, Double> flags) {

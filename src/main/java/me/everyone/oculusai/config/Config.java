@@ -105,6 +105,13 @@ public final class Config implements Service {
     private long replayCombatMs = 4000L;
     private int replayMaxKb = 1024;
 
+    private boolean packEnabled = true;
+    private String packUrl = "";
+    private String packSha1 = "";
+    private boolean packArenaOnly = true;
+    private boolean packRequired = false;
+    private String packPrompt = "";
+
     public Config(OculusAI plugin) {
         this.plugin = plugin;
     }
@@ -248,6 +255,13 @@ public final class Config implements Service {
         replayRadius = Math.max(2, Math.min(32, config.getInt("replay.radius", 10)));
         replayCombatMs = Math.max(1000L, config.getLong("replay.combat-ms", 4000L));
         replayMaxKb = Math.max(64, Math.min(8192, config.getInt("replay.max-kb", 1024)));
+
+        packEnabled = config.getBoolean("resource-pack.enabled", true);
+        packUrl = config.getString("resource-pack.url", "").trim();
+        packSha1 = config.getString("resource-pack.sha1", "").trim();
+        packArenaOnly = !"all".equalsIgnoreCase(config.getString("resource-pack.send-to", "arena").trim());
+        packRequired = config.getBoolean("resource-pack.required", false);
+        packPrompt = config.getString("resource-pack.prompt", "");
 
     }
 
@@ -646,6 +660,34 @@ public final class Config implements Service {
      *  then the oldest frames, because the end is the evidence. */
     public int replayMaxKb() {
         return replayMaxKb;
+    }
+
+    /** Слать ли игрокам ресурспак с логотипом для скорборда. */
+    public boolean packEnabled() {
+        return packEnabled;
+    }
+
+    /** Свой адрес пака; пусто - пак этой версии из релиза на GitHub. */
+    public String packUrl() {
+        return packUrl;
+    }
+
+    /** SHA-1 своего пака в hex; для пака из релиза считается сам. */
+    public String packSha1() {
+        return packSha1;
+    }
+
+    /** Только в мире тестовой арены - единственное место, где логотип виден. */
+    public boolean packArenaOnly() {
+        return packArenaOnly;
+    }
+
+    public boolean packRequired() {
+        return packRequired;
+    }
+
+    public String packPrompt() {
+        return packPrompt;
     }
 
     private Sound parseSound(String value, Sound fallback) {

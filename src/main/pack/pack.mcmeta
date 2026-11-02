@@ -1,0 +1,9 @@
+{
+  "pack": {
+    "description": "OculusAI",
+    "pack_format": 6,
+    "supported_formats": [6, 1000],
+    "min_format": 6,
+    "max_format": 1000
+  }
+}

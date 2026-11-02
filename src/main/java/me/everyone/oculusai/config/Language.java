@@ -53,6 +53,10 @@ public final class Language implements Service {
                     + "<gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| "
                     + "<gray>NoLookHit %nolookhit% <dark_gray>| <gray>Aim %aim% <dark_gray>| "
                     + "<gray>Наказание %punish%";
+    /** Прежнее имя нейросетевой проверки. Строку, где оно стоит нетронутым,
+     *  можно смело заменить новым из jar; переведённую руками - нельзя. */
+    private static final List<String> LEGACY_AIM_NAMES =
+            List.of("Neuro Aim", "<light_purple>Neuro Aim");
     private static final List<String> REMOVED_KEYS = List.of(
             "check-settings.nolookhit",
             "check-settings.hitbox.max-width",
@@ -243,6 +247,15 @@ public final class Language implements Service {
                 || STATUS_WITH_NOLOOKHIT_RU.equals(currentStatus))) {
             lang.set("checks.status", bundledStatus);
             migrated++;
+        }
+
+        for (String key : lang.getKeys(true)) {
+            String current = lang.isString(key) ? lang.getString(key) : null;
+            String bundled = defaults.getString(key);
+            if (LEGACY_AIM_NAMES.contains(current) && bundled != null && !bundled.equals(current)) {
+                lang.set(key, bundled);
+                migrated++;
+            }
         }
 
         // Old alert lines only printed %detail%. Keep a custom translation,

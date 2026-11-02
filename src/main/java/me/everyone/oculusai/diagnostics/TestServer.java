@@ -352,8 +352,11 @@ public final class TestServer implements Service, Listener {
         }
         boolean recording = plugin.datasets().collecting();
         Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
+        // Логотип слева от заголовка - только тем, у кого загружен пак с ним:
+        // у остальных на его месте был бы пустой квадрат.
         Objective objective = board.registerNewObjective("oai_test", "dummy",
-                plugin.theme().title(recording ? "Recording" : "Test Server"));
+                plugin.resourcePack().logo(player)
+                        + plugin.theme().title(recording ? "Recording" : "Test Server"));
         objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
         if (recording) {

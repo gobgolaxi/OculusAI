@@ -204,7 +204,7 @@ settings:
     disabled: "<gray>State: <red>off"
     hint: "<gray>Hits through walls and closed doors."
   aim:
-    name: "<light_purple>Neuro Aim"
+    name: "<light_purple>Neuro"
     enabled: "<gray>State: <green>on"
     disabled: "<gray>State: <red>off"
     hint: "<gray>The neural aim check."
@@ -264,7 +264,7 @@ history:
     punish: "punished"
     alert: "alerted"
     check-wall: "Wall"
-    check-aim: "Neuro Aim"
+    check-aim: "Neuro"
     check-hitbox: "HitBox"
   unknown-player: "<red>No stored history for <white>%player%<red>."
   reading:
@@ -511,7 +511,7 @@ checks:
     analysis: "Analysis"
     checks: "Attack checks"
     wall: "Wall"
-    aim: "Neuro Aim"
+    aim: "Neuro"
     hitbox: "HitBox"
     punish: "Punishment"
 update:
@@ -571,9 +571,9 @@ check:
     hitbox: "attack outside the target hitbox"
   name:
     wall: "Wall"
-    aim: "Neuro Aim"
+    aim: "Neuro"
     hitbox: "HitBox"
-  # Which feature group stood out most in the windows behind a Neuro Aim alert.
+  # Which feature group stood out most in the windows behind a Neuro alert.
   flag:
     Rotation: "Rotation"
     Aim: "Aim"

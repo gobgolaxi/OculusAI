@@ -102,7 +102,8 @@ fi
 gh release create "v$next" --title "$title" --latest "${notes_arg[@]}" \
     "build/libs/OculusAI-$next-1.21.11.jar" \
     "build/libs/OculusAI-$next-1.16.5.jar" \
-    "build/libs/OculusAI-$next-plugin-src.zip"
+    "build/libs/OculusAI-$next-plugin-src.zip" \
+    "build/pack/OculusAI-pack.zip"
 
 echo "==> готово: v$next"
 echo "    плагины узнают о нём после ./oaiapi/deploy.sh"

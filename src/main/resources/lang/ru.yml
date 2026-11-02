@@ -202,7 +202,7 @@ settings:
     disabled: "<gray>Состояние: <red>выключен"
     hint: "<gray>Удары через стены и закрытые двери."
   aim:
-    name: "<light_purple>Neuro Aim"
+    name: "<light_purple>Neuro"
     enabled: "<gray>Состояние: <green>включён"
     disabled: "<gray>Состояние: <red>выключен"
     hint: "<gray>Нейросетевая проверка прицела."
@@ -262,7 +262,7 @@ history:
     punish: "наказан"
     alert: "алерт"
     check-wall: "Wall"
-    check-aim: "Neuro Aim"
+    check-aim: "Neuro"
     check-hitbox: "HitBox"
   unknown-player: "<red>Истории для <white>%player%<red> не сохранено."
   reading:
@@ -509,7 +509,7 @@ checks:
     analysis: "Анализ"
     checks: "Проверки ударов"
     wall: "Wall"
-    aim: "Neuro Aim"
+    aim: "Neuro"
     hitbox: "HitBox"
     punish: "Наказание"
 update:
@@ -569,9 +569,9 @@ check:
     hitbox: "удар вне хитбокса цели"
   name:
     wall: "Wall"
-    aim: "Neuro Aim"
+    aim: "Neuro"
     hitbox: "HitBox"
-  # Какая группа признаков сильнее всего выбилась в окнах, за которые сработал Neuro Aim.
+  # Какая группа признаков сильнее всего выбилась в окнах, за которые сработал Neuro.
   flag:
     Rotation: "Rotation"
     Aim: "Aim"

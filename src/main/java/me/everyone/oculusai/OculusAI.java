@@ -55,6 +55,7 @@ public final class OculusAI extends JavaPlugin {
     private Bypass bypass;
     private Storage storage;
     private Ui ui;
+    private me.everyone.oculusai.ui.ResourcePack resourcePack;
     private Alerts alerts;
     private Punishments punishments;
     private BanCounter banCounter;
@@ -102,6 +103,7 @@ public final class OculusAI extends JavaPlugin {
         checks = register(new Checks(this));
         detection = register(new Detection(this));
         ui = register(new Ui(this));
+        resourcePack = register(new me.everyone.oculusai.ui.ResourcePack(this));
         packets = register(new PacketBridge(this));
         commands = register(new Commands(this));
         npcs = register(new Npcs(this));
@@ -323,6 +325,10 @@ public final class OculusAI extends JavaPlugin {
 
     public Npcs npcs() {
         return npcs;
+    }
+
+    public me.everyone.oculusai.ui.ResourcePack resourcePack() {
+        return resourcePack;
     }
 
     public TestServer testServer() {

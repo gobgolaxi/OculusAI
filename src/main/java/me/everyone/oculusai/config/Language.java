@@ -184,6 +184,27 @@ public final class Language implements Service {
         }
     }
 
+    /** Меняет нетронутое прежнее имя нейросетевой проверки на новое из jar.
+     *  Возвращает, сколько строк заменено. */
+    static int migrateAimNames(YamlConfiguration lang, YamlConfiguration defaults) {
+        int migrated = 0;
+        for (String key : lang.getKeys(true)) {
+            // Секции и числа пропускаются до contains: List.of на null не
+            // отвечает false, а бросает NPE - и плагин не включался вовсе.
+            if (!lang.isString(key)) {
+                continue;
+            }
+            String current = lang.getString(key);
+            String bundled = defaults.getString(key);
+            if (current != null && LEGACY_AIM_NAMES.contains(current)
+                    && bundled != null && !bundled.equals(current)) {
+                lang.set(key, bundled);
+                migrated++;
+            }
+        }
+        return migrated;
+    }
+
     private void adoptNewKeys(File file) {
         if (defaults == null || lang == null || !file.isFile()) {
             return;
@@ -249,14 +270,7 @@ public final class Language implements Service {
             migrated++;
         }
 
-        for (String key : lang.getKeys(true)) {
-            String current = lang.isString(key) ? lang.getString(key) : null;
-            String bundled = defaults.getString(key);
-            if (LEGACY_AIM_NAMES.contains(current) && bundled != null && !bundled.equals(current)) {
-                lang.set(key, bundled);
-                migrated++;
-            }
-        }
+        migrated += migrateAimNames(lang, defaults);
 
         // Old alert lines only printed %detail%. Keep a custom translation,
         // but append the metrics placeholder when it has no metrics at all.

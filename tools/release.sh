@@ -81,6 +81,14 @@ for flavour in "${FLAVOURS[@]}"; do
     echo "    $flavour  $(stat -c%s "$jar") б"
 done
 
+# Пак с логотипом клиент качает с сервиса, а плагин сверяет его с копией в
+# jar. Кладём тот же zip туда, откуда его выложит деплой сервиса, - иначе
+# после первого изменения пака хэши разойдутся и клиент его отвергнет.
+if [ -d "$HERE/api" ]; then
+    mkdir -p "$HERE/api/pack"
+    cp build/pack/OculusAI-pack.zip "$HERE/api/pack/OculusAI-pack.zip"
+fi
+
 git add gradle.properties
 git commit -q -m "Версия $next"
 git tag "v$next"

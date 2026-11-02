@@ -29,16 +29,16 @@ import org.bukkit.event.player.PlayerResourcePackStatusEvent;
  *  только тем, чей клиент ответил, что пак загружен.
  *
  *  <p>Пак лежит внутри jar, и по нему же считается SHA-1. Клиент качает его
- *  из релиза на GitHub той же версии: в релиз уходит тот же самый zip, сборка
- *  у него повторяемая, так что хэш сходится. */
+ *  с сервиса OculusAI: туда выкладывается тот же самый zip, сборка у него
+ *  повторяемая, так что хэш сходится. */
 public final class ResourcePack implements Service, Listener {
 
     /** Символ, которому в паке назначен логотип. */
     public static final String LOGO = "";
 
     private static final String BUNDLED = "pack/OculusAI-pack.zip";
-    private static final String RELEASE_URL =
-            "https://github.com/gobgolaxi/OculusAI/releases/download/v%s/OculusAI-pack.zip";
+    /** Эндпоинт пака на сервисе; адрес сервиса - api.url. */
+    private static final String PACK_PATH = "/api/v1/resource-pack.zip";
     /** Свой id у пака, чтобы на 1.20.3+ он лёг рядом с паком сервера, а не
      *  вместо него. Постоянный: клиент кэширует пак по нему. */
     private static final UUID ID = UUID.nameUUIDFromBytes(
@@ -80,13 +80,13 @@ public final class ResourcePack implements Service, Listener {
     }
 
     private void resolve() {
-        String custom = plugin.config().packUrl();
-        if (!custom.isEmpty()) {
-            url = custom;
-            hash = hex(plugin.config().packSha1());
+        String configured = plugin.config().packUrl();
+        url = configured.isEmpty() ? plugin.config().apiUrl() + PACK_PATH : configured;
+        String sha1 = plugin.config().packSha1();
+        if (!"auto".equalsIgnoreCase(sha1)) {
+            hash = hex(sha1);
             return;
         }
-        url = String.format(RELEASE_URL, plugin.buildVersion());
         hash = bundledHash();
         if (hash == null) {
             // Без хэша клиент пак примет, но не сможет закэшировать, а

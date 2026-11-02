@@ -107,7 +107,7 @@ public final class Config implements Service {
 
     private boolean packEnabled = true;
     private String packUrl = "";
-    private String packSha1 = "";
+    private String packSha1 = "auto";
     private boolean packArenaOnly = true;
     private boolean packRequired = false;
     private String packPrompt = "";
@@ -258,7 +258,7 @@ public final class Config implements Service {
 
         packEnabled = config.getBoolean("resource-pack.enabled", true);
         packUrl = config.getString("resource-pack.url", "").trim();
-        packSha1 = config.getString("resource-pack.sha1", "").trim();
+        packSha1 = config.getString("resource-pack.sha1", "auto").trim();
         packArenaOnly = !"all".equalsIgnoreCase(config.getString("resource-pack.send-to", "arena").trim());
         packRequired = config.getBoolean("resource-pack.required", false);
         packPrompt = config.getString("resource-pack.prompt", "");
@@ -667,12 +667,12 @@ public final class Config implements Service {
         return packEnabled;
     }
 
-    /** Свой адрес пака; пусто - пак этой версии из релиза на GitHub. */
+    /** Адрес пака; пусто - эндпоинт пака на сервисе из api.url. */
     public String packUrl() {
         return packUrl;
     }
 
-    /** SHA-1 своего пака в hex; для пака из релиза считается сам. */
+    /** SHA-1 пака в hex; {@code auto} - хэш пака, вшитого в jar; пусто - без проверки. */
     public String packSha1() {
         return packSha1;
     }

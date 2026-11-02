@@ -16,6 +16,7 @@ import me.everyone.oculusai.detection.FeatureExtractor;
 import me.everyone.oculusai.detection.FeatureSchemas;
 import me.everyone.oculusai.detection.FeatureVector;
 import me.everyone.oculusai.detection.RotationSample;
+import me.everyone.oculusai.network.ApiClient;
 import me.everyone.oculusai.player.PlayerData;
 import org.bukkit.entity.Player;
 
@@ -250,17 +251,18 @@ public final class Detection implements Service {
         // в настройках: 512 чисел на запрос, которые колоночная модель не
         // смотрит, - это трафик раз в секунду на каждого бойца.
         boolean wantsTicks = plugin.api().predictWantsTicks();
-        CompletableFuture<Double> answer = plugin.api().predict(data.uuid(), features,
+        CompletableFuture<ApiClient.Prediction> answer = plugin.api().predict(data.uuid(), features,
                 wantsTicks ? ticks : null, wantsTicks ? TICK_CHANNELS.size() : 0);
-        answer.thenAccept(probability -> {
-            if (probability == null || Double.isNaN(probability)) {
+        answer.thenAccept(prediction -> {
+            if (prediction == null || Double.isNaN(prediction.probability())) {
                 return;
             }
+            double probability = prediction.probability();
             plugin.mainThread().run(() -> {
                 if (!data.recording() && probability < plugin.config().suspicion()) {
                     data.recordScale(scale);
                 }
-                accept(data, probability);
+                accept(data, probability, prediction.flags());
                 // After accept(), so the buffer on the row is the buffer this
                 // window produced rather than the one it started from. The
                 // service derives peak_buffer from this column: taken before,
@@ -301,14 +303,20 @@ public final class Detection implements Service {
         return total;
     }
 
-    private void accept(PlayerData data, double probability) {
+    private void accept(PlayerData data, double probability, Map<String, Double> flags) {
         // The buffer integrates the smoothed reading, not the raw one. Recording
         // still gets the raw value - a session is a record of what was measured
         // - but the thing that decides a kick should not be swayed by one
         // degenerate window. This path never depends on mathEnabled: that flag
         // only chooses which probability a live display prints.
         data.rawProbability(probability);
-        data.applyProbability(data.smooth(probability),
+        double smoothed = data.smooth(probability);
+        // Причина считается только по окнам, которые буфер поднимают: за них и
+        // будет алерт.
+        if (smoothed >= plugin.config().suspicion()) {
+            data.noteFlags(flags, probability);
+        }
+        data.applyProbability(smoothed,
                 plugin.config().suspicion(),
                 plugin.config().gain(),
                 plugin.config().decay(),

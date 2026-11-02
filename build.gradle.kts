@@ -97,6 +97,12 @@ tasks {
         // адресу, так что половина запросов получала бы 001.
         jvmArgs("-Xms2G", "-Xmx2G", "-Djava.net.preferIPv4Stack=true")
         minecraftVersion(mcVersion)
+        // Те же двое, что у runFolia: ProtocolLib - жёсткая зависимость, а без
+        // LuckPerms на стенде не выдать ноды с `default: false`.
+        downloadPlugins {
+            hangar("ProtocolLib", "5.4.0")
+            url("https://download.luckperms.net/1675/bukkit/loader/LuckPerms-Bukkit-5.5.88.jar")
+        }
     }
 
     named<xyz.jpenilla.runpaper.task.RunServer>("runFolia") {

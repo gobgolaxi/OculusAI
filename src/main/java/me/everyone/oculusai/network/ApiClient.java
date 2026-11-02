@@ -130,8 +130,17 @@ public final class ApiClient implements Service {
      *  that is not small - twenty ticks on six channels is a hundred and
      *  twenty numbers against seventeen columns - so it is sent only when
      *  there is a window to send. */
-    public CompletableFuture<Double> predict(UUID player, Map<String, Double> features,
-                                             double[] ticks, int tickChannels) {
+    /** Ответ сервиса на одно окно.
+     *
+     *  @param flags отклонение каждой группы признаков, имя группы - то, что
+     *               печатается в скобках после Neuro Aim. Что в группу входит,
+     *               знает только сервис. Пусто - сервис их не считает (старый
+     *               или без датасета). */
+    public record Prediction(double probability, Map<String, Double> flags) {
+    }
+
+    public CompletableFuture<Prediction> predict(UUID player, Map<String, Double> features,
+                                                 double[] ticks, int tickChannels) {
         JsonObject body = new JsonObject();
         JsonObject values = new JsonObject();
         features.forEach(values::addProperty);
@@ -152,9 +161,18 @@ public final class ApiClient implements Service {
 
         return postVoting("/predict", body).thenApply(response -> {
             if (response == null || !response.has("probability")) {
-                return Double.NaN;
+                return null;
             }
-            return response.get("probability").getAsDouble();
+            Map<String, Double> flags = new java.util.LinkedHashMap<>();
+            if (response.has("flags") && response.get("flags").isJsonObject()) {
+                for (Map.Entry<String, com.google.gson.JsonElement> entry
+                        : response.getAsJsonObject("flags").entrySet()) {
+                    if (entry.getValue().isJsonPrimitive()) {
+                        flags.put(entry.getKey(), entry.getValue().getAsDouble());
+                    }
+                }
+            }
+            return new Prediction(response.get("probability").getAsDouble(), flags);
         });
     }
 

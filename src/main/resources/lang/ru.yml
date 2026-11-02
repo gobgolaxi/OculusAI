@@ -571,3 +571,10 @@ check:
     wall: "Wall"
     aim: "Neuro Aim"
     hitbox: "HitBox"
+  # Какая группа признаков сильнее всего выбилась в окнах, за которые сработал Neuro Aim.
+  flag:
+    Rotation: "Rotation"
+    Aim: "Aim"
+    Hits: "Hits"
+    Crits: "Crits"
+    SprintReset: "SprintReset"

@@ -13,6 +13,8 @@ libs/
 # the admin credentials.
 oaiapi/
 oaiapi_backup/
+# Здесь сервис лежит под именем api/ - то же самое, в публичный репо нельзя.
+api/
 
 # Collected data and fitted models are per-server, never shared.
 **/data/

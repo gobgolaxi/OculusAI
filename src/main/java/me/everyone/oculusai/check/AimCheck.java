@@ -52,6 +52,11 @@ public final class AimCheck implements PlayerCheck {
     }
 
     @Override
+    public String flag(PlayerData data) {
+        return data.strongestFlag();
+    }
+
+    @Override
     public CheckResult test(PlayerData data) {
         if (!plugin.config().checkAimEnabled() || data.buffer() < plugin.config().alertAt()) {
             return CheckResult.pass();

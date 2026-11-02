@@ -123,6 +123,10 @@ public final class Alerts implements Service {
     private void deliver(PlayerData data, Check check, CheckResult result, boolean test) {
         String detail = Msg.strip(result.detail());
         String checkName = plugin.lang().textOr("check.name." + check.id(), check.id());
+        String flag = check.flag(data);
+        if (flag != null) {
+            checkName += " (" + plugin.lang().textOr("check.flag." + flag, flag) + ")";
+        }
         String symbol = plugin.config().alertSymbol();
         boolean metrics = check.showsMetrics();
         String message = plugin.config().prefix() + plugin.lang().text(
@@ -153,9 +157,10 @@ public final class Alerts implements Service {
         }
 
         send(message, true);
-        plugin.history().note(data.uuid(), data.name(), "check-" + check.id(), detail);
+        String noted = flag == null ? detail : "[" + flag + "] " + detail;
+        plugin.history().note(data.uuid(), data.name(), "check-" + check.id(), noted);
         plugin.getLogger().warning((test ? "Test check " : "Check ") + check.id()
-                + " failed for " + data.name() + ": " + detail);
+                + " failed for " + data.name() + ": " + noted);
         if (check.reportsToService()) {
             plugin.api().reportAlert(data.name(), data.uuid().toString(),
                     data.probability(), data.buffer());

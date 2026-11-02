@@ -46,4 +46,10 @@ public interface Check {
     default boolean showsMetrics() {
         return false;
     }
+
+    /** Ключ уточнения в скобках после имени проверки ({@code check.flag.<key>}),
+     *  например Rotation у Neuro Aim. {@code null} - без скобок. */
+    default String flag(me.everyone.oculusai.player.PlayerData data) {
+        return null;
+    }
 }

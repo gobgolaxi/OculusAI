@@ -42,6 +42,10 @@ public final class PlayerData {
     private final Deque<Double> scaleHistory = new ArrayDeque<>();
     private final Deque<AttackMoment> attackHistory = new ArrayDeque<>();
     private final RunningStats running;
+    /** Накопленные оценки групп признаков от сервиса (Rotation, Hits...) за
+     *  окна, которые поднимали буфер. Живут и сбрасываются вместе с буфером -
+     *  причина алерта должна говорить о том же отрезке боя. */
+    private final java.util.Map<String, Double> flagEvidence = new java.util.HashMap<>();
 
     private volatile double buffer;
     private volatile double probability;
@@ -355,6 +359,38 @@ public final class PlayerData {
         }
     }
 
+    /** Окно, поднимавшее буфер: его отклонения по группам ложатся в общий
+     *  счёт с весом вероятности. Старые окна затухают, так что причина
+     *  следует за тем, что игрок делает сейчас. */
+    public void noteFlags(java.util.Map<String, Double> scores, double weight) {
+        if (scores == null || scores.isEmpty()) {
+            return;
+        }
+        synchronized (flagEvidence) {
+            flagEvidence.replaceAll((name, value) -> value * 0.85D);
+            scores.forEach((name, score) -> {
+                if (score != null && Double.isFinite(score)) {
+                    flagEvidence.merge(name, score * weight, Double::sum);
+                }
+            });
+        }
+    }
+
+    /** Группа признаков, сильнее всех выбившаяся за текущий буфер, или null. */
+    public String strongestFlag() {
+        synchronized (flagEvidence) {
+            String best = null;
+            double top = 0.0D;
+            for (java.util.Map.Entry<String, Double> entry : flagEvidence.entrySet()) {
+                if (entry.getValue() > top) {
+                    top = entry.getValue();
+                    best = entry.getKey();
+                }
+            }
+            return best;
+        }
+    }
+
     public void recordScale(double scale) {
         if (scale <= 0.0D) {
             return;
@@ -582,6 +618,9 @@ public final class PlayerData {
     public void resetBuffer() {
         buffer = 0.0D;
         probabilitySmoothing.reset();
+        synchronized (flagEvidence) {
+            flagEvidence.clear();
+        }
         synchronized (bufferHistory) {
             bufferHistory.clear();
         }

@@ -52,6 +52,9 @@ public final class PlayerData {
     /** The model's answer before smoothing or the buffer. /oai math shows this
      *  instead of {@link #probability}, which stays smoothed. */
     private volatile double rawProbability;
+    /** Отклонение каждой группы признаков в последнем окне, как его прислал
+     *  сервис. Пишется на каждом окне, а не только на подозрительных. */
+    private volatile java.util.Map<String, Double> lastGroups = java.util.Map.of();
     private volatile long lastProbabilityMs;
     private volatile long lastAttackMs;
     private volatile int windowsAnalysed;
@@ -594,6 +597,14 @@ public final class PlayerData {
         return rawProbability;
     }
 
+    public void lastGroups(java.util.Map<String, Double> groups) {
+        lastGroups = groups == null ? java.util.Map.of() : java.util.Map.copyOf(groups);
+    }
+
+    public java.util.Map<String, Double> lastGroups() {
+        return lastGroups;
+    }
+
     /** The probability a live display should print: the raw model answer in
      *  raw mode, the smoothed one otherwise. */
     public double displayProbability(boolean raw) {
@@ -631,6 +642,7 @@ public final class PlayerData {
         resetBuffer();
         probability = 0.0D;
         rawProbability = 0.0D;
+        lastGroups = java.util.Map.of();
         lastProbabilityMs = 0L;
         lastAttackMs = 0L;
         windowsAnalysed = 0;

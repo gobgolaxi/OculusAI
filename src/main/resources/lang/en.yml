@@ -30,7 +30,6 @@ help:
     data: "Record and label training data."
     dashboard: "Open the dataset and model dashboard."
     reload: "Re-read config.yml."
-    checks: "Open check settings or toggle checks."
     npc: "Spawn a sparring dummy that attacks you."
 theme:
   aurora: "Aurora"
@@ -268,6 +267,7 @@ history:
     check-hitbox: "HitBox"
   unknown-player: "<white>No stored history for <accent>%player%<white>."
   reading:
+    summary: "<white>Prob %probability% <dark_gray>| <white>Buffer %buffer%"
     time: "<gray>When: <white>%value%"
     probability: "<gray>Prob: <white>%value%"
     buffer: "<gray>Buffer: <white>%value%<dark_gray>/%max%"
@@ -328,24 +328,12 @@ setup:
   how: "<white>Get a key and bind this server:"
   hover: "<white>Click to open"
   command: "<white>Or right here: <accent>%value%"
-report:
-  usage: "<white>Usage: <accent>%value%"
-  sent: "<white>Report on <accent>%player%<white> sent to the panel."
-  no-reason: "no reason given"
 connect:
   open: "<white>Link to bind:"
   hover: "<white>Click to open"
   failed: "<white>The service did not answer. Check <accent>api.url<white> in config.yml."
   expired: "<white>The link expired. Run <accent>/oai connect<white> again."
   done: "<white>Server connected. The key is saved and bound to <accent>%address%<white>."
-guide:
-  title: "<white>How to use"
-  what: "<white>AI anticheat for aim. It watches fights and scores them."
-  watch: "<accent>/oai monitor<white> - live list only for you, red dot = suspicious."
-  check: "<accent>/oai prob player<white> - follow one player closely."
-  act: "<accent>/oai journal<white> - what already triggered. <accent>/oai history player<white> - past readings."
-  numbers: "<white>Percent is this moment, the bar is the buffer. Alert at <accent>%alert%<white>, punish at <accent>%punish%<white>."
-  test: "<accent>/oai npc<white> - spawn a dummy and try it yourself."
 monitor-cmd:
   empty: "<dark_gray>Nothing yet."
   more: "<dark_gray>+%value% more"
@@ -407,11 +395,6 @@ kickanim:
   firework: "Firework"
   wither: "Wither"
   random: "Random"
-animations:
-  current: "<white>Punishment effect: <accent>%value%<white>."
-  list: "<white>Available:"
-  set: "<white>Punishment effect: <accent>%value%<white>."
-  unknown: "<white>No such effect: <accent>%value%<white>."
 checks-menu:
   title: "Checks"
   header: "<aqua>Checks"
@@ -497,21 +480,6 @@ check-settings:
     max-angle:
       name: "<aqua>Look tolerance"
       hint: "<gray>Allowed angle between the look and the target hitbox. Covers the attack packet arriving before the look packet."
-checks:
-  usage: "<white>Usage: <accent>%value%"
-  status: "<white>Analysis <accent>%analysis%<white> | Attacks <accent>%checks%<white> | Wall <accent>%wall%<white> | HitBox <accent>%hitbox%<white> | Aim <accent>%aim%<white> | Punishment <accent>%punish%"
-  enabled: "<accent>%name%<white> enabled."
-  disabled: "<accent>%name%<white> disabled."
-  state:
-    enabled: "on"
-    disabled: "off"
-  name:
-    analysis: "Analysis"
-    checks: "Attack checks"
-    wall: "Wall"
-    aim: "Neuro"
-    hitbox: "HitBox"
-    punish: "Punishment"
 update:
   available: "<white>Update the plugin version"
   staged: "<white>Version <accent>%version%<white> is downloaded — it is applied on the next restart."

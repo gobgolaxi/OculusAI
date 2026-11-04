@@ -310,6 +310,7 @@ public final class Detection implements Service {
         // degenerate window. This path never depends on mathEnabled: that flag
         // only chooses which probability a live display prints.
         data.rawProbability(probability);
+        data.lastGroups(flags);
         double smoothed = data.smooth(probability);
         // Причина считается только по окнам, которые буфер поднимают: за них и
         // будет алерт.

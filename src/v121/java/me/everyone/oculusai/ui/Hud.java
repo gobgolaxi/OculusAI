@@ -1028,6 +1028,10 @@ public final class Hud implements Service {
         placeholders.put("bar", Msg.bar(fraction, barWidth));
         placeholders.put("arrow", arrow(target));
         placeholders.put("probability", Msg.probability(shownProbability(target)));
+        var readings = target.readings();
+        placeholders.put("avg", me.everyone.oculusai.util.Values.average(readings));
+        placeholders.put("recent", me.everyone.oculusai.util.Values.recent(readings));
+        placeholders.put("groups", me.everyone.oculusai.util.Values.groups(target.lastGroups()));
         placeholders.put("buffer", Msg.round(target.buffer(), 1));
         placeholders.put("max_buffer", Msg.round(plugin.config().bufferMax(), 0));
         placeholders.put("player", target.name());

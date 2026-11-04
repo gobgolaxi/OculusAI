@@ -5,15 +5,6 @@
 alert:
   hover:
   - <gray>Нажми, чтобы следить за <white>%player%
-animations:
-  current:
-  - '<gray>Анимация наказания: <white>%value%<gray>.'
-  list:
-  - 'Доступны:'
-  set:
-  - '<green>Анимация наказания: <white>%value%<green>.'
-  unknown:
-  - '<red>Нет такой анимации: <white>%value%<red>.'
 bypass:
   disabled:
   - <green>Античит снова включён для <white>%player%<green>.
@@ -48,25 +39,6 @@ check:
   test-line:
   - <dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
   - <dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%
-checks:
-  disabled:
-  - <gray>%name% выключен.
-  enabled:
-  - <green>%name% включён.
-  name:
-    aim:
-    - Neuro Aim
-  state:
-    disabled:
-    - <red>выкл
-    enabled:
-    - <green>вкл
-  status:
-  - <gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Наказание %punish%
-  - <gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>NoLookHit %nolookhit% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Наказание %punish%
-  - <gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Наказание %punish%
-  usage:
-  - '<red>Использование: <white>%value%'
 command:
   no-permission:
   - <red>У тебя нет прав.
@@ -109,20 +81,6 @@ forget:
   - '<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> <white>0%case%%dropped%<gray>. Подозрение начинается заново.'
   usage:
   - '<red>Использование: <white>%value%'
-guide:
-  act:
-  - <white>/oai journal<gray> - что уже сработало. <white>/oai history ник<gray> - прошлые показания.
-  check:
-  - <white>/oai prob ник<gray> - следить за одним игроком.
-  numbers:
-  - Проценты - это сейчас, полоска - буфер. Алерт на <white>%alert%<gray>, наказание на <white>%punish%<gray>.
-  test:
-  - <white>/oai npc<gray> - заспавнить манекен и проверить самому.
-  watch:
-  - <white>/oai monitor<gray> - живой список только для тебя, красная точка = подозрительно.
-  - <white>/oai monitor<gray> - живой список, красная точка = подозрительно.
-  what:
-  - ИИ-античит по аиму. Смотрит бои и оценивает их.
 help:
   header:
   - <gray>версия <white>%version% <dark_gray>- <gray>сервис <white>%status%
@@ -213,11 +171,6 @@ prob:
 reload:
   done:
   - <green>Перезагружено <gray>за <white>%value%мс<gray>.
-report:
-  sent:
-  - <gray>Жалоба на <white>%player%<gray> отправлена в панель.
-  usage:
-  - '<red>Использование: <white>%value%'
 sessions:
   deleted:
   - <gray>Удалено <white>%value%

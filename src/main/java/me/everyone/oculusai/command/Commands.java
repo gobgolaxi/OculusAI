@@ -10,14 +10,10 @@ import java.util.Map;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.command.SubCommand;
 import me.everyone.oculusai.command.sub.BypassCommand;
-import me.everyone.oculusai.command.sub.AnimationsCommand;
-import me.everyone.oculusai.command.sub.ChecksCommand;
 import me.everyone.oculusai.command.sub.ConnectCommand;
 import me.everyone.oculusai.command.sub.DashboardCommand;
 import me.everyone.oculusai.command.sub.DataCommand;
-import me.everyone.oculusai.command.sub.DiagCommand;
 import me.everyone.oculusai.command.sub.ForgetCommand;
-import me.everyone.oculusai.command.sub.GuideCommand;
 import me.everyone.oculusai.command.sub.HelpCommand;
 import me.everyone.oculusai.command.sub.HistoryCommand;
 import me.everyone.oculusai.command.sub.JournalCommand;
@@ -28,7 +24,6 @@ import me.everyone.oculusai.command.sub.PlayerCommand;
 import me.everyone.oculusai.command.sub.ProbCommand;
 import me.everyone.oculusai.command.sub.PunishCommand;
 import me.everyone.oculusai.command.sub.ReloadCommand;
-import me.everyone.oculusai.command.sub.ReportCommand;
 import me.everyone.oculusai.command.sub.UpdateCommand;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -51,7 +46,6 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
     public void enable() {
         subCommands.clear();
         subCommands.add(new HelpCommand(plugin, this));
-        subCommands.add(new GuideCommand(plugin));
         subCommands.add(new JournalCommand(plugin));
         subCommands.add(new HistoryCommand(plugin));
         subCommands.add(new ProbCommand(plugin));
@@ -63,13 +57,9 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
         subCommands.add(PunishCommand.kick(plugin));
         subCommands.add(PunishCommand.ban(plugin));
         subCommands.add(new DataCommand(plugin));
-        subCommands.add(new ReportCommand(plugin));
         subCommands.add(new NpcCommand(plugin));
         subCommands.add(new ConnectCommand(plugin));
         subCommands.add(new DashboardCommand(plugin));
-        subCommands.add(new ChecksCommand(plugin));
-        subCommands.add(new AnimationsCommand(plugin));
-        subCommands.add(new DiagCommand(plugin));
         subCommands.add(new UpdateCommand(plugin));
         subCommands.add(new ReloadCommand(plugin));
 

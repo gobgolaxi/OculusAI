@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.util.Msg;
-import me.everyone.oculusai.util.Values;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -29,10 +28,6 @@ public final class Monitor implements Service {
     private static final int HEADER_EVERY = 15;
 
     private static final int MAX_ROWS = 12;
-    private static final int BAR_WIDTH = 10;
-    /** The pvp feed carries a name, two numbers and a bar on one chat line, so
-     *  its bar is shorter than the one in the padded list. */
-    private static final int PVP_BAR_WIDTH = 8;
 
     private static final String CONSOLE = "console";
     /** A tiny state file rather than config.yml: saving Bukkit's config on
@@ -294,25 +289,26 @@ public final class Monitor implements Service {
         }
     }
 
-    /** The coloured dot both rows start with: grey below the alert line,
-     *  gold over it, red once the buffer is at punishing level. */
-    private String dot(PlayerData data) {
-        if (data.buffer() >= plugin.config().punishAt()) {
-            return "<red>\u25cf";
-        }
-        return data.buffer() >= plugin.config().alertAt() ? "<gold>\u25cf" : "<dark_gray>\u25cf";
-    }
-
-    /** How full the buffer is, 0..1, for the bar. */
-    private double fraction(PlayerData data) {
-        double max = plugin.config().bufferMax();
-        return max > 0.0D ? data.buffer() / max : 0.0D;
-    }
-
+    /** Префикс античита, модель, ник и показание числом в цвете детекта. */
     private String pvpRow(PlayerData data) {
-        return " " + dot(data) + " <white><bold>" + data.name()
-                + " " + Values.inline(plugin.config(), shownProbability(data), data.buffer())
-                + " " + Msg.bar(fraction(data), PVP_BAR_WIDTH);
+        double probability = shownProbability(data);
+        String value = Double.isNaN(probability)
+                ? "<dark_gray>-"
+                : "<" + Msg.heatColour(probability) + ">" + Msg.probability(probability);
+        return plugin.config().prefix() + Msg.parse(plugin.theme().resolveAccent(
+                "<accent>" + modelName() + " <white>" + data.name() + " " + value));
+    }
+
+    /** Имя модели, которой сервис считает этот сервер. */
+    private String modelName() {
+        String tier = plugin.api().serviceModel();
+        if ("fast".equalsIgnoreCase(tier)) {
+            return "Monolith Fast";
+        }
+        if ("pro".equalsIgnoreCase(tier)) {
+            return "Monolith Pro";
+        }
+        return "Monolith";
     }
 
     private String frame(Session session) {
@@ -363,23 +359,11 @@ public final class Monitor implements Service {
     }
 
     private String row(PlayerData data) {
-        return " " + dot(data) + " <white>" + pad(data.name(), 16)
-                + " " + Values.probability(plugin.config(), shownProbability(data))
-                + " <gray>buf " + Values.buffer(plugin.config(), data.buffer())
-                + "<dark_gray>/<gray>" + Msg.round(plugin.config().bufferMax(), 1)
-                + " " + Msg.bar(fraction(data), BAR_WIDTH);
+        return pvpRow(data);
     }
 
     private double shownProbability(PlayerData data) {
         return data.displayProbability(!plugin.detection().mathEnabled());
-    }
-
-    private static String pad(String value, int width) {
-        StringBuilder builder = new StringBuilder(value);
-        while (builder.length() < width) {
-            builder.append(' ');
-        }
-        return builder.toString();
     }
 
     public List<String> onlineNames(String partial) {

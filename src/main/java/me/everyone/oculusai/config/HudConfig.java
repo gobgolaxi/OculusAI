@@ -20,6 +20,18 @@ public final class HudConfig implements Service {
     /** High enough to clear any fight, low enough not to look detached. */
     private static final double MAX_HOLOGRAM_HEIGHT = 5.15D;
 
+    /** Средняя за последние окна и сами окна, каждое с маркером в цвете
+     *  детекта. Числа - как их выдала модель, не проценты. */
+    static final String COMPACT_FORMAT = "<white>AVG: %avg% <dark_gray>| %recent%";
+    /** Формат одной строки до 2.3. */
+    static final String LEGACY_COMPACT_FORMAT = "<white>%probability% %bar%";
+    /** Строка над хотбаром: ник, показание, буфер и отклонение каждой группы
+     *  признаков (R - Rotation, A - Aim, H - Hits, C - Crits, S - SprintReset). */
+    static final String ACTION_BAR_FORMAT = "%arrow% <white>%player% <dark_gray>| <white>%probability% "
+            + "<dark_gray>| <white>%buffer%<dark_gray>/<white>%max_buffer% <dark_gray>| %groups%";
+    static final String LEGACY_ACTION_BAR_FORMAT = "%arrow% <white>%player% <dark_gray>| <gray>%probability% "
+            + "<dark_gray>| <white>%buffer%<dark_gray>/<white>%max_buffer%";
+
     private final OculusAI plugin;
 
     private String actionBarFormat = "";
@@ -56,9 +68,13 @@ public final class HudConfig implements Service {
         // A triangle for where the buffer is heading, then the name, then the
         // two numbers. The name stays here - unlike the hologram, this line
         // does not hang over the player it is about.
-        actionBarFormat = config.getString("actionbar",
-                "%arrow% <white>%player% <dark_gray>| <gray>%probability% "
-                + "<dark_gray>| <white>%buffer%<dark_gray>/<white>%max_buffer%");
+        actionBarFormat = config.getString("actionbar", ACTION_BAR_FORMAT);
+        boolean changed = false;
+        if (LEGACY_ACTION_BAR_FORMAT.equals(actionBarFormat)) {
+            actionBarFormat = ACTION_BAR_FORMAT;
+            config.set("actionbar", ACTION_BAR_FORMAT);
+            changed = true;
+        }
         hologramFormat = config.getStringList("hologram.format");
         if (hologramFormat.isEmpty()) {
             hologramFormat = List.of(
@@ -78,8 +94,22 @@ public final class HudConfig implements Service {
         // No name on the hologram: it floats over the player, whose own
         // nameplate is right under it. No labels and no buffer figure either -
         // the reading and the length of the bar say the same thing shorter.
-        hologramCompactFormat = config.getString("hologram.compact-format",
-                "<white>%probability% %bar%");
+        hologramCompactFormat = config.getString("hologram.compact-format", COMPACT_FORMAT);
+        // Нетронутый прежний формат из jar - это не выбор владельца, а
+        // умолчание, которое сменилось: такой меняется на новое и пишется
+        // обратно. Свой формат остаётся как есть.
+        if (LEGACY_COMPACT_FORMAT.equals(hologramCompactFormat)) {
+            hologramCompactFormat = COMPACT_FORMAT;
+            config.set("hologram.compact-format", COMPACT_FORMAT);
+            changed = true;
+        }
+        if (changed) {
+            try {
+                config.save(file);
+            } catch (IOException exception) {
+                plugin.getLogger().log(Level.WARNING, "Could not update probcfg.yml", exception);
+            }
+        }
         // A window lands about every half second during a fight, so three
         // seconds of silence is a stop rather than a gap.
         staleSeconds = Math.max(1, config.getInt("hologram.stale-seconds", 3));

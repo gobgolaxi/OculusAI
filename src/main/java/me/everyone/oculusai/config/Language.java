@@ -35,24 +35,6 @@ public final class Language implements Service {
             "<gray>Hits a target whose hitbox is larger than allowed.";
     private static final String LEGACY_HITBOX_DESC_RU =
             "<gray>Удар по цели с увеличенным хитбоксом.";
-    private static final String LEGACY_STATUS_EN =
-            "<gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| "
-                    + "<gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| "
-                    + "<gray>Punishment %punish%";
-    private static final String LEGACY_STATUS_RU =
-            "<gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| "
-                    + "<gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| "
-                    + "<gray>Наказание %punish%";
-    private static final String STATUS_WITH_NOLOOKHIT_EN =
-            "<gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| "
-                    + "<gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| "
-                    + "<gray>NoLookHit %nolookhit% <dark_gray>| <gray>Aim %aim% <dark_gray>| "
-                    + "<gray>Punishment %punish%";
-    private static final String STATUS_WITH_NOLOOKHIT_RU =
-            "<gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| "
-                    + "<gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| "
-                    + "<gray>NoLookHit %nolookhit% <dark_gray>| <gray>Aim %aim% <dark_gray>| "
-                    + "<gray>Наказание %punish%";
     /** Прежнее имя нейросетевой проверки. Строку, где оно стоит нетронутым,
      *  можно смело заменить новым из jar; переведённую руками - нельзя. */
     private static final List<String> LEGACY_AIM_NAMES =
@@ -68,7 +50,14 @@ public final class Language implements Service {
             "event.check-nolookhit",
             "connect.asking",
             "forget.dropped",
-            "update.notes");
+            "update.notes",
+            // Команды guide, report, animations, checks и diag убраны: то же
+            // самое делается из меню.
+            "guide",
+            "report",
+            "animations",
+            "checks",
+            "help.command.checks");
 
     /** Строки, которые менялись между версиями. Совпадающее значение - это
      *  нетронутый текст из прежнего jar, и его можно заменить новым; строку,
@@ -346,16 +335,6 @@ public final class Language implements Service {
             migrated++;
         }
 
-        String currentStatus = lang.getString("checks.status");
-        String bundledStatus = defaults.getString("checks.status");
-        if (bundledStatus != null && !bundledStatus.equals(currentStatus)
-                && (LEGACY_STATUS_EN.equals(currentStatus)
-                || LEGACY_STATUS_RU.equals(currentStatus)
-                || STATUS_WITH_NOLOOKHIT_EN.equals(currentStatus)
-                || STATUS_WITH_NOLOOKHIT_RU.equals(currentStatus))) {
-            lang.set("checks.status", bundledStatus);
-            migrated++;
-        }
 
         migrated += migrateMessages(lang, defaults);
 

@@ -124,7 +124,35 @@ public final class OculusAI extends JavaPlugin {
             return;
         }
 
-        getLogger().info("OculusAI enabled, service at " + config().apiUrl());
+        printBanner();
+    }
+
+    /** Логотип в консоли при запуске. Только ASCII: рамочные символы
+     *  Юникода в консоли Windows с её кодировкой превращаются в мусор. */
+    private static final String[] BANNER = {
+            "  ___                _                 _     ___",
+            " / _ \\   ___  _   _ | | _   _  ___    / \\   |_ _|",
+            "| | | | / __|| | | || || | | |/ __|  / _ \\   | |",
+            "| |_| || (__ | |_| || || |_| |\\__ \\ / ___ \\  | |",
+            " \\___/  \\___| \\__,_||_| \\__,_||___//_/   \\_\\|___|",
+    };
+
+    private void printBanner() {
+        org.bukkit.command.CommandSender console = getServer().getConsoleSender();
+        Themes.Theme theme = theme() == null ? null : theme().current();
+        String from = theme == null ? "#8e7bff" : theme.primary();
+        String to = theme == null ? "#38bdf8" : theme.secondary();
+        console.sendMessage("");
+        for (String line : BANNER) {
+            console.sendMessage(me.everyone.oculusai.util.Msg.parse(
+                    "<gradient:" + from + ":" + to + ">" + line + "</gradient>"));
+        }
+        String version = buildVersion.isEmpty() ? getDescription().getVersion() : buildVersion;
+        console.sendMessage(me.everyone.oculusai.util.Msg.parse(
+                "<white>  AI anticheat <dark_gray>| <white>v" + version
+                        + (buildFlavour.isEmpty() ? "" : " <dark_gray>(" + buildFlavour + ")")
+                        + " <dark_gray>| <white>service " + config().apiUrl()));
+        console.sendMessage("");
     }
 
     @Override

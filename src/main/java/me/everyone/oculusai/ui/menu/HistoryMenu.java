@@ -4,9 +4,7 @@ import me.everyone.oculusai.ui.gui.Menu;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import me.everyone.oculusai.OculusAI;
@@ -31,15 +29,6 @@ public final class HistoryMenu extends Menu {
     private static final int SLOT_PAGES = 49;
     private static final int SLOT_NEXT = 53;
 
-    private static final double MIN_STEP = 0.1D;
-
-    private enum Level {
-        ZERO,
-        LOW,
-        MID,
-        HIGH
-    }
-
     private final UUID targetId;
     private final String targetName;
     private final int page;
@@ -47,7 +36,6 @@ public final class HistoryMenu extends Menu {
     private PlayerData data;
     private HistorySort sort = HistorySort.FRESHNESS;
     private List<PlayerData.Reading> ordered = List.of();
-    private Map<Long, PlayerData.Reading> previous = Map.of();
     private int pages;
 
     public HistoryMenu(OculusAI plugin, Player viewer, PlayerData target) {
@@ -107,7 +95,7 @@ public final class HistoryMenu extends Menu {
         int from = from();
         for (int i = from; i < Math.min(ordered.size(), from + PER_PAGE); i++) {
             PlayerData.Reading reading = ordered.get(i);
-            set(FIRST_READING + i - from, item(paneOf(level(reading.buffer())), name(reading), lore(reading)));
+            set(FIRST_READING + i - from, item(paneOf(reading), name(reading), lore(reading)));
         }
 
         controls(paginated);
@@ -207,16 +195,9 @@ public final class HistoryMenu extends Menu {
         List<PlayerData.Reading> readings = plugin.history().readings(targetId);
         if (readings.isEmpty()) {
             ordered = List.of();
-            previous = Map.of();
             pages = 0;
             return;
         }
-
-        Map<Long, PlayerData.Reading> before = new HashMap<>();
-        for (int i = 1; i < readings.size(); i++) {
-            before.put(readings.get(i).capturedAt(), readings.get(i - 1));
-        }
-        previous = before;
 
         Comparator<PlayerData.Reading> order = sort == HistorySort.FRESHNESS
                 ? Comparator.comparingLong(PlayerData.Reading::capturedAt).reversed()
@@ -241,81 +222,44 @@ public final class HistoryMenu extends Menu {
         return new int[]{from() + 1, Math.min(ordered.size(), from() + PER_PAGE)};
     }
 
-    private boolean flagged(PlayerData.Reading reading) {
-        return reading.probability() >= plugin.config().suspicion();
-    }
-
-    private Level level(double buffer) {
-        if (buffer <= 0.0D) {
-            return Level.ZERO;
-        }
-        if (buffer < alertStep()) {
-            return Level.LOW;
-        }
-        if (buffer < punishStep()) {
-            return Level.MID;
-        }
-        return Level.HIGH;
-    }
-
-    private double alertStep() {
-        return Math.max(MIN_STEP, plugin.config().alertAt());
-    }
-
-    private double punishStep() {
-        return Math.max(alertStep() + MIN_STEP, plugin.config().punishAt());
-    }
-
-    private Material paneOf(Level level) {
-        return switch (level) {
-            case ZERO -> Material.LIME_STAINED_GLASS_PANE;
-            case LOW -> Material.YELLOW_STAINED_GLASS_PANE;
-            case MID -> Material.ORANGE_STAINED_GLASS_PANE;
-            case HIGH -> Material.RED_STAINED_GLASS_PANE;
-        };
-    }
-
-    private Map<String, String> levelPlaceholders(Level level) {
-        return switch (level) {
-            case ZERO -> Map.of();
-            case LOW -> Map.of("value", Msg.round(alertStep(), 1));
-            case MID -> Map.of("value", Msg.round(alertStep(), 1),
-                    "next", Msg.round(punishStep(), 1));
-            case HIGH -> Map.of("value", Msg.round(punishStep(), 1),
-                    "max", Msg.round(plugin.config().bufferMax(), 0));
-        };
-    }
-
     private String name(PlayerData.Reading reading) {
-        return Msg.parse("<dark_gray>" + clock(reading.capturedAt()));
+        return Msg.parse("<" + detectColour(reading.probability()) + ">" + clock(reading.capturedAt()));
     }
 
+    /** Две строки: показание с буфером и время. Цвет числа - по детекту. */
     private List<String> lore(PlayerData.Reading reading) {
-        double max = plugin.config().bufferMax();
-        Level level = level(reading.buffer());
-        PlayerData.Reading before = previous.get(reading.capturedAt());
         List<String> lore = new ArrayList<>();
+        lore.add(plugin.lang().textOr("history.reading.summary",
+                        "<white>Prob %probability% <dark_gray>| <white>Buffer %buffer%")
+                .replace("%probability%", Msg.parse("<" + detectColour(reading.probability()) + ">"
+                        + Msg.probability(reading.probability())))
+                .replace("%buffer%", Msg.parse("<" + detectColour(reading.probability()) + ">"
+                        + Msg.round(reading.buffer(), 1))));
         lore.add(plugin.lang().text("history.reading.time", Map.of("value", ago(reading.capturedAt()))));
-        lore.add(plugin.lang().text("history.reading.probability",
-                Map.of("value", Msg.probability(reading.probability()))));
-        lore.add(plugin.lang().text("history.reading.buffer", Map.of(
-                "value", Msg.round(reading.buffer(), 1),
-                "max", Msg.round(max, 0))));
-        lore.add(Msg.parse(Msg.bar(reading.buffer() / max, 12)));
-        if (before != null) {
-            double delta = reading.buffer() - before.buffer();
-            String key = delta > 0.0001D ? "history.reading.rising"
-                    : (delta < -0.0001D ? "history.reading.falling" : "history.reading.steady");
-            lore.add(plugin.lang().text(key, Map.of("value", Msg.round(Math.abs(delta), 1))));
-        }
-        lore.add("");
-        lore.add(plugin.lang().text("history.level." + level.name().toLowerCase(Locale.ROOT),
-                levelPlaceholders(level)));
-        if (flagged(reading)) {
-            lore.add(plugin.lang().text("history.reading.flagged",
-                    Map.of("value", Msg.probability(plugin.config().suspicion()))));
-        }
         return lore;
+    }
+
+    /** Ступени цвета те же, что у стекла: ниже порога сомнения - зелёный,
+     *  дальше жёлтый, оранжевый и красный от 0.9. */
+    private String detectColour(double probability) {
+        if (probability < plugin.config().suspicion()) {
+            return "green";
+        }
+        if (probability < 0.7D) {
+            return "yellow";
+        }
+        return probability < 0.9D ? "gold" : "red";
+    }
+
+    private Material paneOf(PlayerData.Reading reading) {
+        double probability = reading.probability();
+        if (probability < plugin.config().suspicion()) {
+            return Material.LIME_STAINED_GLASS_PANE;
+        }
+        if (probability < 0.7D) {
+            return Material.YELLOW_STAINED_GLASS_PANE;
+        }
+        return probability < 0.9D ? Material.ORANGE_STAINED_GLASS_PANE : Material.RED_STAINED_GLASS_PANE;
     }
 
     private List<String> targetLore() {

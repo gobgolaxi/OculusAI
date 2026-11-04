@@ -30,7 +30,6 @@ help:
     data: "Записывать и размечать обучающие данные."
     dashboard: "Открыть дашборд датасета и модели."
     reload: "Перечитать config.yml."
-    checks: "Открыть настройки проверок или переключить их."
     npc: "Заспавнить манекен, который атакует тебя."
 theme:
   aurora: "Aurora"
@@ -266,6 +265,7 @@ history:
     check-hitbox: "HitBox"
   unknown-player: "<white>Истории для <accent>%player%<white> не сохранено."
   reading:
+    summary: "<white>Prob %probability% <dark_gray>| <white>Буфер %buffer%"
     time: "<gray>Когда: <white>%value%"
     probability: "<gray>Prob: <white>%value%"
     buffer: "<gray>Буфер: <white>%value%<dark_gray>/%max%"
@@ -329,24 +329,12 @@ setup:
   how: "<white>Получи ключ и привяжи сервер:"
   hover: "<white>Нажми, чтобы открыть"
   command: "<white>Или прямо здесь: <accent>%value%"
-report:
-  usage: "<white>Использование: <accent>%value%"
-  sent: "<white>Жалоба на <accent>%player%<white> отправлена в панель."
-  no-reason: "без причины"
 connect:
   open: "<white>Ссылка для привязки"
   hover: "<white>Нажми, чтобы открыть"
   failed: "<white>Сервис не ответил. Проверь <accent>api.url<white> в config.yml."
   expired: "<white>Ссылка истекла. Напиши <accent>/oai connect<white> ещё раз."
   done: "<white>Сервер привязан. Ключ сохранён и привязан к <accent>%address%<white>."
-guide:
-  title: "<white>Как пользоваться"
-  what: "<white>ИИ-античит по аиму. Смотрит бои и оценивает их."
-  watch: "<accent>/oai monitor<white> - живой список только для тебя, красная точка = подозрительно."
-  check: "<accent>/oai prob ник<white> - следить за одним игроком."
-  act: "<accent>/oai journal<white> - что уже сработало. <accent>/oai history ник<white> - прошлые показания."
-  numbers: "<white>Проценты - это сейчас, полоска - буфер. Алерт на <accent>%alert%<white>, наказание на <accent>%punish%<white>."
-  test: "<accent>/oai npc<white> - заспавнить манекен и проверить самому."
 monitor-cmd:
   empty: "<dark_gray>Пока пусто."
   more: "<dark_gray>+%value% ещё"
@@ -405,11 +393,6 @@ kickanim:
   firework: "Фейерверк"
   wither: "Визер"
   random: "Случайная"
-animations:
-  current: "<white>Анимация наказания: <accent>%value%<white>."
-  list: "<white>Доступны:"
-  set: "<white>Анимация наказания: <accent>%value%<white>."
-  unknown: "<white>Нет такой анимации: <accent>%value%<white>."
 checks-menu:
   title: "Проверки"
   header: "<aqua>Проверки"
@@ -495,21 +478,6 @@ check-settings:
     max-angle:
       name: "<aqua>Допуск взгляда"
       hint: "<gray>Допустимый угол между взглядом и хитбоксом цели. Компенсирует пакет атаки, пришедший раньше пакета поворота."
-checks:
-  usage: "<white>Использование: <accent>%value%"
-  status: "<white>Анализ <accent>%analysis%<white> | Удары <accent>%checks%<white> | Wall <accent>%wall%<white> | HitBox <accent>%hitbox%<white> | Aim <accent>%aim%<white> | Наказание <accent>%punish%"
-  enabled: "<accent>%name%<white> включён."
-  disabled: "<accent>%name%<white> выключен."
-  state:
-    enabled: "вкл"
-    disabled: "выкл"
-  name:
-    analysis: "Анализ"
-    checks: "Проверки ударов"
-    wall: "Wall"
-    aim: "Neuro"
-    hitbox: "HitBox"
-    punish: "Наказание"
 update:
   available: "<white>Обновите версию плагина"
   staged: "<white>Версия <accent>%version%<white> скачана — применится после рестарта сервера."

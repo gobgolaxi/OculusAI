@@ -150,14 +150,14 @@ public final class UploadQueue implements Service {
         if (dropped) {
             plugin.getLogger().severe("Unsent captures hit the limit of " + MAX_BATCHES
                     + "; the oldest was dropped. The service has been unreachable"
-                    + " for a long time - check /oai diag");
+                    + " for a long time - check that api.url is reachable");
         }
         plugin.getLogger().warning("Capture for " + batch.player() + " (" + batch.rows().size()
                 + " windows) was not accepted; retrying every " + RETRY_SECONDS
                 + "s, " + waiting + " waiting");
     }
 
-    /** How many captures are still waiting. Shown by /oai diag. */
+    /** How many captures are still waiting. */
     public int size() {
         synchronized (pending) {
             return pending.size();
@@ -171,7 +171,7 @@ public final class UploadQueue implements Service {
         }
     }
 
-    /** Offers the oldest batch again. Called on the timer, and by /oai diag. */
+    /** Offers the oldest batch again. Called on the timer. */
     public void flush() {
         if (!sending.compareAndSet(false, true)) {
             return;

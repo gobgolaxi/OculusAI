@@ -5,15 +5,6 @@
 alert:
   hover:
   - <gray>Click to start watching <white>%player%
-animations:
-  current:
-  - '<gray>Punishment effect: <white>%value%<gray>.'
-  list:
-  - 'Available:'
-  set:
-  - '<green>Punishment effect: <white>%value%<green>.'
-  unknown:
-  - '<red>No such effect: <white>%value%<red>.'
 bypass:
   disabled:
   - <green>Anticheat enabled for <white>%player%<green>.
@@ -48,25 +39,6 @@ check:
   test-line:
   - <dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
   - <dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%
-checks:
-  disabled:
-  - <gray>%name% disabled.
-  enabled:
-  - <green>%name% enabled.
-  name:
-    aim:
-    - Neuro Aim
-  state:
-    disabled:
-    - <red>off
-    enabled:
-    - <green>on
-  status:
-  - <gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Punishment %punish%
-  - <gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>NoLookHit %nolookhit% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Punishment %punish%
-  - <gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Punishment %punish%
-  usage:
-  - '<red>Usage: <white>%value%'
 command:
   no-permission:
   - <red>You lack permission.
@@ -109,20 +81,6 @@ forget:
   - '<gray>Forgot <white>%player%<gray>: buffer <white>%buffer%<gray> -> <white>0%case%%dropped%<gray>. Suspicion starts again from nothing.'
   usage:
   - '<red>Usage: <white>%value%'
-guide:
-  act:
-  - <white>/oai journal<gray> - what already triggered. <white>/oai history player<gray> - past readings.
-  check:
-  - <white>/oai prob player<gray> - follow one player closely.
-  numbers:
-  - Percent is this moment, the bar is the buffer. Alert at <white>%alert%<gray>, punish at <white>%punish%<gray>.
-  test:
-  - <white>/oai npc<gray> - spawn a dummy and try it yourself.
-  watch:
-  - <white>/oai monitor<gray> - live list only for you, red dot = suspicious.
-  - <white>/oai monitor<gray> - live list, red dot = suspicious.
-  what:
-  - AI anticheat for aim. It watches fights and scores them.
 help:
   header:
   - <gray>version <white>%version% <dark_gray>- <gray>service <white>%status%
@@ -213,11 +171,6 @@ prob:
 reload:
   done:
   - <green>Reloaded <gray>in <white>%value%ms<gray>.
-report:
-  sent:
-  - <gray>Report on <white>%player%<gray> sent to the panel.
-  usage:
-  - '<red>Usage: <white>%value%'
 sessions:
   deleted:
   - <gray>Deleted <white>%value%

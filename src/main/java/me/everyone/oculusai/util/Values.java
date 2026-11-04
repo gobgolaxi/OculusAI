@@ -85,12 +85,9 @@ public final class Values {
      *  которой каждая подписана в action bar. */
     private static final String[][] GROUPS = {
             {"Rotation", "R"}, {"Aim", "A"}, {"Hits", "H"}, {"Crits", "C"}, {"SprintReset", "S"}};
-    /** Сервис отдаёт отклонение в сигмах и зажимает его на 6 (flags.py). */
-    private static final double GROUP_SCALE = 6.0D;
-
-    /** "R0.42 A0.10 H0.33 C0.05 S0.00": отклонение каждой группы от честных
-     *  записей, переведённое в 0..1, и цвет по нему же. Группы, которых
-     *  сервис не прислал, пропускаются. */
+    /** "R0.42 A0.10 H0.33 C0.05 S0.00": насколько каждая группа редкая для
+     *  честных окон, 0..1 (шкалу строит сервис, см. ApiClient.Prediction), и
+     *  цвет по тому же числу. Группы, которых сервис не прислал, пропускаются. */
     public static String groups(java.util.Map<String, Double> scores) {
         if (scores == null || scores.isEmpty()) {
             return "<dark_gray>-";
@@ -101,7 +98,7 @@ public final class Values {
             if (score == null || !Double.isFinite(score)) {
                 continue;
             }
-            double value = Math.max(0.0D, Math.min(1.0D, score / GROUP_SCALE));
+            double value = Math.max(0.0D, Math.min(1.0D, score));
             if (line.length() > 0) {
                 line.append(' ');
             }

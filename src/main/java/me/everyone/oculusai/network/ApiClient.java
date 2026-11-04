@@ -135,8 +135,27 @@ public final class ApiClient implements Service {
      *  @param flags отклонение каждой группы признаков, имя группы - то, что
      *               печатается в скобках после Neuro. Что в группу входит,
      *               знает только сервис. Пусто - сервис их не считает (старый
-     *               или без датасета). */
-    public record Prediction(double probability, Map<String, Double> flags) {
+     *               или без датасета).
+     *  @param groups те же группы по шкале честных окон, 0..1: 0 - так бывает
+     *               хотя бы у каждого десятого честного, 1 - реже одного из
+     *               тысячи. Это и показывается в action bar. Сервис, который
+     *               этого поля ещё не отдаёт, заменяется грубой оценкой
+     *               flags / 6. */
+    public record Prediction(double probability, Map<String, Double> flags,
+                             Map<String, Double> groups) {
+    }
+
+    private static Map<String, Double> numbers(JsonObject response, String field) {
+        Map<String, Double> values = new java.util.LinkedHashMap<>();
+        if (response.has(field) && response.get(field).isJsonObject()) {
+            for (Map.Entry<String, com.google.gson.JsonElement> entry
+                    : response.getAsJsonObject(field).entrySet()) {
+                if (entry.getValue().isJsonPrimitive()) {
+                    values.put(entry.getKey(), entry.getValue().getAsDouble());
+                }
+            }
+        }
+        return values;
     }
 
     public CompletableFuture<Prediction> predict(UUID player, Map<String, Double> features,
@@ -163,16 +182,13 @@ public final class ApiClient implements Service {
             if (response == null || !response.has("probability")) {
                 return null;
             }
-            Map<String, Double> flags = new java.util.LinkedHashMap<>();
-            if (response.has("flags") && response.get("flags").isJsonObject()) {
-                for (Map.Entry<String, com.google.gson.JsonElement> entry
-                        : response.getAsJsonObject("flags").entrySet()) {
-                    if (entry.getValue().isJsonPrimitive()) {
-                        flags.put(entry.getKey(), entry.getValue().getAsDouble());
-                    }
-                }
+            Map<String, Double> flags = numbers(response, "flags");
+            Map<String, Double> groups = numbers(response, "groups");
+            if (groups.isEmpty() && !response.has("groups")) {
+                // Сервис старше этого поля: сигмы, зажатые на 6, в 0..1.
+                flags.forEach((name, value) -> groups.put(name, Math.min(1.0D, value / 6.0D)));
             }
-            return new Prediction(response.get("probability").getAsDouble(), flags);
+            return new Prediction(response.get("probability").getAsDouble(), flags, groups);
         });
     }
 

@@ -20,8 +20,8 @@ class ValuesFormatTest {
     void groupsAreLetteredScaledAndInServiceOrder() {
         Map<String, Double> scores = new LinkedHashMap<>();
         scores.put("SprintReset", 0.0D);
-        scores.put("Rotation", 3.0D);
-        scores.put("Aim", 9.0D);
+        scores.put("Rotation", 0.5D);
+        scores.put("Aim", 1.5D);
         assertEquals("R0.50 A1.00 S0.00", plain(Values.groups(scores)));
     }
 

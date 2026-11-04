@@ -52,9 +52,14 @@ public final class PlayerData {
     /** The model's answer before smoothing or the buffer. /oai math shows this
      *  instead of {@link #probability}, which stays smoothed. */
     private volatile double rawProbability;
-    /** Отклонение каждой группы признаков в последнем окне, как его прислал
-     *  сервис. Пишется на каждом окне, а не только на подозрительных. */
-    private volatile java.util.Map<String, Double> lastGroups = java.util.Map.of();
+    /** Сколько последних окон усредняется для показа групп признаков. Одно
+     *  окно - это секунда боя с одним фликом, и R от него прыгал вверх и тут
+     *  же падал. */
+    public static final int GROUP_WINDOWS = 4;
+    /** Группы признаков последних окон по шкале честных (0..1), как их
+     *  прислал сервис. Пишутся на каждом окне, а не только на подозрительных. */
+    private final java.util.ArrayDeque<java.util.Map<String, Double>> recentGroups =
+            new java.util.ArrayDeque<>();
     private volatile long lastProbabilityMs;
     private volatile long lastAttackMs;
     private volatile int windowsAnalysed;
@@ -598,11 +603,32 @@ public final class PlayerData {
     }
 
     public void lastGroups(java.util.Map<String, Double> groups) {
-        lastGroups = groups == null ? java.util.Map.of() : java.util.Map.copyOf(groups);
+        synchronized (recentGroups) {
+            recentGroups.addLast(groups == null ? java.util.Map.of() : java.util.Map.copyOf(groups));
+            while (recentGroups.size() > GROUP_WINDOWS) {
+                recentGroups.pollFirst();
+            }
+        }
     }
 
+    /** Среднее каждой группы по последним {@link #GROUP_WINDOWS} окнам - по
+     *  тем из них, где сервис эту группу прислал. */
     public java.util.Map<String, Double> lastGroups() {
-        return lastGroups;
+        java.util.Map<String, double[]> sums = new java.util.LinkedHashMap<>();
+        synchronized (recentGroups) {
+            for (java.util.Map<String, Double> window : recentGroups) {
+                window.forEach((name, value) -> {
+                    if (value != null && Double.isFinite(value)) {
+                        double[] sum = sums.computeIfAbsent(name, ignored -> new double[2]);
+                        sum[0] += value;
+                        sum[1]++;
+                    }
+                });
+            }
+        }
+        java.util.Map<String, Double> mean = new java.util.LinkedHashMap<>();
+        sums.forEach((name, sum) -> mean.put(name, sum[0] / sum[1]));
+        return mean;
     }
 
     /** The probability a live display should print: the raw model answer in
@@ -642,7 +668,9 @@ public final class PlayerData {
         resetBuffer();
         probability = 0.0D;
         rawProbability = 0.0D;
-        lastGroups = java.util.Map.of();
+        synchronized (recentGroups) {
+            recentGroups.clear();
+        }
         lastProbabilityMs = 0L;
         lastAttackMs = 0L;
         windowsAnalysed = 0;

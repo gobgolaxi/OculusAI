@@ -262,6 +262,7 @@ public final class Detection implements Service {
                 if (!data.recording() && probability < plugin.config().suspicion()) {
                     data.recordScale(scale);
                 }
+                data.lastGroups(prediction.groups());
                 accept(data, probability, prediction.flags());
                 // After accept(), so the buffer on the row is the buffer this
                 // window produced rather than the one it started from. The
@@ -310,7 +311,6 @@ public final class Detection implements Service {
         // degenerate window. This path never depends on mathEnabled: that flag
         // only chooses which probability a live display prints.
         data.rawProbability(probability);
-        data.lastGroups(flags);
         double smoothed = data.smooth(probability);
         // Причина считается только по окнам, которые буфер поднимают: за них и
         // будет алерт.

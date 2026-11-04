@@ -1,4 +1,4 @@
-package me.everyone.oculusai.update;
+package me.everyone.oculusai.network;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

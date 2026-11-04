@@ -4,7 +4,7 @@ package me.everyone.oculusai.config;
 import me.everyone.oculusai.core.Service;
 import java.util.Locale;
 import me.everyone.oculusai.OculusAI;
-import me.everyone.oculusai.punishment.Animations;
+import me.everyone.oculusai.check.punishment.Animations;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 

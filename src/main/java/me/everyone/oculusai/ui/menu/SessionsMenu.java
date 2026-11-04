@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import me.everyone.oculusai.OculusAI;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;

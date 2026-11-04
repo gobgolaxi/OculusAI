@@ -1,4 +1,4 @@
-package me.everyone.oculusai.util;
+package me.everyone.oculusai.core;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

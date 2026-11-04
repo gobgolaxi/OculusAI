@@ -1,4 +1,4 @@
-package me.everyone.oculusai.util;
+package me.everyone.oculusai.core;
 
 import me.everyone.oculusai.config.Config;
 

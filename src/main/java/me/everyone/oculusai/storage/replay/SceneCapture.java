@@ -1,4 +1,4 @@
-package me.everyone.oculusai.replay;
+package me.everyone.oculusai.storage.replay;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;

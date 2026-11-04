@@ -16,7 +16,7 @@ import me.everyone.oculusai.core.Service;
 import me.everyone.oculusai.core.ServiceHost;
 import me.everyone.oculusai.core.TickLoop;
 import me.everyone.oculusai.detection.Detection;
-import me.everyone.oculusai.diagnostics.TestServer;
+import me.everyone.oculusai.npc.TestServer;
 import me.everyone.oculusai.network.ApiClient;
 import me.everyone.oculusai.network.Network;
 import me.everyone.oculusai.network.UploadQueue;
@@ -27,9 +27,9 @@ import me.everyone.oculusai.player.EntityTracker;
 import me.everyone.oculusai.player.PlayerRegistry;
 import me.everyone.oculusai.player.Players;
 import me.everyone.oculusai.player.SetupNotifier;
-import me.everyone.oculusai.punishment.BanCounter;
-import me.everyone.oculusai.punishment.Punishments;
-import me.everyone.oculusai.replay.ReplayRecorder;
+import me.everyone.oculusai.check.punishment.BanCounter;
+import me.everyone.oculusai.check.punishment.Punishments;
+import me.everyone.oculusai.storage.replay.ReplayRecorder;
 import me.everyone.oculusai.storage.DatasetStore;
 import me.everyone.oculusai.storage.HistoryStore;
 import me.everyone.oculusai.storage.JournalStore;
@@ -38,7 +38,7 @@ import me.everyone.oculusai.ui.Hud;
 import me.everyone.oculusai.ui.Menus;
 import me.everyone.oculusai.ui.Monitor;
 import me.everyone.oculusai.ui.Ui;
-import me.everyone.oculusai.update.Updater;
+import me.everyone.oculusai.network.Updater;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class OculusAI extends JavaPlugin {
@@ -144,11 +144,11 @@ public final class OculusAI extends JavaPlugin {
         String to = theme == null ? "#38bdf8" : theme.secondary();
         console.sendMessage("");
         for (String line : BANNER) {
-            console.sendMessage(me.everyone.oculusai.util.Msg.parse(
+            console.sendMessage(me.everyone.oculusai.core.Msg.parse(
                     "<gradient:" + from + ":" + to + ">" + line + "</gradient>"));
         }
         String version = buildVersion.isEmpty() ? getDescription().getVersion() : buildVersion;
-        console.sendMessage(me.everyone.oculusai.util.Msg.parse(
+        console.sendMessage(me.everyone.oculusai.core.Msg.parse(
                 "<white>  AI anticheat <dark_gray>| <white>v" + version
                         + (buildFlavour.isEmpty() ? "" : " <dark_gray>(" + buildFlavour + ")")
                         + " <dark_gray>| <white>service " + config().apiUrl()));

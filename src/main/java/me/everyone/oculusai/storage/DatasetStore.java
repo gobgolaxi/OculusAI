@@ -20,7 +20,7 @@ import me.everyone.oculusai.detection.Detection;
 import me.everyone.oculusai.network.UploadQueue;
 import me.everyone.oculusai.detection.FeatureSchemas;
 import me.everyone.oculusai.player.PlayerData;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import org.bukkit.command.CommandSender;
 
 public final class DatasetStore implements Service {

@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Map;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.storage.JournalStore;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;

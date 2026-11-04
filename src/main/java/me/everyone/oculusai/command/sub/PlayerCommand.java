@@ -7,7 +7,7 @@ import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.command.SubCommand;
 import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.storage.JournalStore;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import org.bukkit.command.CommandSender;
 
 public final class PlayerCommand extends SubCommand {

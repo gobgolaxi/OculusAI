@@ -1,4 +1,4 @@
-package me.everyone.oculusai.punishment;
+package me.everyone.oculusai.check.punishment;
 
 
 import me.everyone.oculusai.core.Platform;
@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntConsumer;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.player.PlayerData;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;

@@ -5,7 +5,7 @@ import me.everyone.oculusai.core.Service;
 import me.everyone.oculusai.core.TickLoop;
 import java.util.Map;
 import me.everyone.oculusai.OculusAI;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;

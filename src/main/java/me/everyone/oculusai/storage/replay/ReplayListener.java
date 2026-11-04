@@ -1,4 +1,4 @@
-package me.everyone.oculusai.replay;
+package me.everyone.oculusai.storage.replay;
 
 import me.everyone.oculusai.OculusAI;
 import org.bukkit.entity.Entity;

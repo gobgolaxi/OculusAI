@@ -17,7 +17,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.player.PlayerData;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
@@ -363,7 +363,7 @@ public final class Monitor implements Service {
                 + " <gray>p <" + Msg.heatColour(smoothed) + ">" + Msg.probability(smoothed)
                 + " <gray>raw <" + Msg.heatColour(raw) + ">" + Msg.probability(raw)
                 + " <gray>buf <white>" + Msg.round(data.buffer(), 1)
-                + " <dark_gray>| " + me.everyone.oculusai.util.Values.groups(data.latestGroups())
+                + " <dark_gray>| " + me.everyone.oculusai.core.Values.groups(data.latestGroups())
                 + " <dark_gray>#" + data.windowsAnalysed();
     }
 

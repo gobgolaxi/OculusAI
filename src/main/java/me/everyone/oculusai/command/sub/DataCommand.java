@@ -10,7 +10,7 @@ import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.command.SubCommand;
 import me.everyone.oculusai.player.PlayerData;
 import me.everyone.oculusai.storage.DatasetStore;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 

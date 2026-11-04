@@ -1,4 +1,4 @@
-package me.everyone.oculusai.util;
+package me.everyone.oculusai.core;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

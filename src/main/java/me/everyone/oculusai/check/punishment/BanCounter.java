@@ -1,4 +1,4 @@
-package me.everyone.oculusai.punishment;
+package me.everyone.oculusai.check.punishment;
 
 import java.io.File;
 import java.io.IOException;

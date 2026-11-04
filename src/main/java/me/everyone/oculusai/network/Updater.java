@@ -1,4 +1,4 @@
-package me.everyone.oculusai.update;
+package me.everyone.oculusai.network;
 
 
 import me.everyone.oculusai.core.Service;
@@ -27,7 +27,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import me.everyone.oculusai.OculusAI;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;

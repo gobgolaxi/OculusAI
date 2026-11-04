@@ -5,7 +5,7 @@ import java.util.Map;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.command.SubCommand;
 import me.everyone.oculusai.command.Commands;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import org.bukkit.command.CommandSender;
 
 public final class HelpCommand extends SubCommand {

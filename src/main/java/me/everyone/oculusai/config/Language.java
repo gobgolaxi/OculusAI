@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import me.everyone.oculusai.OculusAI;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 public final class Language implements Service {

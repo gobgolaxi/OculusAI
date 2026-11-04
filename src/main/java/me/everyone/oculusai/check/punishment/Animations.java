@@ -1,4 +1,4 @@
-package me.everyone.oculusai.punishment;
+package me.everyone.oculusai.check.punishment;
 
 import java.util.ArrayList;
 import java.util.List;

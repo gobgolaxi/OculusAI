@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import me.everyone.oculusai.OculusAI;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 

@@ -5,7 +5,7 @@ import java.util.Map;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.check.Check;
 import me.everyone.oculusai.ui.gui.Menu;
-import me.everyone.oculusai.util.Msg;
+import me.everyone.oculusai.core.Msg;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;

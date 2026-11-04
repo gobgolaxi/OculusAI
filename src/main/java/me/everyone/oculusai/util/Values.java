@@ -60,11 +60,13 @@ public final class Values {
             total += readings.get(i).probability();
         }
         double mean = total / (readings.size() - from);
-        return "<" + Msg.heatColour(mean) + ">" + Msg.probability(mean);
+        return "<" + Msg.heatColour(mean) + ">"
+                + String.format(java.util.Locale.ROOT, "%.2f", Math.max(0.0D, Math.min(1.0D, mean)));
     }
 
-    /** Последние показания слева направо, от старого к новому: цветной
-     *  маркер по уровню детекта и само число белым. */
+    /** Последние показания слева направо, от старого к новому, каждое в цвете
+     *  детекта. Коротко - ".28", а не "0.283": пять показаний по пять знаков
+     *  над головой не влезали в строку голограммы и переносились. */
     public static String recent(java.util.List<me.everyone.oculusai.player.PlayerData.Reading> readings) {
         if (readings.isEmpty()) {
             return "<dark_gray>-";
@@ -75,10 +77,21 @@ public final class Values {
             if (line.length() > 0) {
                 line.append(' ');
             }
-            line.append('<').append(Msg.heatColour(value)).append(">■<white>")
-                    .append(Msg.probability(value));
+            line.append('<').append(Msg.heatColour(value)).append('>').append(shortValue(value));
         }
         return line.toString();
+    }
+
+    /** ".28", "1.0" и "-" для пропуска. */
+    static String shortValue(double value) {
+        if (!Double.isFinite(value)) {
+            return "-";
+        }
+        double clamped = Math.max(0.0D, Math.min(1.0D, value));
+        if (clamped >= 0.995D) {
+            return "1.0";
+        }
+        return String.format(java.util.Locale.ROOT, "%.2f", clamped).substring(1);
     }
 
     /** Группы признаков в том порядке, в каком их называет сервис, и буква,

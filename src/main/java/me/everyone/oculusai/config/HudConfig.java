@@ -20,11 +20,12 @@ public final class HudConfig implements Service {
     /** High enough to clear any fight, low enough not to look detached. */
     private static final double MAX_HOLOGRAM_HEIGHT = 5.15D;
 
-    /** Средняя за последние окна и сами окна, каждое с маркером в цвете
+    /** Средняя за последние окна и сами окна, каждое в цвете
      *  детекта. Числа - как их выдала модель, не проценты. */
-    static final String COMPACT_FORMAT = "<white>AVG: %avg% <dark_gray>| %recent%";
-    /** Формат одной строки до 2.3. */
-    static final String LEGACY_COMPACT_FORMAT = "<white>%probability% %bar%";
+    static final String COMPACT_FORMAT = "<white>AVG %avg% <dark_gray>| %recent%";
+    /** Прежние умолчания: до 2.3 и первый вариант с AVG. */
+    static final java.util.List<String> LEGACY_COMPACT_FORMATS = java.util.List.of(
+            "<white>%probability% %bar%", "<white>AVG: %avg% <dark_gray>| %recent%");
     /** Строка над хотбаром: ник, показание, буфер и отклонение каждой группы
      *  признаков (R - Rotation, A - Aim, H - Hits, C - Crits, S - SprintReset). */
     static final String ACTION_BAR_FORMAT = "%arrow% <white>%player% <dark_gray>| <white>%probability% "
@@ -98,7 +99,7 @@ public final class HudConfig implements Service {
         // Нетронутый прежний формат из jar - это не выбор владельца, а
         // умолчание, которое сменилось: такой меняется на новое и пишется
         // обратно. Свой формат остаётся как есть.
-        if (LEGACY_COMPACT_FORMAT.equals(hologramCompactFormat)) {
+        if (LEGACY_COMPACT_FORMATS.contains(hologramCompactFormat)) {
             hologramCompactFormat = COMPACT_FORMAT;
             config.set("hologram.compact-format", COMPACT_FORMAT);
             changed = true;

@@ -38,8 +38,8 @@ class ValuesFormatTest {
             readings.add(new PlayerData.Reading(i, i / 10.0D, 0.0D));
         }
         String recent = plain(Values.recent(readings));
-        assertEquals("■0.200 ■0.300 ■0.400 ■0.500 ■0.600", recent);
-        assertEquals("0.400", plain(Values.average(readings)));
+        assertEquals(".20 .30 .40 .50 .60", recent);
+        assertEquals("0.40", plain(Values.average(readings)));
         assertTrue(plain(Values.recent(List.of())).equals("-"));
     }
 }

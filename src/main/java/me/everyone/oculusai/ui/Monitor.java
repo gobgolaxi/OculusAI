@@ -57,6 +57,11 @@ public final class Monitor implements Service {
     private final Set<String> globalWatchers = ConcurrentHashMap.newKeySet();
     /** Ticks since the watch was switched on - used to say "nobody" now and then. */
     private int globalTicks;
+    /** Кто смотрит отладочную ленту /oai monitor data. Не сохраняется: это
+     *  инструмент на время разбора боя, а не постоянная подписка. */
+    private final Set<String> dataWatchers = ConcurrentHashMap.newKeySet();
+    /** Какое окно каждого игрока уже напечатано - строка идёт одна на окно. */
+    private final Map<UUID, Long> dataPrinted = new ConcurrentHashMap<>();
 
     public Monitor(OculusAI plugin) {
         this.plugin = plugin;
@@ -134,6 +139,8 @@ public final class Monitor implements Service {
         }
         sessions.clear();
         globalWatchers.clear();
+        dataWatchers.clear();
+        dataPrinted.clear();
     }
 
     /** Whether anybody at all is on the watch over everybody. */
@@ -211,9 +218,22 @@ public final class Monitor implements Service {
         sessions.remove(uuid.toString());
     }
 
+    /** Включает и выключает отладочную ленту для этого отправителя. */
+    public boolean toggleData(CommandSender sender) {
+        String id = idOf(sender);
+        boolean on = !dataWatchers.remove(id);
+        if (on) {
+            dataWatchers.add(id);
+        }
+        return on;
+    }
+
     private void tick() {
         if (!globalWatchers.isEmpty()) {
             broadcastPvp();
+        }
+        if (!dataWatchers.isEmpty()) {
+            broadcastData();
         }
         for (Session session : new ArrayList<>(sessions.values())) {
             if (session.sender instanceof Player player && !player.isOnline()) {
@@ -297,6 +317,54 @@ public final class Monitor implements Service {
                 : "<" + Msg.heatColour(probability) + ">" + Msg.probability(probability);
         return plugin.config().prefix() + Msg.parse(plugin.theme().resolveAccent(
                 "<accent>" + modelName() + " <white>" + data.name() + " " + value));
+    }
+
+    /** Одна строка на каждое новое окно каждого, кто в бою: ник, сглаженное
+     *  и сырое показание, буфер, группы признаков этого окна и номер окна.
+     *  Окна приходят чаще раза в секунду, поэтому за тик печатается только
+     *  последнее - промежуточные видны по номеру. */
+    private void broadcastData() {
+        List<CommandSender> targets = new ArrayList<>();
+        for (String id : dataWatchers) {
+            CommandSender watcher = senderOf(id);
+            if (watcher != null) {
+                targets.add(watcher);
+            }
+        }
+        if (targets.isEmpty()) {
+            return;
+        }
+        long window = plugin.config().monitorPvpMs();
+        List<String> lines = new ArrayList<>();
+        for (PlayerData data : plugin.data().all()) {
+            long at = data.lastProbabilityMs();
+            if (at <= 0L || !data.inCombat(window)) {
+                continue;
+            }
+            Long printed = dataPrinted.put(data.uuid(), at);
+            if (printed != null && printed == at) {
+                continue;
+            }
+            lines.add(dataRow(data));
+        }
+        if (lines.isEmpty()) {
+            return;
+        }
+        String frame = Msg.parse(plugin.theme().resolveAccent(String.join("\n", lines)));
+        for (CommandSender watcher : targets) {
+            watcher.sendMessage(frame);
+        }
+    }
+
+    private String dataRow(PlayerData data) {
+        double smoothed = data.probability();
+        double raw = data.rawProbability();
+        return "<accent>" + data.name()
+                + " <gray>p <" + Msg.heatColour(smoothed) + ">" + Msg.probability(smoothed)
+                + " <gray>raw <" + Msg.heatColour(raw) + ">" + Msg.probability(raw)
+                + " <gray>buf <white>" + Msg.round(data.buffer(), 1)
+                + " <dark_gray>| " + me.everyone.oculusai.util.Values.groups(data.latestGroups())
+                + " <dark_gray>#" + data.windowsAnalysed();
     }
 
     /** Имя модели, которой сервис считает этот сервер. */

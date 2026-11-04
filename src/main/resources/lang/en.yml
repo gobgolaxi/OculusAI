@@ -338,6 +338,8 @@ monitor-cmd:
   empty: "<dark_gray>Nothing yet."
   more: "<dark_gray>+%value% more"
   pvp-none: "<dark_gray>Nobody is fighting right now."
+  data-on: "<white>Window feed on: one line per model window. <accent>/oai monitor data<white> turns it off."
+  data-off: "<white>Window feed off."
 prob:
   watching: "<white>Buffer <accent>%buffer%<white>, last reading <accent>%probability%<white>, windows analysed <accent>%windows%"
   no-data: "<white>Nothing analysed yet - readings only appear while they fight."
@@ -528,8 +530,8 @@ check:
     wall: "<gray>Hits through walls and closed doors."
     aim: "<gray>Neural aim check."
     hitbox: "<gray>Hits outside the target's real hitbox."
-  test-line: "<dark_gray>[TEST] <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
-  alert-line: "<accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
+  test-line: "<dark_gray>[TEST] <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check%"
+  alert-line: "<accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check%"
   reason:
     wall: "no line of sight"
     aim: "window above threshold"

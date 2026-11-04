@@ -611,6 +611,15 @@ public final class PlayerData {
         }
     }
 
+    /** Группы последнего окна как есть, без усреднения - для отладочной
+     *  ленты /oai monitor data. */
+    public java.util.Map<String, Double> latestGroups() {
+        synchronized (recentGroups) {
+            java.util.Map<String, Double> last = recentGroups.peekLast();
+            return last == null ? java.util.Map.of() : last;
+        }
+    }
+
     /** Среднее каждой группы по последним {@link #GROUP_WINDOWS} окнам - по
      *  тем из них, где сервис эту группу прислал. */
     public java.util.Map<String, Double> lastGroups() {

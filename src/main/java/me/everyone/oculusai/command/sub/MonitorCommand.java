@@ -13,10 +13,12 @@ public final class MonitorCommand extends SubCommand {
 
     /** The word that brings back the old list: everyone who looks suspicious. */
     private static final String LIST = "list";
+    /** Отладочная лента: строка на каждое окно модели с группами признаков. */
+    private static final String DATA = "data";
 
     public MonitorCommand(OculusAI plugin) {
         super(plugin, "monitor", List.of("mon", "watch"), "oculusai.alerts",
-                "/oai monitor [list|player...]",
+                "/oai monitor [list|data|player...]",
                 "Watch everybody in PvP, or a list of who looks suspicious.", false);
     }
 
@@ -40,6 +42,12 @@ public final class MonitorCommand extends SubCommand {
             return;
         }
 
+        if (first.equals(DATA)) {
+            replyKey(sender, plugin.monitors().toggleData(sender)
+                    ? "monitor-cmd.data-on" : "monitor-cmd.data-off");
+            return;
+        }
+
         if (first.equals(LIST)) {
             monitors.start(sender, List.of());
             return;
@@ -53,7 +61,7 @@ public final class MonitorCommand extends SubCommand {
     public List<String> complete(CommandSender sender, String[] args) {
         if (args.length == 1) {
             List<String> options = new ArrayList<>(plugin.monitors().onlineNames(args[0]));
-            for (String option : List.of(LIST, "stop", "off")) {
+            for (String option : List.of(LIST, DATA, "stop", "off")) {
                 if (option.startsWith(args[0].toLowerCase(Locale.ROOT))) {
                     options.add(option);
                 }

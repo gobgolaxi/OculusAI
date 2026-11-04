@@ -21,6 +21,7 @@ bypass:
   - '<red>Usage: <white>%value%'
 check:
   alert-line:
+  - <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
   - <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
   - <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%
   desc:
@@ -37,6 +38,7 @@ check:
     hitbox:
     - target hitbox %width%x%height% exceeds %max-width%x%max-height%
   test-line:
+  - <dark_gray>[TEST] <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
   - <dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
   - <dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%
 command:

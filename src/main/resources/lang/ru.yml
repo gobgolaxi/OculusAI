@@ -339,6 +339,8 @@ monitor-cmd:
   empty: "<dark_gray>Пока пусто."
   more: "<dark_gray>+%value% ещё"
   pvp-none: "<dark_gray>Сейчас никто не дерётся."
+  data-on: "<white>Лента окон включена: строка на каждое окно модели. <accent>/oai monitor data<white> - выключить."
+  data-off: "<white>Лента окон выключена."
 bypass:
   usage: "<white>Использование: <accent>%value%"
   enabled: "<white>Античит выключен для <accent>%player%"
@@ -526,8 +528,8 @@ check:
     wall: "<gray>Удары через стены и закрытые двери."
     aim: "<gray>Нейросетевая проверка прицела."
     hitbox: "<gray>Удар вне реального хитбокса цели."
-  test-line: "<dark_gray>[ТЕСТ] <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
-  alert-line: "<accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%"
+  test-line: "<dark_gray>[ТЕСТ] <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check%"
+  alert-line: "<accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check%"
   reason:
     wall: "нет видимости"
     aim: "окно выше порога"

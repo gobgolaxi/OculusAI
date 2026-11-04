@@ -342,11 +342,9 @@ public final class Language implements Service {
 
         migrated += migrateAimNames(lang, defaults);
 
-        // Old alert lines only printed %detail%. Keep a custom translation,
-        // but append the metrics placeholder when it has no metrics at all.
-        // Alerts only fills it for checks that actually use the model.
-        migrated += ensureMetrics("check.test-line");
-        migrated += ensureMetrics("check.alert-line");
+        // Строка алерта - только ник и проверка. Раньше здесь дописывался
+        // %metrics% в любую строку без него; это вернуло бы проб с буфером
+        // в строку, где их убрали намеренно.
 
         if (added == 0 && removed == 0 && migrated == 0) {
             return;
@@ -368,18 +366,6 @@ public final class Language implements Service {
                 || value.contains("%height%")
                 || value.contains("%max-width%")
                 || value.contains("%max-height%"));
-    }
-
-    private int ensureMetrics(String key) {
-        String value = lang.getString(key);
-        if (value == null || value.isBlank()
-                || value.contains("%metrics%")
-                || value.contains("%probability%")
-                || value.contains("%buffer%")) {
-            return 0;
-        }
-        lang.set(key, value + " <dark_gray>· %metrics%");
-        return 1;
     }
 
     public String text(String key) {

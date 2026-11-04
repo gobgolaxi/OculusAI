@@ -5,7 +5,6 @@ import java.util.Map;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.command.SubCommand;
 import me.everyone.oculusai.player.PlayerData;
-import me.everyone.oculusai.util.Msg;
 import org.bukkit.command.CommandSender;
 
 public final class ForgetCommand extends SubCommand {
@@ -28,9 +27,6 @@ public final class ForgetCommand extends SubCommand {
             return;
         }
 
-        double buffer = data.buffer();
-        int discarded = data.recordedCount();
-
         plugin.punishments().forget(data.uuid());
         // Only here. The same method runs on every quit and on every bypass
         // toggle, and neither of those is anybody saying "wipe this player".
@@ -48,12 +44,7 @@ public final class ForgetCommand extends SubCommand {
         data.clearWindow();
         data.resetBuffer();
 
-        replyKey(sender, "forget.done", Map.of(
-                "player", data.name(),
-                "buffer", Msg.round(buffer, 1),
-                "dropped", discarded > 0
-                        ? plugin.lang().text("forget.dropped", Map.of("value", Integer.toString(discarded)))
-                        : ""));
+        replyKey(sender, "forget.done", Map.of("player", data.name()));
     }
 
     @Override

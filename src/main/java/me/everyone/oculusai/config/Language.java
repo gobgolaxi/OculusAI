@@ -65,11 +65,50 @@ public final class Language implements Service {
             "check.desc.nolookhit",
             "check.reason.nolookhit",
             "checks.name.nolookhit",
-            "event.check-nolookhit");
+            "event.check-nolookhit",
+            "connect.asking",
+            "forget.dropped",
+            "update.notes");
+
+    /** Строки, которые менялись между версиями. Совпадающее значение - это
+     *  нетронутый текст из прежнего jar, и его можно заменить новым; строку,
+     *  переписанную владельцем сервера, миграция не трогает. */
+    private static final Map<String, List<String>> LEGACY_MESSAGES = Map.of(
+            "update.available", List.of(
+                    "<gold>Вышла новая версия <white><bold>%version%<gold> — обновите античит. "
+                            + "<gray>Сейчас стоит <white>%current%<gray>.",
+                    "<gold>Version <white><bold>%version%<gold> is out — update the anticheat. "
+                            + "<gray>This server runs <white>%current%<gray>."),
+            "update.download", List.of(
+                    " <yellow>[Скачать]",
+                    " <yellow>[Download]"),
+            "prob.watching", List.of(
+                    "<gray>Смотришь за <white>%player%<gray>. Буфер <white>%buffer%<gray>, "
+                            + "последний reading <white>%probability%<gray>, окон проанализировано "
+                            + "<white>%windows%",
+                    "<gray>Watching <white>%player%<gray>. Buffer <white>%buffer%<gray>, "
+                            + "last reading <white>%probability%<gray>, windows analysed "
+                            + "<white>%windows%"),
+            "bypass.enabled", List.of(
+                    "<green>Античит выключен для <white>%player%<green>.",
+                    "<green>Anticheat disabled for <white>%player%<green>."),
+            "bypass.disabled", List.of(
+                    "<green>Античит снова включён для <white>%player%<green>.",
+                    "<green>Anticheat enabled for <white>%player%<green>."),
+            "forget.done", List.of(
+                    "<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> "
+                            + "<white>0%dropped%<gray>. Подозрение начинается заново.",
+                    "<gray>Forgot <white>%player%<gray>: buffer <white>%buffer%<gray> -> "
+                            + "<white>0%dropped%<gray>. Suspicion starts again from nothing."),
+            "connect.open", List.of(
+                    "<gray>Открой ссылку под своим аккаунтом, чтобы привязать сервер:",
+                    "<gray>Open this link while signed in to bind the server:"));
 
     private final OculusAI plugin;
     private YamlConfiguration lang;
     private YamlConfiguration defaults;
+    /** Every value each key has shipped with before, from lang/legacy/. */
+    private YamlConfiguration legacy;
 
     public Language(OculusAI plugin) {
         this.plugin = plugin;
@@ -101,6 +140,7 @@ public final class Language implements Service {
         }
         lang = loadConfiguration(file, "lang/" + file.getName());
         defaults = loadBundled("lang/" + file.getName());
+        legacy = loadBundled("lang/legacy/" + file.getName());
         adoptNewKeys(file);
     }
 
@@ -182,6 +222,53 @@ public final class Language implements Service {
                     "Could not read bundled language " + bundledPath + "; using empty defaults", exception);
             return new YamlConfiguration();
         }
+    }
+
+    /** Заменяет прежние bundled-тексты новыми, но только когда значение
+     *  осталось ровно таким, каким его выпустил jar. Возвращает число
+     *  заменённых строк. */
+    static int migrateMessages(YamlConfiguration lang, YamlConfiguration defaults) {
+        int migrated = 0;
+        for (Map.Entry<String, List<String>> entry : LEGACY_MESSAGES.entrySet()) {
+            String current = lang.getString(entry.getKey());
+            String bundled = defaults.getString(entry.getKey());
+            if (current != null && bundled != null && !bundled.equals(current)
+                    && entry.getValue().contains(current)) {
+                lang.set(entry.getKey(), bundled);
+                migrated++;
+            }
+        }
+        return migrated;
+    }
+
+    /** Обновляет каждую строку, которая всё ещё равна тексту из какого-то
+     *  прежнего jar, на текущий текст из этого.
+     *
+     *  <p>lang/legacy/ собран из истории репозитория: для каждого ключа - все
+     *  значения, с которыми он когда-либо выходил. Совпадение означает, что
+     *  владелец сервера строку не трогал, и замена ничего у него не отнимает;
+     *  переписанную руками строку не найти в истории, и она остаётся как есть.
+     *  Без этого смена оформления доходила бы только до новых серверов: файл
+     *  языка копируется один раз, а дальше в него лишь добавляются ключи. */
+    static int migrateHistory(YamlConfiguration lang, YamlConfiguration defaults,
+                              YamlConfiguration legacy) {
+        if (legacy == null) {
+            return 0;
+        }
+        int migrated = 0;
+        for (String key : legacy.getKeys(true)) {
+            if (!legacy.isList(key) || !lang.isString(key)) {
+                continue;
+            }
+            String current = lang.getString(key);
+            String bundled = defaults.getString(key);
+            if (current != null && bundled != null && !bundled.equals(current)
+                    && legacy.getStringList(key).contains(current)) {
+                lang.set(key, bundled);
+                migrated++;
+            }
+        }
+        return migrated;
     }
 
     /** Меняет нетронутое прежнее имя нейросетевой проверки на новое из jar.
@@ -270,6 +357,10 @@ public final class Language implements Service {
             migrated++;
         }
 
+        migrated += migrateMessages(lang, defaults);
+
+        migrated += migrateHistory(lang, defaults, legacy);
+
         migrated += migrateAimNames(lang, defaults);
 
         // Old alert lines only printed %detail%. Keep a custom translation,
@@ -313,19 +404,28 @@ public final class Language implements Service {
     }
 
     public String text(String key) {
-        return Msg.parse(raw(key, key));
+        return Msg.parse(themed(raw(key, key)));
     }
 
     public String text(String key, Map<String, String> placeholders) {
-        return Msg.parse(raw(key, key), placeholders);
+        return Msg.parse(themed(raw(key, key)), placeholders);
     }
 
     public String plain(String key) {
-        return Msg.strip(raw(key, key));
+        return Msg.strip(themed(raw(key, key)));
     }
 
     public String textOr(String key, String fallback) {
-        return Msg.parse(raw(key, fallback));
+        return Msg.parse(themed(raw(key, fallback)));
+    }
+
+    /** Resolves the theme's {@code <accent>} tag before the message is
+     *  colourized. Msg only knows fixed colour names, so an unexpanded
+     *  {@code <accent>} would otherwise be dropped and the text would come out
+     *  in whatever colour was active before it. */
+    private String themed(String value) {
+        Themes themes = plugin.theme();
+        return themes == null ? value : themes.resolveAccent(value);
     }
 
     private String raw(String key, String fallback) {

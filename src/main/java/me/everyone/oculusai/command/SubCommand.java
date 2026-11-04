@@ -50,7 +50,12 @@ public abstract class SubCommand {
     }
 
     protected void reply(CommandSender sender, String miniMessage) {
-        sender.sendMessage(Msg.parse(plugin.config().prefix() + miniMessage));
+        sender.sendMessage(plugin.config().prefix() + Msg.parse(accented(miniMessage)));
+    }
+
+    /** {@code <accent>} в строке, собранной в коде, - цвет акцента темы. */
+    protected String accented(String miniMessage) {
+        return plugin.theme() == null ? miniMessage : plugin.theme().resolveAccent(miniMessage);
     }
 
     protected void replyKey(CommandSender sender, String key) {

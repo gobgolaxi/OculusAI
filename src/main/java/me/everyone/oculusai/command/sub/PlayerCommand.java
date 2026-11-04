@@ -56,10 +56,10 @@ public final class PlayerCommand extends SubCommand {
         List<Double> history = data.bufferHistory();
         if (!history.isEmpty()) {
             replyKey(sender, "player-cmd.buffer-history");
-            StringBuilder sb = new StringBuilder("<dark_gray>");
+            StringBuilder sb = new StringBuilder("<white>");
             for (int i = 0; i < history.size(); i++) {
-                if (i > 0) sb.append("<dark_gray>, ");
-                sb.append("<white>").append(Msg.round(history.get(i), 1));
+                if (i > 0) sb.append("<white>, ");
+                sb.append("<accent>").append(Msg.round(history.get(i), 1));
             }
             reply(sender, sb.toString());
         }
@@ -79,9 +79,9 @@ public final class PlayerCommand extends SubCommand {
                     String ageStr = age < 60
                             ? age + "s"
                             : (age < 3600 ? (age / 60) + "m" : (age / 3600) + "h");
-                    reply(sender, "<dark_gray>- <gray>" + ageStr
-                            + " <dark_gray>| <white>" + Msg.probability(snap.probability())
-                            + " <dark_gray>| <gray>buf <white>" + Msg.round(snap.buffer(), 1));
+                    reply(sender, "<white>- " + ageStr
+                            + " | <accent>" + Msg.probability(snap.probability())
+                            + "<white> | buf <accent>" + Msg.round(snap.buffer(), 1));
                 }
             }
         }

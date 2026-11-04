@@ -32,8 +32,8 @@ public final class AnimationsCommand extends SubCommand {
         if (args.length < 2) {
             replyKey(sender, "animations.current",
                     Map.of("value", plugin.lang().textOr("kickanim." + current, current)));
-            reply(sender, "<gray>" + plugin.lang().textOr("animations.list", "Available:")
-                    + " <white>" + String.join("<dark_gray>, <white>", Animations.ALL));
+            reply(sender, "<white>" + plugin.lang().textOr("animations.list", "Available:")
+                    + " <accent>" + String.join("<white>, <accent>", Animations.ALL));
             return;
         }
 

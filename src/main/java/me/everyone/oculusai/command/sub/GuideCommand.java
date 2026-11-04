@@ -26,7 +26,7 @@ public final class GuideCommand extends SubCommand {
     public void execute(CommandSender sender, String[] args) {
         sender.sendMessage(plugin.config().prefix() + plugin.lang().text("guide.title"));
         for (String key : LINES) {
-            sender.sendMessage(Msg.parse(" <dark_gray>- <gray>")
+            sender.sendMessage(Msg.parse(" <white>- ")
                     + plugin.lang().text(key, Map.of(
                             "alert", Msg.round(plugin.config().alertAt(), 1),
                             "punish", Msg.round(plugin.config().punishAt(), 1))));

@@ -1,0 +1,272 @@
+# Every value a key of lang/en.yml has shipped with in an earlier release.
+# Generated from git history - do not edit by hand. A server's language
+# file whose line still equals one of these was never touched by its owner,
+# so Language replaces it with the current bundled text on start-up.
+alert:
+  hover:
+  - <gray>Click to start watching <white>%player%
+animations:
+  current:
+  - '<gray>Punishment effect: <white>%value%<gray>.'
+  list:
+  - 'Available:'
+  set:
+  - '<green>Punishment effect: <white>%value%<green>.'
+  unknown:
+  - '<red>No such effect: <white>%value%<red>.'
+bypass:
+  disabled:
+  - <green>Anticheat enabled for <white>%player%<green>.
+  enabled:
+  - <green>Anticheat disabled for <white>%player%<green>.
+  permission:
+  - <yellow><bold>%player%<yellow> still has oculusai.bypass - remove it to enable analysis.
+  - <yellow>%player% still has oculusai.bypass - remove it to enable analysis.
+  save-failed:
+  - '<red>Could not save bypass.yml: the list will reset after a restart.'
+  unknown:
+  - <red>That player has never joined this server.
+  usage:
+  - '<red>Usage: <white>%value%'
+check:
+  alert-line:
+  - <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
+  - <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%
+  desc:
+    hitbox:
+    - <gray>Hits a target whose hitbox is larger than allowed.
+  name:
+    aim:
+    - Neuro Aim
+    - Aim
+  reason:
+    aim:
+    - prob %probability%, buffer %buffer%
+    - prob %probability%
+    hitbox:
+    - target hitbox %width%x%height% exceeds %max-width%x%max-height%
+  test-line:
+  - <dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
+  - <dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%
+checks:
+  disabled:
+  - <gray>%name% disabled.
+  enabled:
+  - <green>%name% enabled.
+  name:
+    aim:
+    - Neuro Aim
+  state:
+    disabled:
+    - <red>off
+    enabled:
+    - <green>on
+  status:
+  - <gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Punishment %punish%
+  - <gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>NoLookHit %nolookhit% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Punishment %punish%
+  - <gray>Analysis %analysis% <dark_gray>| <gray>Attacks %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Punishment %punish%
+  usage:
+  - '<red>Usage: <white>%value%'
+command:
+  no-permission:
+  - <red>You lack permission.
+  players-only:
+  - <red>Players only.
+  unknown:
+  - <red>Unknown subcommand. Try <white>/%label% help<red>.
+connect:
+  done:
+  - <green>Server connected. <gray>The key is saved and bound to <white>%address%<gray>.
+  expired:
+  - <red>The link expired. Run <white>/oai connect<red> again.
+  failed:
+  - <red><bold>The service did not answer.<red> Check <white>api.url<red> in config.yml.
+  - <red>The service did not answer. Check <white>api.url<red> in config.yml.
+  hover:
+  - <gray>Click to open
+  open:
+  - '<gray>Open this link while signed in to bind the server:'
+dashboard:
+  alwaysprob:
+    turned-off:
+    - <gray>AlwaysProb is off.
+    turned-on:
+    - <green>AlwaysProb is on.<gray> Readings stay over every player you can see.
+    unsupported:
+    - <red>This server version has no text displays, so AlwaysProb cannot draw anything.
+  probheight:
+    save-failed:
+    - <red>Could not save the height to probcfg.yml.
+  theme:
+    changed:
+    - <gray>Theme changed to <white>%value%<gray>.
+dummy:
+  gone:
+  - <red>That dummy is gone.
+forget:
+  done:
+  - '<gray>Forgot <white>%player%<gray>: buffer <white>%buffer%<gray> -> <white>0%dropped%<gray>. Suspicion starts again from nothing.'
+  - '<gray>Forgot <white>%player%<gray>: buffer <white>%buffer%<gray> -> <white>0%case%%dropped%<gray>. Suspicion starts again from nothing.'
+  usage:
+  - '<red>Usage: <white>%value%'
+guide:
+  act:
+  - <white>/oai journal<gray> - what already triggered. <white>/oai history player<gray> - past readings.
+  check:
+  - <white>/oai prob player<gray> - follow one player closely.
+  numbers:
+  - Percent is this moment, the bar is the buffer. Alert at <white>%alert%<gray>, punish at <white>%punish%<gray>.
+  test:
+  - <white>/oai npc<gray> - spawn a dummy and try it yourself.
+  watch:
+  - <white>/oai monitor<gray> - live list only for you, red dot = suspicious.
+  - <white>/oai monitor<gray> - live list, red dot = suspicious.
+  what:
+  - AI anticheat for aim. It watches fights and scores them.
+help:
+  header:
+  - <gray>version <white>%version% <dark_gray>- <gray>service <white>%status%
+  status:
+    down:
+    - <red>down
+    up:
+    - <green>up
+history:
+  event:
+    check-aim:
+    - Neuro Aim
+    - Aim
+  no-data:
+  - <dark_gray>No data for you yet - readings only appear while fighting.
+  unknown-player:
+  - <red>No stored history for <white>%player%<red>.
+journal:
+  observe-started:
+  - <gray>Observing <white>%player%<gray> in spectator with Prob enabled.
+  observe-unsupported:
+  - '<red>Spectating does not work on Folia: it teleports you onto a player another thread is ticking.'
+  player-offline:
+  - <red>This player is no longer online.
+manual:
+  banned:
+  - '<gray>Banned <white>%player%<gray>: <white>%reason%'
+  broadcast-ban:
+  - <red>%player% <gray>banned <dark_gray>- <white>%reason%
+  broadcast-kick:
+  - <red>%player% <gray>kicked <dark_gray>- <white>%reason%
+  kicked:
+  - '<gray>Kicked <white>%player%<gray>: <white>%reason%'
+  self:
+  - <red>You cannot punish yourself.
+  usage:
+  - '<red>Usage: <white>%value%'
+math:
+  disabled:
+  - <yellow>Prob shows the raw model probability.<gray> The buffer and checks keep running.
+  enabled:
+  - <green>Prob shows the smoothed reading.<gray> The buffer, Aim alerts and punishments work as usual.
+npc:
+  cleared:
+  - <gray>Sparring dummies removed.
+  full:
+  - <red>Already at the sparring dummy limit.
+  killed:
+  - <gray>Dummy <white>%value%<gray> is down.
+  spawned:
+  - <gray>Spawned <white>%value%<gray> sparring dummy/dummies.
+  unsupported:
+  - '<red>The sparring manikin does not work on Folia: it walks after a player across regions, which Folia does not allow from one thread.'
+  usage:
+  - '<red>Usage: <white>%value%'
+player-cmd:
+  buffer:
+  - '<gray>Buffer: <white>%value%<dark_gray>/%max%'
+  buffer-history:
+  - '<gray>Buffer history:'
+  in-combat:
+  - <green>Currently in combat.
+  no-data:
+  - <dark_gray>No data yet — readings only appear while fighting.
+  not-in-combat:
+  - <dark_gray>Not in combat.
+  peak-buffer:
+  - '<gray>Peak buffer: <white>%value%'
+  prob-history:
+  - '<gray>Probability history:'
+  probability:
+  - '<gray>Last probability: <white>%value%'
+  recording:
+  - '<gold>Recording: <white>%value%<gold> windows captured.'
+  usage:
+  - '<red>Usage: <white>%value%'
+  windows:
+  - '<gray>Windows analysed: <white>%value%'
+players:
+  watching:
+  - <gray>Watching <white>%player%<gray>.
+prob:
+  no-data:
+  - <dark_gray>Nothing analysed yet - readings only appear while they fight.
+  watching:
+  - <gray>Watching <white>%player%<gray>. Buffer <white>%buffer%<gray>, last reading <white>%probability%<gray>, windows analysed <white>%windows%
+  - <gray>Buffer <white>%buffer%<gray>, last reading <white>%probability%<gray>, windows analysed <white>%windows%
+reload:
+  done:
+  - <green>Reloaded <gray>in <white>%value%ms<gray>.
+report:
+  sent:
+  - <gray>Report on <white>%player%<gray> sent to the panel.
+  usage:
+  - '<red>Usage: <white>%value%'
+sessions:
+  deleted:
+  - <gray>Deleted <white>%value%
+  failed:
+  - <red>The service did not answer or refused the change.
+  updated:
+  - <gray>Updated <white>%value%
+settings:
+  aim:
+    name:
+    - <light_purple>Neuro Aim
+setup:
+  command:
+  - '<gray>Or right here: <white>%value%'
+  hover:
+  - <gray>Click to open
+  how:
+  - '<gray>Get a key and bind this server:'
+  not-connected:
+  - <red><bold>Anticheat is not connected to the API - nothing is being analysed.
+  - <red>Anticheat is not connected to the API - nothing is being analysed.
+shared:
+  no-permission:
+  - <red>No permission
+  player-offline:
+  - <red>That player is not online.
+spawn:
+  disabled:
+  - <red>The test server is not enabled.
+  teleported:
+  - <gray>Teleported to the test arena spawn.
+update:
+  available:
+  - <gold>Version <white><bold>%version%<gold> is out — update the anticheat. <gray>This server runs <white>%current%<gray>.
+  - <gold>Version <white>%version%<gold> is out — update the anticheat. <gray>This server runs <white>%current%<gray>.
+  checking:
+  - <gray>Asking the service about a newer build...
+  current:
+  - <green>This is the newest build, <white>%version%<green>.
+  disabled:
+  - '<gray>Update checks are off: <white>update.enabled<gray> in config.yml.'
+  download:
+  - ' <yellow>[Download]'
+  hover:
+  - <gray>Click to open
+  staged:
+  - <green>Version %version% is downloaded<gray> — it is applied on the next restart.
+  unknown-build:
+  - '<red>This jar was not built by Gradle: there is no version to compare.'
+vanish:
+  gamemode-blocked:
+  - <red>You cannot change gamemode while vanished.

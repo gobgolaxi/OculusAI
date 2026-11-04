@@ -69,6 +69,21 @@ public final class Themes implements Service {
                 + "><bold>ᴏᴄᴜʟᴜsᴀɪ</bold></gradient> <dark_gray>- <white>" + suffix);
     }
 
+    /** Заменяет тег {@code <accent>} на цвет акцента текущей темы.
+     *
+     *  <p>Msg знает только фиксированные имена цветов, и нераскрытый
+     *  {@code <accent>} он бы молча выбросил - текст остался бы в предыдущем
+     *  цвете. Раскрывается до разбора, и для строк из языка, и для ответов,
+     *  собранных в коде. */
+    public String resolveAccent(String value) {
+        if (value == null || current == null) {
+            return value;
+        }
+        return value
+                .replace("</accent>", "")
+                .replace("<accent>", "<" + current.accent() + ">");
+    }
+
     public String accent(String text) {
         return Msg.parse("<" + current.accent() + ">" + text);
     }
@@ -80,7 +95,7 @@ public final class Themes implements Service {
     public String prefix(String template) {
         if (template == null || template.isBlank() || !template.contains("%primary%")) {
             return Msg.parse("<gradient:" + current.primary() + ":" + current.secondary()
-                    + "><bold>ᴏᴄᴜʟᴜsᴀɪ</bold></gradient> <dark_gray>» <gray>");
+                    + "><bold>ᴏᴄᴜʟᴜsᴀɪ</bold></gradient> <dark_gray>» <white>");
         }
         return Msg.parse(template
                 .replace("%primary%", current.primary())

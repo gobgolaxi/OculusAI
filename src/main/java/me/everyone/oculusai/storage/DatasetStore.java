@@ -176,23 +176,23 @@ public final class DatasetStore implements Service {
             if (!collecting) {
                 return;
             }
-            StringBuilder line = new StringBuilder("<gray>Recording:");
+            StringBuilder line = new StringBuilder("<white>Recording:");
             int total = 0;
             for (RosterEntry entry : roster.values()) {
                 PlayerData data = plugin.data().get(entry.uuid());
                 int captured = data == null ? 0 : data.recordedCount();
                 total += captured;
-                line.append(" <white>").append(entry.name())
-                        .append(" <").append(captured > 0 ? "green" : "red").append(">")
-                        .append(captured).append("<dark_gray>,");
+                line.append(" <accent>").append(entry.name())
+                        .append(" <white>").append(captured).append(",");
             }
             if (line.charAt(line.length() - 1) == ',') {
                 line.setLength(line.length() - 1);
             }
             if (total == 0) {
-                line.append(" <dark_gray>— windows are only taken while they fight");
+                line.append(" — windows are only taken while they fight");
             }
-            starter.sendMessage(Msg.parse(plugin.config().prefix() + line));
+            starter.sendMessage(plugin.config().prefix()
+                    + Msg.parse(plugin.theme().resolveAccent(line.toString())));
         });
     }
 

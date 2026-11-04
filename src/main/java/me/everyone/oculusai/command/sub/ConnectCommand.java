@@ -4,7 +4,6 @@ import com.google.gson.JsonObject;
 import me.everyone.oculusai.OculusAI;
 import me.everyone.oculusai.command.SubCommand;
 import me.everyone.oculusai.core.TickLoop;
-import me.everyone.oculusai.util.Msg;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.TextComponent;
@@ -34,7 +33,6 @@ public final class ConnectCommand extends SubCommand {
             poll.cancel();
             poll = null;
         }
-        replyKey(sender, "connect.asking");
         plugin.api().linkStart(Bukkit.getServer().getName(), Bukkit.getBukkitVersion())
                 .thenAccept(response -> plugin.mainThread().run(
                         () -> offer(sender, response)));
@@ -48,21 +46,26 @@ public final class ConnectCommand extends SubCommand {
         String url = response.get("url").getAsString();
         String token = response.get("token").getAsString();
 
-        sender.sendMessage(plugin.config().prefix() + plugin.lang().text("connect.open"));
         sendLink(sender, url);
         watch(sender, token, System.currentTimeMillis());
     }
 
     private void sendLink(CommandSender sender, String url) {
+        String label = plugin.config().prefix() + plugin.lang().text("connect.open") + " ";
+        String link = plugin.theme().accent("<underline>" + url);
         if (!(sender instanceof Player player)) {
-            sender.sendMessage(Msg.parse("<aqua>" + url));
+            sender.sendMessage(label + link);
             return;
         }
-        TextComponent component = new TextComponent(Msg.parse("<aqua><u>" + url));
-        component.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url));
-        component.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+        // One line, so the label and the link have to be one component tree:
+        // two sendMessage calls would put the label above the link.
+        TextComponent message = new TextComponent(TextComponent.fromLegacyText(label));
+        TextComponent target = new TextComponent(TextComponent.fromLegacyText(link));
+        target.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, url));
+        target.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                 new Text(plugin.lang().text("connect.hover"))));
-        player.spigot().sendMessage(component);
+        message.addExtra(target);
+        player.spigot().sendMessage(message);
     }
 
     private void watch(CommandSender sender, String token, long startedAt) {

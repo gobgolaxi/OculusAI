@@ -28,16 +28,16 @@ public final class DiagCommand extends SubCommand {
         } else if (sender instanceof Player self) {
             target = self;
         } else {
-            reply(sender, "<red>Console must name a player: <white>/oai diag &lt;player&gt;");
+            reply(sender, "<white>Console must name a player: <accent>/oai diag &lt;player&gt;");
             return;
         }
         if (target == null) {
-            reply(sender, "<red>That player is not online.");
+            reply(sender, "<white>That player is not online.");
             return;
         }
 
         PlayerData data = plugin.data().get(target);
-        reply(sender, "<gray>Diagnostics for <white>" + target.getName());
+        reply(sender, "<white>Diagnostics for <accent>" + target.getName());
         line(sender, "tracked", data != null, data == null
                 ? "no PlayerData - the join was missed, relog" : "ok");
         if (data == null) {
@@ -129,8 +129,8 @@ public final class DiagCommand extends SubCommand {
     }
 
     private void line(CommandSender sender, String label, boolean ok, String detail) {
-        sender.sendMessage(Msg.parse("<dark_gray> - <gray>" + label + " "
-                + (ok ? "<green>v" : "<red>x") + " <gray>" + detail));
+        sender.sendMessage(Msg.parse("<white> - " + label + " "
+                + (ok ? "v" : "x") + " " + detail));
     }
 
     private static String trim(double value) {

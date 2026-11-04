@@ -5,7 +5,21 @@
       "file": "oculusai:font/logo.png",
       "ascent": 7,
       "height": 8,
-      "chars": [""]
+      "chars": ["\uE0A1"]
+    },
+    {
+      "type": "bitmap",
+      "file": "oculusai:font/admin.png",
+      "ascent": 8,
+      "height": 10.8,
+      "chars": ["\uE0A2"]
+    },
+    {
+      "type": "bitmap",
+      "file": "oculusai:font/player.png",
+      "ascent": 8,
+      "height": 10.8,
+      "chars": ["\uE0A3"]
     }
   ]
 }

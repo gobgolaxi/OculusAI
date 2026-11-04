@@ -66,7 +66,7 @@ public final class SetupNotifier implements Service, Listener {
         player.sendMessage(plugin.config().prefix() + plugin.lang().text("setup.how"));
 
         TextComponent link = new TextComponent(TextComponent.fromLegacyText(
-                Msg.parse(plugin.config().prefix() + "<aqua><u>" + site)));
+                plugin.config().prefix() + Msg.parse(plugin.theme().resolveAccent("<accent><u>" + site))));
         link.setClickEvent(new ClickEvent(ClickEvent.Action.OPEN_URL, site));
         link.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                 new Text(TextComponent.fromLegacyText(

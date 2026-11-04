@@ -407,12 +407,6 @@ public final class Updater implements Service {
         TextComponent message = new TextComponent(TextComponent.fromLegacyText(
                 Msg.parse(plugin.config().prefix()) + body));
 
-        String note = notes.get();
-        if (note != null && !note.isBlank()) {
-            message.addExtra(new TextComponent(TextComponent.fromLegacyText(
-                    plugin.lang().text("update.notes", Map.of("value", note)))));
-        }
-
         // A staged build needs no link: it is already on disk, and clicking
         // through to download it by hand is how an operator ends up with two.
         String site = plugin.config().site();

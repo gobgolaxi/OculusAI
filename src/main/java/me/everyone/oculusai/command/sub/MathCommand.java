@@ -25,9 +25,9 @@ public final class MathCommand extends SubCommand {
         // must still see a real message rather than the key name.
         sender.sendMessage(plugin.config().prefix() + plugin.lang().textOr(
                 math ? "math.enabled" : "math.disabled",
-                math ? "<green>Prob shows the smoothed reading.<gray> The buffer, "
+                math ? "<white>Prob shows the smoothed reading. The buffer, "
                         + "Aim alerts and punishments work as usual."
-                     : "<yellow>Prob shows the raw model probability.<gray> The buffer "
+                     : "<white>Prob shows the raw model probability. The buffer "
                         + "and checks keep running."));
     }
 

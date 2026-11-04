@@ -1,0 +1,272 @@
+# Every value a key of lang/ru.yml has shipped with in an earlier release.
+# Generated from git history - do not edit by hand. A server's language
+# file whose line still equals one of these was never touched by its owner,
+# so Language replaces it with the current bundled text on start-up.
+alert:
+  hover:
+  - <gray>Нажми, чтобы следить за <white>%player%
+animations:
+  current:
+  - '<gray>Анимация наказания: <white>%value%<gray>.'
+  list:
+  - 'Доступны:'
+  set:
+  - '<green>Анимация наказания: <white>%value%<green>.'
+  unknown:
+  - '<red>Нет такой анимации: <white>%value%<red>.'
+bypass:
+  disabled:
+  - <green>Античит снова включён для <white>%player%<green>.
+  enabled:
+  - <green>Античит выключен для <white>%player%<green>.
+  permission:
+  - <yellow>У <bold>%player%<yellow> всё ещё есть право oculusai.bypass - сними его, чтобы включить анализ.
+  - <yellow>У %player% всё ещё есть право oculusai.bypass - сними его, чтобы включить анализ.
+  save-failed:
+  - '<red>Не удалось сохранить bypass.yml: после перезапуска список сбросится.'
+  unknown:
+  - <red>Такой игрок ещё ни разу не заходил на сервер.
+  usage:
+  - '<red>Использование: <white>%value%'
+check:
+  alert-line:
+  - <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
+  - <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%
+  desc:
+    hitbox:
+    - <gray>Удар по цели с увеличенным хитбоксом.
+  name:
+    aim:
+    - Neuro Aim
+    - Aim
+  reason:
+    aim:
+    - prob %probability%, buffer %buffer%
+    - prob %probability%
+    hitbox:
+    - хитбокс цели %width%x%height% больше %max-width%x%max-height%
+  test-line:
+  - <dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
+  - <dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%
+checks:
+  disabled:
+  - <gray>%name% выключен.
+  enabled:
+  - <green>%name% включён.
+  name:
+    aim:
+    - Neuro Aim
+  state:
+    disabled:
+    - <red>выкл
+    enabled:
+    - <green>вкл
+  status:
+  - <gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Наказание %punish%
+  - <gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>HitBox %hitbox% <dark_gray>| <gray>NoLookHit %nolookhit% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Наказание %punish%
+  - <gray>Анализ %analysis% <dark_gray>| <gray>Удары %checks% <dark_gray>| <gray>Wall %wall% <dark_gray>| <gray>Aim %aim% <dark_gray>| <gray>Наказание %punish%
+  usage:
+  - '<red>Использование: <white>%value%'
+command:
+  no-permission:
+  - <red>У тебя нет прав.
+  players-only:
+  - <red>Только для игроков.
+  unknown:
+  - <red>Неизвестная подкоманда. Попробуй <white>/%label% help<red>.
+connect:
+  done:
+  - <green>Сервер привязан. <gray>Ключ сохранён и привязан к <white>%address%<gray>.
+  expired:
+  - <red>Ссылка истекла. Напиши <white>/oai connect<red> ещё раз.
+  failed:
+  - <red><bold>Сервис не ответил.<red> Проверь <white>api.url<red> в config.yml.
+  - <red>Сервис не ответил. Проверь <white>api.url<red> в config.yml.
+  hover:
+  - <gray>Нажми, чтобы открыть
+  open:
+  - '<gray>Открой ссылку под своим аккаунтом, чтобы привязать сервер:'
+dashboard:
+  alwaysprob:
+    turned-off:
+    - <gray>AlwaysProb выключен.
+    turned-on:
+    - <green>AlwaysProb включён.<gray> Показания держатся над каждым, кого видишь.
+    unsupported:
+    - <red>На этой версии сервера нет text display — AlwaysProb нечем рисовать.
+  probheight:
+    save-failed:
+    - <red>Не удалось сохранить высоту в probcfg.yml.
+  theme:
+    changed:
+    - <gray>Тема изменена на <white>%value%<gray>.
+dummy:
+  gone:
+  - <red>Этот манекен уже удалён.
+forget:
+  done:
+  - '<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> <white>0%dropped%<gray>. Подозрение начинается заново.'
+  - '<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> <white>0%case%%dropped%<gray>. Подозрение начинается заново.'
+  usage:
+  - '<red>Использование: <white>%value%'
+guide:
+  act:
+  - <white>/oai journal<gray> - что уже сработало. <white>/oai history ник<gray> - прошлые показания.
+  check:
+  - <white>/oai prob ник<gray> - следить за одним игроком.
+  numbers:
+  - Проценты - это сейчас, полоска - буфер. Алерт на <white>%alert%<gray>, наказание на <white>%punish%<gray>.
+  test:
+  - <white>/oai npc<gray> - заспавнить манекен и проверить самому.
+  watch:
+  - <white>/oai monitor<gray> - живой список только для тебя, красная точка = подозрительно.
+  - <white>/oai monitor<gray> - живой список, красная точка = подозрительно.
+  what:
+  - ИИ-античит по аиму. Смотрит бои и оценивает их.
+help:
+  header:
+  - <gray>версия <white>%version% <dark_gray>- <gray>сервис <white>%status%
+  status:
+    down:
+    - <red>выключен
+    up:
+    - <green>в сети
+history:
+  event:
+    check-aim:
+    - Neuro Aim
+    - Aim
+  no-data:
+  - <dark_gray>У тебя пока нет данных — readings появляются только во время боя.
+  unknown-player:
+  - <red>Истории для <white>%player%<red> не сохранено.
+journal:
+  observe-started:
+  - <gray>Теперь наблюдаешь за <white>%player%<gray> с включённым Prob.
+  observe-unsupported:
+  - '<red>Слежка не работает на Folia: она телепортирует тебя к игроку, которого тикает другой поток.'
+  player-offline:
+  - <red>Этот игрок уже не в сети.
+manual:
+  banned:
+  - '<gray>Забанен <white>%player%<gray>: <white>%reason%'
+  broadcast-ban:
+  - <red>%player% <gray>забанен <dark_gray>- <white>%reason%
+  broadcast-kick:
+  - <red>%player% <gray>кикнут <dark_gray>- <white>%reason%
+  kicked:
+  - '<gray>Кикнут <white>%player%<gray>: <white>%reason%'
+  self:
+  - <red>Себя наказать нельзя.
+  usage:
+  - '<red>Использование: <white>%value%'
+math:
+  disabled:
+  - <yellow>Prob показывает чистую вероятность модели.<gray> Буфер и проверки продолжают работать.
+  enabled:
+  - <green>Prob показывает сглаженное показание.<gray> Буфер, Aim-алерты и наказания работают как обычно.
+npc:
+  cleared:
+  - <gray>Манекены убраны.
+  full:
+  - <red>Уже достигнут лимит манекенов.
+  killed:
+  - <gray>Манекен <white>%value%<gray> повержен.
+  spawned:
+  - '<gray>Заспавнено манекенов: <white>%value%<gray>.'
+  unsupported:
+  - '<red>Манекен не работает на Folia: он ходит за игроком между регионами, а Folia этого из одного потока не позволяет.'
+  usage:
+  - '<red>Использование: <white>%value%'
+player-cmd:
+  buffer:
+  - '<gray>Буфер: <white>%value%<dark_gray>/%max%'
+  buffer-history:
+  - '<gray>История буфера:'
+  in-combat:
+  - <green>Сейчас в бою.
+  no-data:
+  - <dark_gray>Данных пока нет — readings появляются только во время боя.
+  not-in-combat:
+  - <dark_gray>Не в бою.
+  peak-buffer:
+  - '<gray>Пик буфера: <white>%value%'
+  prob-history:
+  - '<gray>История вероятностей:'
+  probability:
+  - '<gray>Последняя вероятность: <white>%value%'
+  recording:
+  - '<gold>Запись: <white>%value%<gold> окон записано.'
+  usage:
+  - '<red>Использование: <white>%value%'
+  windows:
+  - '<gray>Окон проанализировано: <white>%value%'
+players:
+  watching:
+  - <gray>Теперь смотришь за <white>%player%<gray>.
+prob:
+  no-data:
+  - <dark_gray>Пока ничего не проанализировано - readings появляются только во время боя.
+  watching:
+  - <gray>Смотришь за <white>%player%<gray>. Буфер <white>%buffer%<gray>, последний reading <white>%probability%<gray>, окон проанализировано <white>%windows%
+  - <gray>Буфер <white>%buffer%<gray>, последний reading <white>%probability%<gray>, окон проанализировано <white>%windows%
+reload:
+  done:
+  - <green>Перезагружено <gray>за <white>%value%мс<gray>.
+report:
+  sent:
+  - <gray>Жалоба на <white>%player%<gray> отправлена в панель.
+  usage:
+  - '<red>Использование: <white>%value%'
+sessions:
+  deleted:
+  - <gray>Удалено <white>%value%
+  failed:
+  - <red>Сервис не ответил или отклонил изменение.
+  updated:
+  - <gray>Обновлено <white>%value%
+settings:
+  aim:
+    name:
+    - <light_purple>Neuro Aim
+setup:
+  command:
+  - '<gray>Или прямо здесь: <white>%value%'
+  hover:
+  - <gray>Нажми, чтобы открыть
+  how:
+  - '<gray>Получи ключ и привяжи сервер:'
+  not-connected:
+  - <red><bold>Античит не подключён к API — анализ не работает.
+  - <red>Античит не подключён к API — анализ не работает.
+shared:
+  no-permission:
+  - <red>Нет прав.
+  player-offline:
+  - <red>Этот игрок не в сети.
+spawn:
+  disabled:
+  - <red>Тестовый сервер не включён.
+  teleported:
+  - <gray>Телепортирован на спавн тестовой арены.
+update:
+  available:
+  - <gold>Вышла новая версия <white><bold>%version%<gold> — обновите античит. <gray>Сейчас стоит <white>%current%<gray>.
+  - <gold>Вышла новая версия <white>%version%<gold> — обновите античит. <gray>Сейчас стоит <white>%current%<gray>.
+  checking:
+  - <gray>Спрашиваю сервис о новой версии...
+  current:
+  - <green>Стоит последняя версия <white>%version%<green>.
+  disabled:
+  - '<gray>Проверка обновлений выключена: <white>update.enabled<gray> в config.yml.'
+  download:
+  - ' <yellow>[Скачать]'
+  hover:
+  - <gray>Нажми, чтобы открыть
+  staged:
+  - <green>Версия %version% скачана<gray> — применится после рестарта сервера.
+  unknown-build:
+  - '<red>Этот jar собран не через Gradle: версию не с чем сравнить.'
+vanish:
+  gamemode-blocked:
+  - <red>Нельзя менять gamemode во время скрытого наблюдения.

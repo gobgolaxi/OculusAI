@@ -28,16 +28,14 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scoreboard.DisplaySlot;
-import org.bukkit.scoreboard.Objective;
-import org.bukkit.scoreboard.Score;
-import org.bukkit.scoreboard.Scoreboard;
+import me.everyone.oculusai.ui.Sidebar;
 
 public final class TestServer implements Service, Listener {
 
@@ -56,6 +54,8 @@ public final class TestServer implements Service, Listener {
      *  it. */
     private static final double PURGE_RADIUS = 96.0D;
     private volatile String modelLine = "loading...";
+    /** Сайдбар каждого игрока - один на всё время, обновляется на месте. */
+    private final java.util.Map<UUID, Sidebar> sidebars = new java.util.concurrent.ConcurrentHashMap<>();
 
     public TestServer(OculusAI plugin) {
         this.plugin = plugin;
@@ -108,6 +108,7 @@ public final class TestServer implements Service, Listener {
             scoreboardTask.cancel();
             scoreboardTask = null;
         }
+        sidebars.clear();
         if (modelTask != null) {
             modelTask.cancel();
             modelTask = null;
@@ -125,6 +126,11 @@ public final class TestServer implements Service, Listener {
             return;
         }
         resetPlayer(event.getPlayer());
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void onQuit(PlayerQuitEvent event) {
+        sidebars.remove(event.getPlayer().getUniqueId());
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -351,34 +357,29 @@ public final class TestServer implements Service, Listener {
             return;
         }
         boolean recording = plugin.datasets().collecting();
-        Scoreboard board = Bukkit.getScoreboardManager().getNewScoreboard();
         // Логотип слева от заголовка - только тем, у кого загружен пак с ним:
         // у остальных на его месте был бы пустой квадрат.
-        Objective objective = board.registerNewObjective("oai_test", "dummy",
-                plugin.resourcePack().logo(player)
-                        + plugin.theme().title(recording ? "Recording" : "Test Server"));
-        objective.setDisplaySlot(DisplaySlot.SIDEBAR);
-
-        if (recording) {
-            fillRecordingScoreboard(objective, player);
-        } else {
-            fillIdleScoreboard(objective);
-        }
-
-        player.setScoreboard(board);
+        String title = plugin.resourcePack().logo(player)
+                + plugin.theme().title(recording ? "Recording" : "Test Server");
+        // Доска одна на игрока и не подменяется: новая доска на каждое
+        // обновление - это сайдбар, который на миг пропадает, то есть мерцает.
+        Sidebar sidebar = sidebars.computeIfAbsent(player.getUniqueId(), ignored -> new Sidebar(title));
+        sidebar.title(title);
+        sidebar.lines(recording ? recordingLines(player) : idleLines());
+        sidebar.show(player);
     }
 
-    private void fillIdleScoreboard(Objective objective) {
-        int line = 5;
-        set(objective, line--, " ");
-        set(objective, line--, Msg.parse("<gray>Version <white>" + plugin.getDescription().getVersion()));
-        set(objective, line--, Msg.parse("<gray>Model <white>" + modelLine));
-        set(objective, line--, "  ");
-        set(objective, line--, Msg.parse("<gray>Online <white>"
-                + Bukkit.getOnlinePlayers().size() + "/" + Bukkit.getMaxPlayers()));
+    private java.util.List<String> idleLines() {
+        return java.util.List.of(
+                " ",
+                Msg.parse("<gray>Version <white>" + plugin.getDescription().getVersion()),
+                Msg.parse("<gray>Model <white>" + modelLine),
+                "  ",
+                Msg.parse("<gray>Online <white>"
+                        + Bukkit.getOnlinePlayers().size() + "/" + Bukkit.getMaxPlayers()));
     }
 
-    private void fillRecordingScoreboard(Objective objective, Player viewer) {
+    private java.util.List<String> recordingLines(Player viewer) {
         DatasetStore datasets = plugin.datasets();
         long elapsedSeconds = Math.max(0L,
                 (System.currentTimeMillis() - datasets.collectingSinceMs()) / 1000L);
@@ -389,24 +390,19 @@ public final class TestServer implements Service, Listener {
                 ? "<gray>You <dark_gray>not signed up"
                 : "<gray>You <white>" + (ownData == null ? 0 : ownData.recordedCount()) + " windows";
 
-        int line = 6;
-        set(objective, line--, " ");
-        set(objective, line--, Msg.parse("<gray>Time <white>" + formatDuration(elapsedSeconds)));
-        set(objective, line--, Msg.parse("<gray>Players <white>" + datasets.roster().size()));
-        set(objective, line--, Msg.parse(youLine));
-        set(objective, line--, Msg.parse("<gray>Total <white>" + datasets.totalRecorded() + " windows"));
-        set(objective, line--, "  ");
+        return java.util.List.of(
+                " ",
+                Msg.parse("<gray>Time <white>" + formatDuration(elapsedSeconds)),
+                Msg.parse("<gray>Players <white>" + datasets.roster().size()),
+                Msg.parse(youLine),
+                Msg.parse("<gray>Total <white>" + datasets.totalRecorded() + " windows"),
+                "  ");
     }
 
     private static String formatDuration(long totalSeconds) {
         long minutes = totalSeconds / 60L;
         long seconds = totalSeconds % 60L;
         return (minutes < 10 ? "0" : "") + minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
-    }
-
-    private void set(Objective objective, int score, String text) {
-        Score entry = objective.getScore(text);
-        entry.setScore(score);
     }
 
     private void refreshModelLine() {

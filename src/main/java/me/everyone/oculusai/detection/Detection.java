@@ -154,27 +154,35 @@ public final class Detection implements Service {
     }
 
     private static double[] ticksOf(List<RotationSample> window) {
-        double[] flat = new double[window.size() * TICK_CHANNELS.size()];
-        int at = 0;
-        for (RotationSample sample : window) {
-            flat[at++] = sample.yaw();
-            flat[at++] = sample.pitch();
-            flat[at++] = sample.attacked() ? 1.0D : 0.0D;
-            flat[at++] = finite(sample.aimError());
-            flat[at++] = sample.ticksSinceAttack();
-            flat[at++] = sample.teleport() ? 1.0D : 0.0D;
-            flat[at++] = finite(sample.targetAngle());
-            flat[at++] = finite(sample.targetEdgeAngle());
-            flat[at++] = finite(sample.targetDistance());
-            flat[at++] = sample.targetId();
-            flat[at++] = sample.targetsNear();
-            flat[at++] = sample.swungEmpty() ? 1.0D : 0.0D;
-            flat[at++] = sample.onGround() ? 1.0D : 0.0D;
-            flat[at++] = sample.sprinting() ? 1.0D : 0.0D;
-            flat[at++] = finite(sample.speed());
-            flat[at++] = sample.sinceLastMs();
+        int channels = TICK_CHANNELS.size();
+        double[] flat = new double[window.size() * channels];
+        for (int i = 0; i < window.size(); i++) {
+            tickRow(window.get(i), flat, i * channels);
         }
         return flat;
+    }
+
+    /** Один тик в каналы {@link #TICK_CHANNELS}, начиная с {@code offset}.
+     *  Одно определение на два места: аимовое окно и кристалльное (схема 8
+     *  начинается с тех же каналов). */
+    public static void tickRow(RotationSample sample, double[] out, int offset) {
+        int at = offset;
+        out[at++] = sample.yaw();
+        out[at++] = sample.pitch();
+        out[at++] = sample.attacked() ? 1.0D : 0.0D;
+        out[at++] = finite(sample.aimError());
+        out[at++] = sample.ticksSinceAttack();
+        out[at++] = sample.teleport() ? 1.0D : 0.0D;
+        out[at++] = finite(sample.targetAngle());
+        out[at++] = finite(sample.targetEdgeAngle());
+        out[at++] = finite(sample.targetDistance());
+        out[at++] = sample.targetId();
+        out[at++] = sample.targetsNear();
+        out[at++] = sample.swungEmpty() ? 1.0D : 0.0D;
+        out[at++] = sample.onGround() ? 1.0D : 0.0D;
+        out[at++] = sample.sprinting() ? 1.0D : 0.0D;
+        out[at++] = finite(sample.speed());
+        out[at] = sample.sinceLastMs();
     }
 
     private void analyse(PlayerData data) {

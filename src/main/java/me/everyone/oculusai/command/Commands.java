@@ -57,6 +57,7 @@ public final class Commands implements Service, CommandExecutor, TabCompleter {
         subCommands.add(PunishCommand.kick(plugin));
         subCommands.add(PunishCommand.ban(plugin));
         subCommands.add(new DataCommand(plugin));
+        subCommands.add(new me.everyone.oculusai.command.sub.CrystalDataCommand(plugin));
         subCommands.add(new NpcCommand(plugin));
         subCommands.add(new ConnectCommand(plugin));
         subCommands.add(new DashboardCommand(plugin));

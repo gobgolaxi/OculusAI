@@ -61,6 +61,8 @@ public final class OculusAI extends JavaPlugin {
     private BanCounter banCounter;
     private Checks checks;
     private Detection detection;
+    private me.everyone.oculusai.detection.crystal.Crystals crystals;
+    private me.everyone.oculusai.storage.CrystalDataset crystalData;
     private PacketBridge packets;
     private Commands commands;
     private Npcs npcs;
@@ -102,6 +104,8 @@ public final class OculusAI extends JavaPlugin {
         punishments = register(new Punishments(this));
         checks = register(new Checks(this));
         detection = register(new Detection(this));
+        crystals = register(new me.everyone.oculusai.detection.crystal.Crystals(this));
+        crystalData = register(new me.everyone.oculusai.storage.CrystalDataset(this));
         ui = register(new Ui(this));
         resourcePack = register(new me.everyone.oculusai.ui.ResourcePack(this));
         packets = register(new PacketBridge(this));
@@ -292,6 +296,11 @@ public final class OculusAI extends JavaPlugin {
 
     public DatasetStore datasets() {
         return storage.datasets();
+    }
+
+    /** Запись кристалльного датасета, схема 8: /oai datacrystal. */
+    public me.everyone.oculusai.storage.CrystalDataset crystalData() {
+        return crystalData;
     }
 
     public HistoryStore history() {

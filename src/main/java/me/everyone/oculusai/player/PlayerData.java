@@ -71,6 +71,9 @@ public final class PlayerData {
      *  колонки, сплющенные подряд. Пустой список - запись без тиков, так
      *  ведёт себя всё, что писалось до их появления. */
     private final List<double[]> recordedTicks = new ArrayList<>();
+    /** Кристалльная история: те же тики плюс постановки и удары кристаллов. */
+    private final me.everyone.oculusai.detection.crystal.CrystalTimeline crystal =
+            new me.everyone.oculusai.detection.crystal.CrystalTimeline();
     private final List<String> recordedNames = new ArrayList<>();
 
     private volatile boolean attackedThisTick;
@@ -203,6 +206,7 @@ public final class PlayerData {
         attackedThisTick = false;
         aimErrorThisTick = Double.NaN;
         momentThisTick = null;
+        crystal.onTick(sample);
 
         synchronized (window) {
             window.addLast(sample);
@@ -235,6 +239,11 @@ public final class PlayerData {
         synchronized (window) {
             window.clear();
         }
+        crystal.reset();
+    }
+
+    public me.everyone.oculusai.detection.crystal.CrystalTimeline crystal() {
+        return crystal;
     }
 
     public void noteSprint(boolean nowSprinting) {

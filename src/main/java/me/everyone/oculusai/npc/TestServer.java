@@ -407,6 +407,18 @@ public final class TestServer implements Service, Listener {
 
     private void refreshModelLine() {
         plugin.api().status().thenAccept(response -> {
+            if (response == null) {
+                // Один неответ - это обычно перезапуск сервиса, а не пропавшая
+                // модель: последняя известная остаётся на месте, а спросить
+                // ещё раз стоит через несколько секунд, а не через полминуты.
+                plugin.mainThread().run(() -> {
+                    if (modelLine.equals("loading...")) {
+                        modelLine = "unavailable";
+                    }
+                });
+                plugin.ticks().after(100L, this::refreshModelLine);
+                return;
+            }
             String display = abbreviate(response);
             plugin.mainThread().run(() -> modelLine = display);
         });

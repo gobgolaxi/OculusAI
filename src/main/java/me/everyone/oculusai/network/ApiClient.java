@@ -67,7 +67,8 @@ public final class ApiClient implements Service {
     private volatile Set<Integer> serviceSchemas = Set.of();
     /** Читает ли версия на слоте сырые тики. Спрашивается у сервиса, а не
      *  угадывается: какая версия стоит на слоте, знает только он. */
-    private volatile boolean predictWantsTicks;
+    /** Нужны ли модели сырые тики; null - сервис ещё не сказал. */
+    private volatile Boolean predictWantsTicks;
     /** Стоит ли на сервисе кристалльная модель (настройка crystal_model). */
     private volatile boolean crystalModel;
     /** What the service last said this key is entitled to. Read from the
@@ -241,8 +242,12 @@ public final class ApiClient implements Service {
      *  ответа настроек - они не шлются: лишний трафик хуже, чем один лишний
      *  цикл предсказания без тиков, а траекторная модель на запрос без них
      *  отвечает понятной ошибкой, а не тихо неверной вероятностью. */
+    /** Слать ли тики в /predict. Пока настроек нет, - да: лишние тики модель,
+     *  которая их не читает, просто пропустит, а без них модель на тиках
+     *  отвечает 422, и первые секунды после запуска анализ стоял. */
     public boolean predictWantsTicks() {
-        return predictWantsTicks;
+        Boolean wants = predictWantsTicks;
+        return wants == null || wants;
     }
 
     /** Есть ли чем оценивать кристалльные окна. Нет - они не отправляются. */
@@ -649,6 +654,13 @@ public final class ApiClient implements Service {
                     if (response.statusCode() == 429) {
                         noteThrottled(response.body());
                         return null;
+                    }
+                    if (response.statusCode() == 422 && request.uri().getPath().endsWith("/predict")
+                            && response.body() != null
+                            && (response.body().contains("тик") || response.body().contains("tick"))) {
+                        // Модель на слоте читает тики, а настройки об этом ещё
+                        // не дошли (или устарели): со следующего окна они едут.
+                        predictWantsTicks = Boolean.TRUE;
                     }
                     if (response.statusCode() / 100 != 2) {
                         plugin.getLogger().warning("Service answered " + response.statusCode()

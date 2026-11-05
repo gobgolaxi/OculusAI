@@ -18,7 +18,12 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.World;
+import org.bukkit.block.data.type.RespawnAnchor;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
@@ -48,6 +53,17 @@ public final class Crystals implements Service, Listener {
     private record Breaker(UUID player, long at) {
     }
 
+    /** Подорванный якорь: кто, где и когда - чтобы урон от его взрыва
+     *  записать тому, кто подорвал. */
+    private record Detonation(UUID player, String world, double x, double y, double z, long at) {
+    }
+
+    private final java.util.Deque<Detonation> detonations = new java.util.concurrent.ConcurrentLinkedDeque<>();
+    /** Урон от взрыва якоря приходит в том же тике; расстояние - радиус
+     *  взрыва с запасом. */
+    private static final long DETONATION_MS = 1_500L;
+    private static final double DETONATION_RANGE = 12.0D;
+
     public Crystals(OculusAI plugin) {
         this.plugin = plugin;
     }
@@ -61,6 +77,8 @@ public final class Crystals implements Service, Listener {
     public void disable() {
         HandlerList.unregisterAll(this);
         breakers.clear();
+        detonations.clear();
+        CrystalTimeline.clearAnchors();
     }
 
     private CrystalTimeline timeline(Player player) {
@@ -100,6 +118,14 @@ public final class Crystals implements Service, Listener {
             remember(crystal.getUniqueId(), breaker.getUniqueId());
             CrystalTimeline timeline = timeline(breaker);
             if (timeline != null) {
+                // Удар рукой, а не стрелой: только у него есть пакет удара,
+                // по которому видно, мог ли клиент знать о кристалле.
+                if (event.getDamager() == breaker && timeline.hitBeforeSeen(crystal.getEntityId())) {
+                    PlayerData data = plugin.data().get(breaker);
+                    if (data != null) {
+                        plugin.checks().onCrystalUnseenHit(data);
+                    }
+                }
                 // Центр кристалла - на блок выше его основания.
                 Location centre = crystal.getLocation().add(0.0D, 1.0D, 0.0D);
                 timeline.broken(angle(breaker, centre), distance(breaker, centre));
@@ -124,6 +150,96 @@ public final class Crystals implements Service, Listener {
             } else {
                 timeline.damageDealt(event.getFinalDamage());
             }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onAnchorPlace(BlockPlaceEvent event) {
+        if (event.getBlockPlaced().getType() != Material.RESPAWN_ANCHOR) {
+            return;
+        }
+        CrystalTimeline timeline = timeline(event.getPlayer());
+        if (timeline != null) {
+            Location centre = event.getBlockPlaced().getLocation().add(0.5D, 0.5D, 0.5D);
+            timeline.anchorPlaced(angle(event.getPlayer(), centre), distance(event.getPlayer(), centre));
+        }
+    }
+
+    /** Заряд светокамнем и подрыв. Якорь взрывается от нажатия везде, кроме
+     *  Незера: там он ставит точку возрождения. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onAnchorUse(PlayerInteractEvent event) {
+        if (event.getAction() != Action.RIGHT_CLICK_BLOCK) {
+            return;
+        }
+        Block block = event.getClickedBlock();
+        if (block == null || block.getType() != Material.RESPAWN_ANCHOR
+                || !(block.getBlockData() instanceof RespawnAnchor anchor)) {
+            return;
+        }
+        Player player = event.getPlayer();
+        CrystalTimeline timeline = timeline(player);
+        if (timeline == null) {
+            return;
+        }
+        Location centre = block.getLocation().add(0.5D, 0.5D, 0.5D);
+        double angle = angle(player, centre);
+        double distance = distance(player, centre);
+        String world = block.getWorld().getName();
+        ItemStack item = event.getItem();
+        boolean glowstone = item != null && item.getType() == Material.GLOWSTONE;
+        if (glowstone && anchor.getCharges() < anchor.getMaximumCharges()) {
+            timeline.anchorCharged(angle, distance);
+            CrystalTimeline.anchorArmed(world, block.getX(), block.getY(), block.getZ());
+            return;
+        }
+        if (anchor.getCharges() > 0 && block.getWorld().getEnvironment() != World.Environment.NETHER) {
+            timeline.anchorExploded(angle, distance);
+            CrystalTimeline.anchorGone(world, block.getX(), block.getY(), block.getZ());
+            long now = System.currentTimeMillis();
+            detonations.removeIf(old -> now - old.at() > DETONATION_MS);
+            detonations.add(new Detonation(player.getUniqueId(), world,
+                    centre.getX(), centre.getY(), centre.getZ(), now));
+        }
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onAnchorBreak(BlockBreakEvent event) {
+        Block block = event.getBlock();
+        if (block.getType() == Material.RESPAWN_ANCHOR) {
+            CrystalTimeline.anchorGone(block.getWorld().getName(), block.getX(), block.getY(), block.getZ());
+        }
+    }
+
+    /** Урон от взрыва якоря - тому, кто его подорвал. Кристаллы сюда не
+     *  попадают: их взрыв - ENTITY_EXPLOSION и разбирается в onDamage. */
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onBlockBlast(EntityDamageEvent event) {
+        if (event.getCause() != EntityDamageEvent.DamageCause.BLOCK_EXPLOSION
+                || !(event.getEntity() instanceof Player hurt) || detonations.isEmpty()) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        Location at = hurt.getLocation();
+        for (Detonation detonation : detonations) {
+            if (now - detonation.at() > DETONATION_MS
+                    || !detonation.world().equals(at.getWorld().getName())
+                    || Math.abs(detonation.x() - at.getX()) > DETONATION_RANGE
+                    || Math.abs(detonation.y() - at.getY()) > DETONATION_RANGE
+                    || Math.abs(detonation.z() - at.getZ()) > DETONATION_RANGE) {
+                continue;
+            }
+            Player owner = plugin.getServer().getPlayer(detonation.player());
+            CrystalTimeline timeline = owner == null ? null : timeline(owner);
+            if (timeline == null) {
+                return;
+            }
+            if (owner.getUniqueId().equals(hurt.getUniqueId())) {
+                timeline.damageTaken(event.getFinalDamage());
+            } else {
+                timeline.damageDealt(event.getFinalDamage());
+            }
+            return;
         }
     }
 

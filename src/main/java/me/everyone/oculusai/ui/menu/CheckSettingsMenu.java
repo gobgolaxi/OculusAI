@@ -222,6 +222,7 @@ public final class CheckSettingsMenu extends Menu {
             case "aim" -> Material.ENDER_EYE;
             case "hitbox" -> Material.ARMOR_STAND;
             case "crystal" -> Material.END_CRYSTAL;
+            case "crystalpredict" -> Material.FIRE_CHARGE;
             default -> Material.PAPER;
         };
     }

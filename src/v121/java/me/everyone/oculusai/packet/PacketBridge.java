@@ -96,6 +96,9 @@ public final class PacketBridge implements Service {
             var wrapped = event.getPacket().getEnumEntityUseActions().readSafely(0);
             if (wrapped != null && wrapped.getAction() == EnumWrappers.EntityUseAction.ATTACK) {
                 int targetEntityId = event.getPacket().getIntegers().read(0);
+                // Любой удар, до фильтра по игрокам: кристалл не игрок,
+                // а увидеть его удар можно только здесь (CrystalPredict).
+                data.crystal().attackArrived(targetEntityId);
                 // Only a hit on a player counts as combat. A mob is a
                 // different measurement entirely - it walks a straight line
                 // and never strafes, so honest farming reads like a cheat -
@@ -128,6 +131,8 @@ public final class PacketBridge implements Service {
             data.noteGround(player.isOnGround());
             data.noteSprint(player.isSprinting());
             if (type == PacketType.Play.Client.POSITION || type == PacketType.Play.Client.GROUND) {
+                me.everyone.oculusai.detection.crystal.CrystalLook.update(plugin, player, data,
+                        data.lastYaw(), data.lastPitch());
                 data.addSample(data.lastYaw(), data.lastPitch(),
                         plugin.config().windowTicks(),
                         AimGeometry.of(plugin.tracker(), data.entityId(),
@@ -139,6 +144,7 @@ public final class PacketBridge implements Service {
                     ? event.getPacket().getFloat().read(0) : data.lastYaw();
             float pitch = event.getPacket().getFloat().readSafely(1) != null
                     ? event.getPacket().getFloat().read(1) : data.lastPitch();
+            me.everyone.oculusai.detection.crystal.CrystalLook.update(plugin, player, data, yaw, pitch);
             data.addSample(yaw, pitch, plugin.config().windowTicks(),
                     AimGeometry.of(plugin.tracker(), data.entityId(), yaw, pitch),
                     player.isOnGround(), player.isSprinting());

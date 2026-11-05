@@ -110,6 +110,7 @@ public final class OculusAI extends JavaPlugin {
         ui = register(new Ui(this));
         resourcePack = register(new me.everyone.oculusai.ui.ResourcePack(this));
         packets = register(new PacketBridge(this));
+        register(new me.everyone.oculusai.packet.CrystalPackets(this));
         commands = register(new Commands(this));
         npcs = register(new Npcs(this));
         // After the punishment service, which is what asks it to freeze, and

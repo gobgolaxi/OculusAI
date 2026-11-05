@@ -21,6 +21,7 @@ public final class Checks implements Service {
     private final List<PlayerCheck> playerChecks = new ArrayList<>();
     /** Отдельно от playerChecks: зовётся только на кристалльное предсказание. */
     private CrystalCheck crystalCheck;
+    private CrystalPredictCheck crystalPredictCheck;
 
     public Checks(OculusAI plugin) {
         this.plugin = plugin;
@@ -45,6 +46,7 @@ public final class Checks implements Service {
         combatChecks.add(new WallCheck(plugin));
         playerChecks.add(new AimCheck(plugin));
         crystalCheck = new CrystalCheck(plugin);
+        crystalPredictCheck = new CrystalPredictCheck(plugin);
     }
 
     /** Every registered check, in display order. Menus use this instead of
@@ -54,6 +56,9 @@ public final class Checks implements Service {
         result.addAll(playerChecks);
         if (crystalCheck != null) {
             result.add(crystalCheck);
+        }
+        if (crystalPredictCheck != null) {
+            result.add(crystalPredictCheck);
         }
         return List.copyOf(result);
     }
@@ -173,6 +178,18 @@ public final class Checks implements Service {
         }
         boolean test = crystalCheck.testOnly() && plugin.config().checkTestMode();
         return plugin.alerts().raise(data, crystalCheck, result, test) == Alerts.Outcome.SENT && !test;
+    }
+
+    /** Удар по кристаллу раньше, чем клиент мог о нём узнать. */
+    public void onCrystalUnseenHit(PlayerData data) {
+        Player player = data.player();
+        if (crystalPredictCheck == null || !crystalPredictCheck.enabled()
+                || !plugin.config().analysisEnabled() || !plugin.config().checksEnabled()
+                || player == null || !player.isOnline() || plugin.bypass().isBypassed(player)) {
+            return;
+        }
+        boolean test = crystalPredictCheck.testOnly() && plugin.config().checkTestMode();
+        plugin.alerts().raise(data, crystalPredictCheck, crystalPredictCheck.result(), test);
     }
 
     private CheckResult test(CombatCheck check, Player attacker, PlayerData data, int targetEntityId) {

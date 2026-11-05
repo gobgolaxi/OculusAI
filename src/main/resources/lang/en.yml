@@ -267,6 +267,7 @@ history:
     check-aim: "Neuro"
     check-hitbox: "HitBox"
     check-crystal: "Neuro (Crystal)"
+    check-crystalpredict: "CrystalPredict"
   unknown-player: "<white>No stored history for <accent>%player%<white>."
   reading:
     summary: "<white>Prob %probability% <dark_gray>| <white>Buffer %buffer%"
@@ -548,6 +549,7 @@ check:
     aim: "<gray>Neural aim check."
     hitbox: "<gray>Hits outside the target's real hitbox."
     crystal: "<gray>Neural check of crystal PvP: CrystalAura, AutoCrystal."
+    crystalpredict: "<gray>Hits a crystal before the client could have seen it (AutoCrystal ID prediction)."
   test-line: "<dark_gray>[TEST] <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check%"
   alert-line: "<accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check%"
   reason:
@@ -555,11 +557,13 @@ check:
     aim: "window above threshold"
     hitbox: "attack outside the target hitbox"
     crystal: "crystal windows above the line"
+    crystalpredict: "hit a crystal the client had not been sent yet"
   name:
     wall: "Wall"
     aim: "Neuro"
     hitbox: "HitBox"
     crystal: "Neuro (Crystal)"
+    crystalpredict: "CrystalPredict"
   # Which feature group stood out most in the windows behind a Neuro alert.
   flag:
     Rotation: "Rotation"

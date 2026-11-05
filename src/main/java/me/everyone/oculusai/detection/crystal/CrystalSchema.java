@@ -40,7 +40,20 @@ public final class CrystalSchema {
             // другим и по себе. Чит выбирает место выгоднее человека.
             "damage_dealt",
             "damage_taken",
-            "totem_popped");
+            "totem_popped",
+            // Наводка между событиями: угол и расстояние до ближайшего
+            // кристалла (из пакетов появления, которые получил игрок) или
+            // заряженного якоря - в каждом тике, а не только в тике удара.
+            // Нет источника рядом - -1.
+            "blast_angle",
+            "blast_distance",
+            // Якоря возрождения: поставил, зарядил светокамнем, подорвал.
+            "anchor_placed",
+            "anchor_charged",
+            "anchor_exploded",
+            // Удар по кристаллу, пакет появления которого ещё не ушёл
+            // клиенту: клиент не мог его видеть (ID predict).
+            "unseen_hit");
 
     public static final List<String> TICK_CHANNELS = channels();
 
@@ -55,7 +68,13 @@ public final class CrystalSchema {
             "slot_switches",
             "damage_dealt",
             "damage_taken",
-            "totem_pops");
+            "totem_pops",
+            "anchor_charges",
+            "anchor_explosions",
+            // Средний угол до ближайшего источника взрыва по тикам, где он
+            // был рядом: чит держит его на нуле, рука - нет.
+            "blast_angle_mean",
+            "unseen_hits");
 
     private static List<String> channels() {
         List<String> all = new ArrayList<>(Detection.TICK_CHANNELS);

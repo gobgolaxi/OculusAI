@@ -106,6 +106,7 @@ public final class OculusAI extends JavaPlugin {
         detection = register(new Detection(this));
         crystals = register(new me.everyone.oculusai.detection.crystal.Crystals(this));
         crystalData = register(new me.everyone.oculusai.storage.CrystalDataset(this));
+        register(new me.everyone.oculusai.detection.crystal.CrystalDetection(this));
         ui = register(new Ui(this));
         resourcePack = register(new me.everyone.oculusai.ui.ResourcePack(this));
         packets = register(new PacketBridge(this));

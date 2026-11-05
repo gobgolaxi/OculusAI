@@ -264,6 +264,7 @@ history:
     check-wall: "Wall"
     check-aim: "Neuro"
     check-hitbox: "HitBox"
+    check-crystal: "Neuro (Crystal)"
   unknown-player: "<white>Истории для <accent>%player%<white> не сохранено."
   reading:
     summary: "<white>Prob %probability% <dark_gray>| <white>Буфер %buffer%"
@@ -544,16 +545,19 @@ check:
     wall: "<gray>Удары через стены и закрытые двери."
     aim: "<gray>Нейросетевая проверка прицела."
     hitbox: "<gray>Удар вне реального хитбокса цели."
+    crystal: "<gray>Нейросетевая проверка кристалл-PvP: CrystalAura, AutoCrystal."
   test-line: "<dark_gray>[ТЕСТ] <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check%"
   alert-line: "<accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check%"
   reason:
     wall: "нет видимости"
     aim: "окно выше порога"
     hitbox: "удар вне хитбокса цели"
+    crystal: "кристаллы выше порога"
   name:
     wall: "Wall"
     aim: "Neuro"
     hitbox: "HitBox"
+    crystal: "Neuro (Crystal)"
   # Какая группа признаков сильнее всего выбилась в окнах, за которые сработал Neuro.
   flag:
     Rotation: "Rotation"

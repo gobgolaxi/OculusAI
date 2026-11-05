@@ -95,6 +95,7 @@ public final class ChecksMenu extends Menu {
             case "wall" -> Material.IRON_DOOR;
             case "aim" -> Material.ENDER_EYE;
             case "hitbox" -> Material.ARMOR_STAND;
+            case "crystal" -> Material.END_CRYSTAL;
             default -> Material.PAPER;
         };
     }

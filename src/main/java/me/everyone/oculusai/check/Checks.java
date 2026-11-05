@@ -19,6 +19,8 @@ public final class Checks implements Service {
     private final OculusAI plugin;
     private final List<CombatCheck> combatChecks = new ArrayList<>();
     private final List<PlayerCheck> playerChecks = new ArrayList<>();
+    /** Отдельно от playerChecks: зовётся только на кристалльное предсказание. */
+    private CrystalCheck crystalCheck;
 
     public Checks(OculusAI plugin) {
         this.plugin = plugin;
@@ -42,6 +44,7 @@ public final class Checks implements Service {
         combatChecks.add(new HitBoxCheck(plugin));
         combatChecks.add(new WallCheck(plugin));
         playerChecks.add(new AimCheck(plugin));
+        crystalCheck = new CrystalCheck(plugin);
     }
 
     /** Every registered check, in display order. Menus use this instead of
@@ -49,6 +52,9 @@ public final class Checks implements Service {
     public List<Check> all() {
         List<Check> result = new ArrayList<>(combatChecks);
         result.addAll(playerChecks);
+        if (crystalCheck != null) {
+            result.add(crystalCheck);
+        }
         return List.copyOf(result);
     }
 
@@ -147,6 +153,26 @@ public final class Checks implements Service {
             }
         }
         return alerted;
+    }
+
+    /** Новое показание кристалльной модели: только Neuro (Crystal). Отдельно
+     *  от {@link #onPrediction}, иначе каждое кристалльное окно шло бы лишним
+     *  подтверждением аимового алерта. Возвращает, ушёл ли алерт. */
+    public boolean onCrystalPrediction(PlayerData data) {
+        Player player = data.player();
+        if (crystalCheck == null || !plugin.config().analysisEnabled() || !player.isOnline()
+                || plugin.bypass().isBypassed(player)) {
+            return false;
+        }
+        CheckResult result = test(crystalCheck, data);
+        if (result == null || !result.failed()) {
+            if (result != null) {
+                plugin.alerts().reset(data.uuid(), crystalCheck.id());
+            }
+            return false;
+        }
+        boolean test = crystalCheck.testOnly() && plugin.config().checkTestMode();
+        return plugin.alerts().raise(data, crystalCheck, result, test) == Alerts.Outcome.SENT && !test;
     }
 
     private CheckResult test(CombatCheck check, Player attacker, PlayerData data, int targetEntityId) {

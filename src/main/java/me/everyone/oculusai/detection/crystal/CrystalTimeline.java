@@ -6,6 +6,7 @@ import java.util.Deque;
 import java.util.List;
 import me.everyone.oculusai.detection.Detection;
 import me.everyone.oculusai.detection.RotationSample;
+import me.everyone.oculusai.detection.SuspicionBuffer;
 
 /** Кристалльная история одного игрока: последние тики и окна вокруг событий.
  *
@@ -20,6 +21,12 @@ import me.everyone.oculusai.detection.RotationSample;
  * давала бы десяток почти одинаковых окон.
  */
 public final class CrystalTimeline {
+
+    /** Куда уходит готовое окно, кроме записи: на предсказание. Зовётся под
+     *  замком таймлайна из потока пакетов - получатель не должен ждать. */
+    public interface Sink {
+        void window(double[] columns, double[] ticks);
+    }
 
     private static final double NONE = Detection.NO_VALUE;
     private static final int CHANNELS = CrystalSchema.TICK_CHANNELS.size();
@@ -42,6 +49,11 @@ public final class CrystalTimeline {
     /** Сколько тиков осталось дописать в открытое окно; -1 - окна нет. */
     private int remaining = -1;
     private boolean recording;
+    private Sink sink;
+    /** Последнее показание кристалльной модели и буфер подозрения по нему -
+     *  свои, отдельно от аимовых. */
+    private double probability = Double.NaN;
+    private double buffer;
 
     public synchronized void placed(double angleDegrees, double distanceBlocks) {
         placed = true;
@@ -74,7 +86,7 @@ public final class CrystalTimeline {
     }
 
     private void open() {
-        if (recording && remaining < 0) {
+        if ((recording || sink != null) && remaining < 0) {
             remaining = CrystalSchema.POST;
         }
     }
@@ -120,7 +132,7 @@ public final class CrystalTimeline {
         remaining = -1;
         // Окно короче полного - это событие в первые секунды после входа или
         // после сброса; такая строка учила бы модель на обрезке.
-        if (recording && frames.size() == CrystalSchema.WINDOW) {
+        if ((recording || sink != null) && frames.size() == CrystalSchema.WINDOW) {
             emit();
         }
     }
@@ -132,8 +144,44 @@ public final class CrystalTimeline {
             System.arraycopy(frame, 0, flat, at, CHANNELS);
             at += CHANNELS;
         }
-        ticks.add(flat);
-        rows.add(summary(frames));
+        double[] row = summary(frames);
+        if (recording) {
+            ticks.add(flat);
+            rows.add(row);
+        }
+        if (sink != null) {
+            sink.window(row, flat);
+        }
+    }
+
+    /** Подключает предсказание; null - отключает. */
+    public synchronized void sink(Sink value) {
+        sink = value;
+    }
+
+    public synchronized boolean predicting() {
+        return sink != null;
+    }
+
+    /** Показание модели в буфер - та же арифметика, что у аима. */
+    public synchronized void applyProbability(double value, double suspicion, double gain,
+                                              double decay, double leak, double max,
+                                              double maxStep) {
+        probability = value;
+        buffer = SuspicionBuffer.add(buffer, value, suspicion, gain, decay, leak, max, maxStep);
+    }
+
+    public synchronized double probability() {
+        return probability;
+    }
+
+    public synchronized double buffer() {
+        return buffer;
+    }
+
+    public synchronized void resetBuffer() {
+        buffer = 0.0D;
+        probability = Double.NaN;
     }
 
     /** Колонки {@link CrystalSchema#COLUMNS} по кадрам окна. */

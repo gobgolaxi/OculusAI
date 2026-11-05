@@ -671,6 +671,7 @@ public final class PlayerData {
     }
 
     public void resetBuffer() {
+        crystal.resetBuffer();
         buffer = 0.0D;
         probabilitySmoothing.reset();
         synchronized (flagEvidence) {

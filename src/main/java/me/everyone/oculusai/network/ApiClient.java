@@ -68,6 +68,8 @@ public final class ApiClient implements Service {
     /** Читает ли версия на слоте сырые тики. Спрашивается у сервиса, а не
      *  угадывается: какая версия стоит на слоте, знает только он. */
     private volatile boolean predictWantsTicks;
+    /** Стоит ли на сервисе кристалльная модель (настройка crystal_model). */
+    private volatile boolean crystalModel;
     /** What the service last said this key is entitled to. Read from the
      *  settings poll: the plan can lapse between restarts, and until this
      *  arrived the only way to find out which model was answering was to ask
@@ -243,6 +245,33 @@ public final class ApiClient implements Service {
         return predictWantsTicks;
     }
 
+    /** Есть ли чем оценивать кристалльные окна. Нет - они не отправляются. */
+    public boolean crystalModel() {
+        return crystalModel;
+    }
+
+    /** Кристалльное окно - модели кристалльного слота. Вероятность или null,
+     *  если сервис не ответил или модели нет. */
+    public CompletableFuture<Double> predictCrystal(UUID player, Map<String, Double> features,
+                                                    double[] ticks, int tickChannels) {
+        JsonObject body = new JsonObject();
+        JsonObject values = new JsonObject();
+        features.forEach(values::addProperty);
+        body.add("features", values);
+        if (player != null) {
+            body.addProperty("uuid", player.toString());
+        }
+        JsonArray window = new JsonArray();
+        for (double value : ticks) {
+            window.add(value);
+        }
+        body.add("ticks", window);
+        body.addProperty("tick_channels", tickChannels);
+        return postVoting("/predict/crystal", body).thenApply(response ->
+                response == null || !response.has("probability")
+                        ? null : response.get("probability").getAsDouble());
+    }
+
     public Set<Integer> serviceSchemas() {
         return serviceSchemas;
     }
@@ -320,6 +349,8 @@ public final class ApiClient implements Service {
                     && response.get("model_demoted").getAsBoolean();
             predictWantsTicks = response.has("predict_wants_ticks")
                     && response.get("predict_wants_ticks").getAsBoolean();
+            crystalModel = response.has("crystal_model")
+                    && response.get("crystal_model").getAsBoolean();
             if (!response.has("analysis_exclusions")) return;
             List<Exclusion> loaded = new ArrayList<>();
             response.getAsJsonArray("analysis_exclusions").forEach(element -> {

@@ -359,11 +359,13 @@ public final class Monitor implements Service {
     private String dataRow(PlayerData data) {
         double smoothed = data.probability();
         double raw = data.rawProbability();
+        // Коротко, чтобы строка не переносилась: сглаженное/сырое, буфер,
+        // группы окна, номер окна. "CleanBug_9 .24/.31 b1.2 | R.42 A.00 ... #184"
         return "<accent>" + data.name()
-                + " <gray>p <" + Msg.heatColour(smoothed) + ">" + Msg.probability(smoothed)
-                + " <gray>raw <" + Msg.heatColour(raw) + ">" + Msg.probability(raw)
-                + " <gray>buf <white>" + Msg.round(data.buffer(), 1)
-                + " <dark_gray>| " + me.everyone.oculusai.core.Values.groups(data.latestGroups())
+                + " <" + Msg.heatColour(smoothed) + ">" + me.everyone.oculusai.core.Values.shortValue(smoothed)
+                + "<dark_gray>/<" + Msg.heatColour(raw) + ">" + me.everyone.oculusai.core.Values.shortValue(raw)
+                + " <gray>b<white>" + Msg.round(data.buffer(), 1)
+                + " <dark_gray>| " + me.everyone.oculusai.core.Values.groupsShort(data.latestGroups())
                 + " <dark_gray>#" + data.windowsAnalysed();
     }
 

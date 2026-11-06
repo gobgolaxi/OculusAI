@@ -75,6 +75,10 @@ public final class DashboardMenu extends Menu {
                 toggle("analysis.enabled", true);
             }
         });
+        if (analysis) {
+            // Включённый анализ - главное, что видно на дашборде: переливается.
+            pulse(SLOT_POWER);
+        }
 
         boolean up = plugin.api().reachable();
         set(SLOT_STATUS, item(up ? Material.LIME_DYE : Material.RED_DYE,

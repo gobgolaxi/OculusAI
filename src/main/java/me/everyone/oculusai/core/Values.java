@@ -83,7 +83,7 @@ public final class Values {
     }
 
     /** ".28", "1.0" и "-" для пропуска. */
-    static String shortValue(double value) {
+    public static String shortValue(double value) {
         if (!Double.isFinite(value)) {
             return "-";
         }
@@ -101,6 +101,27 @@ public final class Values {
     /** "R0.42 A0.10 H0.33 C0.05 S0.00": насколько каждая группа редкая для
      *  честных окон, 0..1 (шкалу строит сервис, см. ApiClient.Prediction), и
      *  цвет по тому же числу. Группы, которых сервис не прислал, пропускаются. */
+    /** Те же группы короче - для строки ленты окон: "R.42 A.00 H.10". */
+    public static String groupsShort(java.util.Map<String, Double> scores) {
+        if (scores == null || scores.isEmpty()) {
+            return "<dark_gray>-";
+        }
+        StringBuilder line = new StringBuilder();
+        for (String[] group : GROUPS) {
+            Double score = scores.get(group[0]);
+            if (score == null || !Double.isFinite(score)) {
+                continue;
+            }
+            double value = Math.max(0.0D, Math.min(1.0D, score));
+            if (line.length() > 0) {
+                line.append(' ');
+            }
+            line.append("<gray>").append(group[1])
+                    .append('<').append(Msg.heatColour(value)).append('>').append(shortValue(value));
+        }
+        return line.length() == 0 ? "<dark_gray>-" : line.toString();
+    }
+
     public static String groups(java.util.Map<String, Double> scores) {
         if (scores == null || scores.isEmpty()) {
             return "<dark_gray>-";

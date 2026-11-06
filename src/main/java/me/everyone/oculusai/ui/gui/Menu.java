@@ -105,8 +105,22 @@ public abstract class Menu implements InventoryHolder {
         // viewer. A menu opened from a command is already there; one opened
         // from a timer is not.
         plugin.platform().onEntity(viewer, () -> {
+            // Та же страница другого вида - листание, сортировка: раскрытие уже
+            // было, и показывать его на каждой странице значит мигать меню.
+            // Новое встаёт сразу, а змейки продолжают с того же места.
+            Menu previous = viewer.getOpenInventory().getTopInventory().getHolder() instanceof Menu open
+                    && open.getClass() == getClass() ? open : null;
+            if (previous != null) {
+                revealed = true;
+                tick = previous.tick;
+                previous.stop();
+            }
             viewer.openInventory(inventory);
-            viewer.playSound(viewer.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 0.5F, 1.4F);
+            if (previous != null) {
+                paintAll();
+            } else {
+                viewer.playSound(viewer.getLocation(), Sound.BLOCK_ENDER_CHEST_OPEN, 0.5F, 1.4F);
+            }
             stop();
             task = plugin.platform().entityRepeating(viewer, 1L, 1L, this::animate);
         });

@@ -199,6 +199,61 @@ public abstract class Menu implements InventoryHolder {
         pulsing.add(slot);
     }
 
+    /** Клетки внутри рамки, слева направо и сверху вниз: ряды без первого и
+     *  последнего, столбцы без крайних. Списки раскладываются только сюда -
+     *  иначе иконки ложатся на рамку, а змейки бегут между ними. */
+    protected final int[] grid() {
+        int rows = size() / 9;
+        if (rows < 3) {
+            int[] all = new int[size()];
+            for (int i = 0; i < all.length; i++) {
+                all[i] = i;
+            }
+            return all;
+        }
+        int[] slots = new int[(rows - 2) * 7];
+        int at = 0;
+        for (int row = 1; row < rows - 1; row++) {
+            for (int column = 1; column <= 7; column++) {
+                slots[at++] = row * 9 + column;
+            }
+        }
+        return slots;
+    }
+
+    /** Номер клетки сетки, в которую кликнули, или -1. */
+    protected final int gridIndex(int slot) {
+        int[] grid = grid();
+        for (int i = 0; i < grid.length; i++) {
+            if (grid[i] == slot) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    /** {@code count} клеток ряда {@code row}, симметрично вокруг середины.
+     *  Нечётное число - с середины, чётное - середина пропускается: шесть
+     *  иконок встают по три с каждой стороны, а не прижимаются влево. */
+    protected static int[] centred(int row, int count) {
+        int n = Math.max(0, Math.min(7, count));
+        int[] columns = switch (n) {
+            case 1 -> new int[]{4};
+            case 2 -> new int[]{3, 5};
+            case 3 -> new int[]{3, 4, 5};
+            case 4 -> new int[]{2, 3, 5, 6};
+            case 5 -> new int[]{2, 3, 4, 5, 6};
+            case 6 -> new int[]{1, 2, 3, 5, 6, 7};
+            case 7 -> new int[]{1, 2, 3, 4, 5, 6, 7};
+            default -> new int[0];
+        };
+        int[] slots = new int[columns.length];
+        for (int i = 0; i < columns.length; i++) {
+            slots[i] = row * 9 + columns[i];
+        }
+        return slots;
+    }
+
     protected final void toggleButton(int slot, ItemStack item, String path, boolean fallback) {
         button(slot, item, () -> {
             plugin.getConfig().set(path, !plugin.getConfig().getBoolean(path, fallback));

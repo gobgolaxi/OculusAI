@@ -19,6 +19,118 @@ bypass:
   - <red>That player has never joined this server.
   usage:
   - '<red>Usage: <white>%value%'
+check-settings:
+  aim:
+    alert-at:
+      hint:
+      - <gray>Buffer at which Aim starts alerting.
+      name:
+      - <gold>Alert threshold
+    buffer-max:
+      hint:
+      - <gray>Upper bound for buffer growth.
+      name:
+      - <aqua>Buffer maximum
+    decay:
+      hint:
+      - <gray>How fast the buffer falls below the threshold.
+      name:
+      - <aqua>Decay rate
+    gain:
+      hint:
+      - <gray>How fast the buffer rises above the threshold.
+      name:
+      - <aqua>Growth rate
+    leak:
+      hint:
+      - <gray>Share of the buffer lost on a reading below the threshold. Stops a short cheat burst from staying in the buffer after it ends.
+      name:
+      - <aqua>Buffer leak
+    max-step:
+      hint:
+      - <gray>The most one reading may add. Makes a cheat prove itself over several windows instead of one spike, which is what alerted honest players. 0 for no cap.
+      name:
+      - <aqua>Step cap
+    punish-at:
+      hint:
+      - <gray>Buffer at which punishment runs.
+      name:
+      - <red>Punish threshold
+    reset-after-combat:
+      hint:
+      - <gray>Clear the buffer when no new readings arrive for longer than the combat window.
+      name:
+      - <aqua>Reset out of combat
+    smooth:
+      hint:
+      - <gray>How many recent windows to average. 1 disables smoothing.
+      name:
+      - <aqua>Smoothness
+  back:
+  - <yellow>Back to checks
+  back-hint:
+  - <dark_gray>Return to the check list.
+  disabled:
+  - <red>disabled
+  enabled:
+  - <green>enabled
+  header-hint:
+  - <dark_gray>Values are saved to config.yml.
+  hitbox:
+    hitbox-margin:
+      hint:
+      - <gray>Extra margin around the real target hitbox, in blocks.
+      name:
+      - <aqua>Hitbox tolerance
+    max-angle:
+      hint:
+      - <gray>Allowed angle between the look and the target hitbox. Covers the attack packet arriving before the look packet.
+      name:
+      - <aqua>Look tolerance
+    max-distance:
+      hint:
+      - <gray>HitBox does not check farther than this.
+      name:
+      - <aqua>Maximum distance
+  no-description:
+  - <dark_gray>No description.
+  number-hint:
+  - <yellow>Left click <gray>+ <yellow>right click <gray>- <dark_gray>(Shift = x5)
+  shared:
+    confirmations:
+      hint:
+      - <gray>Failures in a row needed before an alert.
+      name:
+      - <aqua>Confirmations
+    cooldown-ms:
+      hint:
+      - <gray>Quiet time between alerts for this check.
+      name:
+      - <aqua>Cooldown
+    enabled:
+      hint:
+      - <gray>Run this check.
+      name:
+      - <aqua>Enabled
+    test-only:
+      hint:
+      - <gray>Show alerts but do not punish.
+      name:
+      - <yellow>Test only
+  state-off:
+  - '<gray>State: <red>disabled'
+  state-on:
+  - '<gray>State: <green>enabled'
+  toggle-hint:
+  - <yellow>Left click <gray>- toggle
+  value:
+  - '<gray>Current: <white>%value%'
+  wall:
+    max-distance:
+      hint:
+      - <gray>Wall does not check farther than this.
+      name:
+      - <aqua>Maximum distance
 check:
   alert-line:
   - <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
@@ -41,6 +153,35 @@ check:
   - <dark_gray>[TEST] <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
   - <dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
   - <dark_gray>[TEST] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%
+checks-menu:
+  analysis-off:
+  - '<gray>Analysis: <red>disabled'
+  analysis-on:
+  - '<gray>Analysis: <green>enabled'
+  back:
+  - <yellow>Back to Dashboard
+  back-hint:
+  - <dark_gray>Return to the overview.
+  empty:
+  - <red>No registered checks
+  empty-hint:
+  - <gray>Checks are registered in Checks.java.
+  header:
+  - <aqua>Checks
+  hint:
+  - <dark_gray>Left click - toggle, right click - settings.
+  left:
+  - <yellow>Left click <gray>- enable or disable
+  no-description:
+  - <dark_gray>No description.
+  registered:
+  - '<gray>Registered: <white>%value%'
+  right:
+  - <yellow>Right click <gray>- open settings
+  state-off:
+  - '<gray>State: <red>disabled'
+  state-on:
+  - '<gray>State: <green>enabled'
 command:
   no-permission:
   - <red>You lack permission.
@@ -61,22 +202,225 @@ connect:
   open:
   - '<gray>Open this link while signed in to bind the server:'
 dashboard:
+  alertsound:
+    current:
+    - '<gray>Current: <white>%value%'
+    line1:
+    - <gray>Changes the sound heard by
+    line2:
+    - <gray>players with alert permission.
+    name:
+    - <light_purple>Alert Sound
+    params:
+    - <gray>Volume <white>%volume%<gray>, pitch <white>%pitch%
   alwaysprob:
+    line1:
+    - <gray>Shows compact Prob holograms
+    line2:
+    - <gray>for every visible player.
+    name:
+    - <aqua>AlwaysProb
+    state-off:
+    - '<gray>State: <red>off'
+    state-on:
+    - '<gray>State: <green>on'
     turned-off:
     - <gray>AlwaysProb is off.
     turned-on:
     - <green>AlwaysProb is on.<gray> Readings stay over every player you can see.
     unsupported:
     - <red>This server version has no text displays, so AlwaysProb cannot draw anything.
+  balance:
+    healthy:
+    - <gray>Balance <white>%value%:1<gray>, healthy
+    lopsided:
+    - <red>Lopsided %value%:1 - collect more of the smaller side
+    need-both:
+    - <gray>Both labels are needed to train.
+  cheater:
+    line1:
+    - <gray>Recorded with <white>/oai data train
+    line2:
+    - <gray>then committed with <white>add cheater
+    name:
+    - <red>Cheater windows
+  checks:
+    count:
+    - '<gray>Registered: <white>%value%'
+    name:
+    - <aqua>Checks
+    state-off:
+    - '<gray>State: <red>disabled'
+    state-on:
+    - '<gray>State: <green>enabled'
+  datasets:
+    click:
+    - <yellow>Click to browse them
+    counts:
+    - '<gray>Sessions: <white>%sessions% <dark_gray>(<green>%enabled%<dark_gray> counted)'
+    line1:
+    - <gray>Each recording is its own file, so one
+    line2:
+    - <gray>can be left out of training and put back.
+    name:
+    - <aqua>Datasets
+  dummy:
+    count:
+    - '<gray>Spawned: <white>%value%'
+    name:
+    - <aqua>Sparring dummy
+  journal:
+    name:
+    - <gold>Journal
+  kickanim:
+    current:
+    - '<gray>Current: <white>%value%'
+  legit:
+    name:
+    - <green>Legit windows
+  model:
+    accuracy:
+    - '<gray>Accuracy: <white>%value%'
+    brier:
+    - '<gray>Brier: <white>%value% <dark_gray>(0.25 = coin flip)'
+    collect:
+    - <gray>Collect both labels, then press Train.
+    fitted:
+    - '<gray>Fitted: <white>%value%'
+    holdout1:
+    - <dark_gray>Measured on players held out of training
+    holdout2:
+    - <dark_gray>entirely, not on windows held back.
+    kind:
+    - '<gray>Model: <white>%value%%suffix%'
+    measured:
+    - '<gray>Measured: <white>%value%'
+    name:
+    - <aqua>Model
+    none:
+    - <red>Nothing trained yet.
+    samples:
+    - '<gray>Trained on: <white>%value%<gray> windows'
+    uncalibrated:
+    - ' <red>(uncalibrated)'
+  players:
+    name:
+    - <aqua>Players
+    online:
+    - '<gray>Online: <white>%value%'
+  power:
+    left:
+    - <yellow>Left click <gray>- toggle analysis
+    name:
+    - <aqua>OculusAI
+    right:
+    - <yellow>Right click <gray>- open settings
+    state-off:
+    - '<gray>State: <red>analysis off'
+    state-on:
+    - '<gray>State: <green>analysis on'
   probheight:
+    left:
+    - <yellow>Left click <gray>- raise by 0.1
+    name:
+    - <aqua>Prob hologram height
+    range:
+    - '<dark_gray>Range: %min%-%max% blocks'
+    right:
+    - <yellow>Right click <gray>- lower by 0.1
     save-failed:
     - <red>Could not save the height to probcfg.yml.
+    shift:
+    - <dark_gray>Shift - step 0.5
+    value:
+    - '<gray>Current: <white>%value%<gray> blocks'
+  punish:
+    line1:
+    - <gray>Leave this off until you have watched
+    line2:
+    - <gray>the model be right on your own server.
+    name:
+    - <red>Act on detections
+    state-off:
+    - '<gray>State: <green>off - alerts only'
+    state-on:
+    - '<gray>State: <red>on'
+  refresh:
+    lore:
+    - <gray>Ask the service again.
+  service:
+    answering:
+    - <gray>Answering normally.
+    down:
+    - <red>Service down
+    start:
+    - '<red>Start it from the api folder:'
+    up:
+    - <green>Service up
+  shared:
+    stored:
+    - '<gray>Stored: <white>%value%'
   theme:
     changed:
     - <gray>Theme changed to <white>%value%<gray>.
+    current:
+    - '<gray>Current: <white>%value%'
+    name:
+    - <aqua>Theme
+  train:
+    done:
+    - <green>Trained. <gray>Accuracy <white>%accuracy% <gray>on <white>%samples%<gray> windows.
+    failed:
+    - <red>Training failed. Check the API key/service log.
+    hint:
+    - <dark_gray>Uses Bukkit permissions and the configured API key.
+    line1:
+    - <gray>Fits a fresh model on everything stored
+    line2:
+    - <gray>and reports how well it scored.
+    name:
+    - <gold>Train
+    need-data:
+    - <red>Both labels need data first.
+    ready:
+    - '<gray>Ready: <white>%value%<gray> windows'
+    running:
+    - <gray>Training...
 dummy:
   gone:
   - <red>That dummy is gone.
+  hp:
+    current:
+    - '<gray>Current: <white>%value%'
+    default:
+    - '<gray>Current: <white>%value% <dark_gray>(default)'
+    line1:
+    - '<gray>Left click: <white>-1 <dark_gray>/ <gray>Shift: <white>-10'
+    line2:
+    - '<gray>Right click: <white>+1 <dark_gray>/ <gray>Shift: <white>+10'
+  invulnerable:
+    line1:
+    - <gray>Toggles whether the dummy can take damage.
+    name:
+    - <white>Health mode
+    state-off:
+    - <red>Mortal
+    state-on:
+    - <green>Infinite HP
+  remove:
+    line1:
+    - <gray>Deletes this dummy.
+    name:
+    - <red>Remove
+  stationary:
+    line1:
+    - <gray>Toggles whether the dummy moves and attacks.
+    state-off:
+    - <green>Chasing you
+    state-on:
+    - <red>Standing still
+  title:
+  - Dummy Settings
 forget:
   done:
   - '<gray>Forgot <white>%player%<gray>: buffer <white>%buffer%<gray> -> <white>0%dropped%<gray>. Suspicion starts again from nothing.'
@@ -92,21 +436,131 @@ help:
     up:
     - <green>up
 history:
+  empty:
+    line1:
+    - <gray>Readings only appear while fighting.
+    line2:
+    - '<gray>Try a sparring dummy: <white>/oai npc'
+    name:
+    - <red>Nothing yet
+  event-line:
+  - <dark_gray>- <gray>%age% <dark_gray>| <white>%type% <dark_gray>%detail%
   event:
     check-aim:
     - Neuro Aim
     - Aim
+  events:
+  - '<gold>What happened:'
+  gone:
+  - <dark_gray>No readings were stored for this player.
+  level:
+    high:
+    - '<red>Critical: <white>%value%<red> to <white>%max%'
+    low:
+    - '<yellow>Building: buffer up to <white>%value%'
+    mid:
+    - '<gold>High: <white>%value%<gold> to <white>%next%'
+    zero:
+    - '<green>Clean: buffer 0'
   no-data:
   - <dark_gray>No data for you yet - readings only appear while fighting.
+  page:
+    name:
+    - <white>Page <gray>%page%<white>/<gray>%pages%
+    range:
+    - <gray>Showing <white>%from%<gray>-<white>%to%<gray> of <white>%total%
+  reading:
+    buffer:
+    - '<gray>Buffer: <white>%value%<dark_gray>/%max%'
+    falling:
+    - '<gray>Buffer falling: <green>-%value%'
+    flagged:
+    - <red>Prob above the suspicion threshold <white>%value%
+    probability:
+    - '<gray>Prob: <white>%value%'
+    rising:
+    - '<gray>Buffer rising: <red>+%value%'
+    steady:
+    - <dark_gray>Buffer unchanged
+    summary:
+    - <white>Prob %probability% <dark_gray>| <white>Buffer %buffer%
+    time:
+    - '<gray>When: <white>%value%'
+  sort:
+    click:
+    - <yellow>Click to switch
+    current:
+    - '<gray>Now: <white>%value%'
+    freshness-hint:
+    - <dark_gray>Newest readings first.
+    name:
+    - <aqua>Sort
+    suspicion-hint:
+    - <dark_gray>Worst readings on top.
+  status:
+    offline:
+    - '<gray>Status: <dark_gray>offline'
+    online:
+    - '<gray>Status: <green>online'
+  target:
+    alerts:
+    - '<gray>Alerts: <white>%value%'
+    first-seen:
+    - '<gray>First seen: <white>%value%'
+    last-seen:
+    - '<gray>Last seen: <white>%value%'
+    peak:
+    - '<gray>Peak buffer in history: <white>%value%'
+    peak-prob:
+    - '<gray>Peak reading: <white>%value%'
+    punishments:
+    - '<gray>Punished: <white>%value% time(s)'
+    readings:
+    - '<gray>Readings in history: <white>%value%'
+    windows:
+    - '<gray>Windows analysed: <white>%value%'
+  title:
+  - History <dark_gray>%player%
   unknown-player:
   - <red>No stored history for <white>%player%<red>.
 journal:
+  entry:
+    first-seen:
+    - '<gray>First seen: <white>%value%'
+    history:
+    - '<gold>Prob history:'
+    history-line:
+    - <dark_gray>- <gray>%age% <dark_gray>| <white>%probability% <dark_gray>| <gray>buffer <white>%buffer%
+    last-buffer:
+    - '<gray>Last buffer: <white>%value%'
+    last-prob:
+    - '<gray>Last probability: <white>%value%'
+    last-seen:
+    - '<gray>Last seen: <white>%value%'
+    observe:
+    - <yellow>Click to spectate in vanish mode
+    observe-hint:
+    - <dark_gray>Sends you into spectator and enables Prob watch.
+    offline:
+    - <dark_gray>Player is offline right now.
+    peak-buffer:
+    - '<gray>Peak buffer: <white>%value%'
+    windows:
+    - '<gray>Windows analysed: <white>%value%'
   observe-started:
   - <gray>Observing <white>%player%<gray> in spectator with Prob enabled.
   observe-unsupported:
   - '<red>Spectating does not work on Folia: it teleports you onto a player another thread is ticking.'
   player-offline:
   - <red>This player is no longer online.
+  refresh:
+    lore:
+    - <gray>Redraw the journal.
+  status:
+    offline:
+    - '<gray>Status: <dark_gray>offline'
+    online:
+    - '<gray>Status: <green>online'
 manual:
   banned:
   - '<gray>Banned <white>%player%<gray>: <white>%reason%'
@@ -162,28 +616,178 @@ player-cmd:
   windows:
   - '<gray>Windows analysed: <white>%value%'
 players:
+  buffer:
+  - '<gray>Buffer: <white>%value%<dark_gray>/%max%'
+  click:
+  - <yellow>Click to watch them
+  last-reading:
+  - '<gray>Last reading: <white>%value%'
+  only-fighting:
+  - <dark_gray>Readings only appear while fighting.
+  recording:
+  - <gold>Recording <white>%value%<gold> windows
   watching:
   - <gray>Watching <white>%player%<gray>.
+  windows:
+  - '<gray>Windows analysed: <white>%value%'
 prob:
   no-data:
   - <dark_gray>Nothing analysed yet - readings only appear while they fight.
   watching:
   - <gray>Watching <white>%player%<gray>. Buffer <white>%buffer%<gray>, last reading <white>%probability%<gray>, windows analysed <white>%windows%
   - <gray>Buffer <white>%buffer%<gray>, last reading <white>%probability%<gray>, windows analysed <white>%windows%
+punish-menu:
+  animation-chosen:
+  - <green>Selected.
+  animation-pick:
+  - <gray>Click to select.
+  ascend-needs-strip:
+  - <yellow>Items only fly out with Drop everything on.
+  ban:
+    after:
+    - <gray>Ban on punishment <white>%value%
+    command-name:
+    - <dark_red>Ban with
+    left:
+    - <dark_gray>Left <gray>+1
+    name:
+    - <dark_red>Ban on count
+    none:
+    - <gray>Banning off
+    right:
+    - <dark_gray>Right <gray>-1
+    shift:
+    - <dark_gray>Shift <gray>step 5
+    with:
+    - '<gray>With: <white>%value%'
+  command:
+  - '<gray>Command: <white>%value%'
+  enabled:
+    name:
+    - <red>Punish
+  header:
+  - <red>Punishment
+  random-note:
+  - <dark_gray>A different one each time, never twice in a row.
+  state-off:
+  - '<gray>State: <red>off'
+  state-on:
+  - '<gray>State: <green>on'
+  strip:
+    line1:
+    - <gray>The inventory comes out of them,
+    name:
+    - <gold>Drop everything
 reload:
   done:
   - <green>Reloaded <gray>in <white>%value%ms<gray>.
 sessions:
+  click:
+    delete:
+    - <yellow>Shift-click <gray>to delete the file
+    exclude:
+    - <yellow>Click <gray>to exclude
+    include:
+    - <yellow>Click <gray>to include
   deleted:
   - <gray>Deleted <white>%value%
+  empty:
+    line1:
+    - <gray>Record one with <white>/oai data train <player>
+    line2:
+    - <gray>then commit it with <white>/oai data add ...
+    name:
+    - <red>No sessions yet
+  excluded:
+  - <dark_gray>Excluded from training
   failed:
   - <red>The service did not answer or refused the change.
+  file:
+  - '<gray>File: <dark_gray>%value%'
+  in-training:
+  - <green>Counted in training
+  next:
+  - <yellow>Next page
+  previous:
+  - <yellow>Previous page
+  recorded:
+  - '<gray>Recorded: <white>%value%'
+  source-line:
+  - '<gray>Source: <white>%value%'
   updated:
   - <gray>Updated <white>%value%
+  warning1:
+  - <gray>The plugin caught this on its own. Check it
+  warning2:
+  - <gray>is really cheating before letting it teach.
+  windows:
+  - '<gray>Windows: <white>%value%'
 settings:
   aim:
+    disabled:
+    - '<gray>State: <red>off'
+    enabled:
+    - '<gray>State: <green>on'
+    hint:
+    - <gray>The neural aim check.
     name:
+    - <light_purple>Neuro
     - <light_purple>Neuro Aim
+  analysis:
+    disabled:
+    - '<gray>State: <red>off'
+    enabled:
+    - '<gray>State: <green>on'
+    hint:
+    - <gray>Master switch for the model and checks.
+    name:
+    - <aqua>Analysis
+  back:
+  - <yellow>Back to Dashboard
+  checks:
+    click:
+    - <yellow>Click to open the check list
+    count:
+    - '<gray>Registered: <white>%value%'
+    disabled:
+    - '<gray>State: <red>off'
+    enabled:
+    - '<gray>State: <green>on'
+    hint:
+    - <gray>Wall and other packet checks.
+    name:
+    - <aqua>Attack checks
+  hint:
+  - <dark_gray>Left click a row to toggle. Right click OculusAI for settings.
+  punish:
+    disabled:
+    - '<gray>State: <green>off'
+    enabled:
+    - '<gray>State: <red>on'
+    hint:
+    - <gray>Run the configured command after a confirmed detection.
+    name:
+    - <red>Punishment
+  test:
+    disabled:
+    - '<gray>State: <red>off'
+    enabled:
+    - '<gray>State: <green>on'
+    hint:
+    - <gray>test-only checks do not punish.
+    name:
+    - <yellow>Test mode
+  title:
+  - OculusAI settings
+  wall:
+    disabled:
+    - '<gray>State: <red>off'
+    enabled:
+    - '<gray>State: <green>on'
+    hint:
+    - <gray>Hits through walls and closed doors.
+    name:
+    - <gold>Wall
 setup:
   command:
   - '<gray>Or right here: <white>%value%'
@@ -195,6 +799,14 @@ setup:
   - <red><bold>Anticheat is not connected to the API - nothing is being analysed.
   - <red>Anticheat is not connected to the API - nothing is being analysed.
 shared:
+  back:
+  - <yellow>Back
+  click-toggle:
+  - <yellow>Click to toggle
+  click-train:
+  - <yellow>Click to train
+  close:
+  - <red>Close
   no-permission:
   - <red>No permission
   player-offline:

@@ -81,9 +81,10 @@ public final class CheckSettingsMenu extends Menu {
                         plugin.lang().text("check-settings.header-hint"))));
 
         List<Option> options = options();
-        for (int i = 0; i < options.size() && i < OPTION_SLOTS.length; i++) {
+        int[] slots = options.size() <= 7 ? centred(2, options.size()) : OPTION_SLOTS;
+        for (int i = 0; i < options.size() && i < slots.length; i++) {
             Option option = options.get(i);
-            button(OPTION_SLOTS[i], optionItem(option), click -> change(option, click));
+            button(slots[i], optionItem(option), click -> change(option, click));
         }
 
         button(SLOT_BACK, item(Material.ARROW, plugin.lang().text("check-settings.back"),

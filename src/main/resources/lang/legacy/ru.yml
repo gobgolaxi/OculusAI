@@ -19,6 +19,118 @@ bypass:
   - <red>Такой игрок ещё ни разу не заходил на сервер.
   usage:
   - '<red>Использование: <white>%value%'
+check-settings:
+  aim:
+    alert-at:
+      hint:
+      - <gray>Буфер, после которого Aim считается сработавшим.
+      name:
+      - <gold>Порог алерта
+    buffer-max:
+      hint:
+      - <gray>Верхняя граница накопления.
+      name:
+      - <aqua>Максимум буфера
+    decay:
+      hint:
+      - <gray>Насколько быстро буфер падает ниже порога.
+      name:
+      - <aqua>Скорость спада
+    gain:
+      hint:
+      - <gray>Насколько быстро буфер растёт выше порога.
+      name:
+      - <aqua>Скорость роста
+    leak:
+      hint:
+      - <gray>Доля буфера, которая теряется на показании ниже порога. Не даёт короткому читу висеть в буфере после того, как он закончился.
+      name:
+      - <aqua>Утечка буфера
+    max-step:
+      hint:
+      - <gray>Сколько максимум может прибавить одно показание. Требует от чита серии высоких окон вместо одного всплеска, из-за которого честный игрок ловил алерт. 0 - без потолка.
+      name:
+      - <aqua>Потолок шага
+    punish-at:
+      hint:
+      - <gray>Буфер, после которого срабатывает наказание.
+      name:
+      - <red>Порог наказания
+    reset-after-combat:
+      hint:
+      - <gray>Обнулять буфер, когда новые показания не приходят дольше времени боя.
+      name:
+      - <aqua>Сброс вне боя
+    smooth:
+      hint:
+      - <gray>Сколько последних окон усреднять. 1 - без сглаживания.
+      name:
+      - <aqua>Smoothness
+  back:
+  - <yellow>Назад к проверкам
+  back-hint:
+  - <dark_gray>Вернуться к списку проверок.
+  disabled:
+  - <red>выключено
+  enabled:
+  - <green>включено
+  header-hint:
+  - <dark_gray>Значения сохраняются в config.yml.
+  hitbox:
+    hitbox-margin:
+      hint:
+      - <gray>Дополнительный запас вокруг реального хитбокса цели в блоках.
+      name:
+      - <aqua>Допуск хитбокса
+    max-angle:
+      hint:
+      - <gray>Допустимый угол между взглядом и хитбоксом цели. Компенсирует пакет атаки, пришедший раньше пакета поворота.
+      name:
+      - <aqua>Допуск взгляда
+    max-distance:
+      hint:
+      - <gray>Дальше этой дистанции HitBox не проверяет.
+      name:
+      - <aqua>Максимальная дистанция
+  no-description:
+  - <dark_gray>Описание не задано.
+  number-hint:
+  - <yellow>ЛКМ <gray>+ <yellow>ПКМ <gray>- <dark_gray>(Shift = x5)
+  shared:
+    confirmations:
+      hint:
+      - <gray>Сколько срабатываний подряд нужно до алерта.
+      name:
+      - <aqua>Подтверждения
+    cooldown-ms:
+      hint:
+      - <gray>Пауза между алертами одной проверки.
+      name:
+      - <aqua>Кулдаун
+    enabled:
+      hint:
+      - <gray>Выполнять эту проверку.
+      name:
+      - <aqua>Включена
+    test-only:
+      hint:
+      - <gray>Показывать алерты, но не наказывать.
+      name:
+      - <yellow>Только тест
+  state-off:
+  - '<gray>Состояние: <red>выключена'
+  state-on:
+  - '<gray>Состояние: <green>включена'
+  toggle-hint:
+  - <yellow>ЛКМ <gray>- переключить
+  value:
+  - '<gray>Сейчас: <white>%value%'
+  wall:
+    max-distance:
+      hint:
+      - <gray>Дальше этой дистанции Wall не проверяет.
+      name:
+      - <aqua>Максимальная дистанция
 check:
   alert-line:
   - <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
@@ -41,6 +153,35 @@ check:
   - <dark_gray>[ТЕСТ] <accent><bold>%symbol%</accent> <white><bold>%player% <dark_gray>| <accent><bold>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
   - <dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail% <dark_gray>· %metrics%
   - <dark_gray>[ТЕСТ] <accent>%symbol%</accent> <white>%player% <dark_gray>| <accent>%check% <dark_gray>· <gray>%detail%
+checks-menu:
+  analysis-off:
+  - '<gray>Анализ: <red>выключен'
+  analysis-on:
+  - '<gray>Анализ: <green>включён'
+  back:
+  - <yellow>Назад в Dashboard
+  back-hint:
+  - <dark_gray>Вернуться к общему экрану.
+  empty:
+  - <red>Нет зарегистрированных проверок
+  empty-hint:
+  - <gray>Проверки добавляются в Checks.java.
+  header:
+  - <aqua>Проверки
+  hint:
+  - <dark_gray>ЛКМ - включить/выключить, ПКМ - настройки.
+  left:
+  - <yellow>ЛКМ <gray>- включить или выключить
+  no-description:
+  - <dark_gray>Описание не задано.
+  registered:
+  - '<gray>Зарегистрировано: <white>%value%'
+  right:
+  - <yellow>ПКМ <gray>- открыть настройки
+  state-off:
+  - '<gray>Состояние: <red>выключена'
+  state-on:
+  - '<gray>Состояние: <green>включена'
 command:
   no-permission:
   - <red>У тебя нет прав.
@@ -61,22 +202,225 @@ connect:
   open:
   - '<gray>Открой ссылку под своим аккаунтом, чтобы привязать сервер:'
 dashboard:
+  alertsound:
+    current:
+    - '<gray>Текущий: <white>%value%'
+    line1:
+    - <gray>Меняет звук, который слышат
+    line2:
+    - <gray>пользователи с правом на алерты.
+    name:
+    - <light_purple>Звук алерта
+    params:
+    - <gray>Громкость <white>%volume%<gray>, тон <white>%pitch%
   alwaysprob:
+    line1:
+    - <gray>Показывает постоянный Prob-hologram
+    line2:
+    - <gray>для каждого игрока поблизости.
+    name:
+    - <aqua>AlwaysProb
+    state-off:
+    - '<gray>Состояние: <red>выкл'
+    state-on:
+    - '<gray>Состояние: <green>вкл'
     turned-off:
     - <gray>AlwaysProb выключен.
     turned-on:
     - <green>AlwaysProb включён.<gray> Показания держатся над каждым, кого видишь.
     unsupported:
     - <red>На этой версии сервера нет text display — AlwaysProb нечем рисовать.
+  balance:
+    healthy:
+    - <gray>Баланс <white>%value%:1<gray>, нормальный
+    lopsided:
+    - <red>Перекос %value%:1 - собери больше меньшей стороны
+    need-both:
+    - <gray>Для обучения нужны оба лейбла.
+  cheater:
+    line1:
+    - <gray>Записываются через <white>/oai data train
+    line2:
+    - <gray>потом коммитятся как <white>add cheater
+    name:
+    - <red>Окна cheater
+  checks:
+    count:
+    - '<gray>Зарегистрировано: <white>%value%'
+    name:
+    - <aqua>Проверки
+    state-off:
+    - '<gray>Состояние: <red>выключены'
+    state-on:
+    - '<gray>Состояние: <green>включены'
+  datasets:
+    click:
+    - <yellow>Нажми, чтобы открыть
+    counts:
+    - '<gray>Сессий: <white>%sessions% <dark_gray>(<green>%enabled%<dark_gray> учитываются)'
+    line1:
+    - <gray>Каждая запись хранится отдельным файлом,
+    line2:
+    - <gray>поэтому её можно исключать и возвращать.
+    name:
+    - <aqua>Датасеты
+  dummy:
+    count:
+    - '<gray>Заспавнено: <white>%value%'
+    name:
+    - <aqua>Манекен
+  journal:
+    name:
+    - <gold>Журнал
+  kickanim:
+    current:
+    - '<gray>Текущая: <white>%value%'
+  legit:
+    name:
+    - <green>Окна legit
+  model:
+    accuracy:
+    - '<gray>Точность: <white>%value%'
+    brier:
+    - '<gray>Brier: <white>%value% <dark_gray>(0.25 = монетка)'
+    collect:
+    - <gray>Собери оба лейбла и нажми Train.
+    fitted:
+    - '<gray>Собрано: <white>%value%'
+    holdout1:
+    - <dark_gray>Проверка идёт на игроках, полностью
+    holdout2:
+    - <dark_gray>исключённых из обучения.
+    kind:
+    - '<gray>Модель: <white>%value%%suffix%'
+    measured:
+    - '<gray>Измерено: <white>%value%'
+    name:
+    - <aqua>Модель
+    none:
+    - <red>Пока ничего не обучено.
+    samples:
+    - '<gray>Обучено на: <white>%value%<gray> окнах'
+    uncalibrated:
+    - ' <red>(без калибровки)'
+  players:
+    name:
+    - <aqua>Игроки
+    online:
+    - '<gray>Онлайн: <white>%value%'
+  power:
+    left:
+    - <yellow>ЛКМ <gray>- включить или выключить анализ
+    name:
+    - <aqua>OculusAI
+    right:
+    - <yellow>ПКМ <gray>- открыть настройки
+    state-off:
+    - '<gray>Состояние: <red>анализ выключен'
+    state-on:
+    - '<gray>Состояние: <green>анализ включён'
   probheight:
+    left:
+    - <yellow>ЛКМ <gray>- поднять на 0.1
+    name:
+    - <aqua>Высота Prob-голограммы
+    range:
+    - '<dark_gray>Диапазон: %min%-%max% блоков'
+    right:
+    - <yellow>ПКМ <gray>- опустить на 0.1
     save-failed:
     - <red>Не удалось сохранить высоту в probcfg.yml.
+    shift:
+    - <dark_gray>Shift - шаг 0.5
+    value:
+    - '<gray>Сейчас: <white>%value%<gray> блоков'
+  punish:
+    line1:
+    - <gray>Не включай это, пока не убедишься,
+    line2:
+    - <gray>что модель реально права на твоём сервере.
+    name:
+    - <red>Действовать по детектам
+    state-off:
+    - '<gray>Состояние: <green>выкл - только алерты'
+    state-on:
+    - '<gray>Состояние: <red>включено'
+  refresh:
+    lore:
+    - <gray>Снова запросить сервис.
+  service:
+    answering:
+    - <gray>Отвечает нормально.
+    down:
+    - <red>Сервис выключен
+    start:
+    - '<red>Запусти его из папки api:'
+    up:
+    - <green>Сервис работает
+  shared:
+    stored:
+    - '<gray>Сохранено: <white>%value%'
   theme:
     changed:
     - <gray>Тема изменена на <white>%value%<gray>.
+    current:
+    - '<gray>Текущая: <white>%value%'
+    name:
+    - <aqua>Тема
+  train:
+    done:
+    - <green>Обучено. <gray>Точность <white>%accuracy% <gray>на <white>%samples%<gray> окнах.
+    failed:
+    - <red>Обучение не удалось. Проверь API key и лог сервиса.
+    hint:
+    - <dark_gray>Используются Bukkit permissions и настроенный API key.
+    line1:
+    - <gray>Обучает новую модель на всех данных
+    line2:
+    - <gray>и показывает, насколько она хороша.
+    name:
+    - <gold>Train
+    need-data:
+    - <red>Сначала нужны оба лейбла.
+    ready:
+    - '<gray>Готово: <white>%value%<gray> окон'
+    running:
+    - <gray>Идёт обучение...
 dummy:
   gone:
   - <red>Этот манекен уже удалён.
+  hp:
+    current:
+    - '<gray>Текущее: <white>%value%'
+    default:
+    - '<gray>Текущее: <white>%value% <dark_gray>(по умолчанию)'
+    line1:
+    - '<gray>ЛКМ: <white>-1 <dark_gray>/ <gray>Shift: <white>-10'
+    line2:
+    - '<gray>ПКМ: <white>+1 <dark_gray>/ <gray>Shift: <white>+10'
+  invulnerable:
+    line1:
+    - <gray>Переключает, может ли манекен получать урон.
+    name:
+    - <white>Режим здоровья
+    state-off:
+    - <red>Смертный
+    state-on:
+    - <green>Бесконечное ХП
+  remove:
+    line1:
+    - <gray>Удаляет этого манекена.
+    name:
+    - <red>Удалить
+  stationary:
+    line1:
+    - <gray>Переключает, двигается ли манекен и атакует ли.
+    state-off:
+    - <green>Преследует тебя
+    state-on:
+    - <red>Стоит на месте
+  title:
+  - Настройки манекена
 forget:
   done:
   - '<gray>Сброшен <white>%player%<gray>: буфер <white>%buffer%<gray> -> <white>0%dropped%<gray>. Подозрение начинается заново.'
@@ -92,21 +436,131 @@ help:
     up:
     - <green>в сети
 history:
+  empty:
+    line1:
+    - <gray>Readings появляются только во время боя.
+    line2:
+    - '<gray>Поиграй с манекеном: <white>/oai npc'
+    name:
+    - <red>Пока ничего нет
+  event-line:
+  - <dark_gray>- <gray>%age% <dark_gray>| <white>%type% <dark_gray>%detail%
   event:
     check-aim:
     - Neuro Aim
     - Aim
+  events:
+  - '<gold>Что произошло:'
+  gone:
+  - <dark_gray>Для этого игрока снятий не сохранено.
+  level:
+    high:
+    - '<red>Критично: от <white>%value%<red> до <white>%max%'
+    low:
+    - '<yellow>Копится: буфер до <white>%value%'
+    mid:
+    - '<gold>Высокий: <white>%value%<gold> - <white>%next%'
+    zero:
+    - '<green>Чисто: буфер 0'
   no-data:
   - <dark_gray>У тебя пока нет данных — readings появляются только во время боя.
+  page:
+    name:
+    - <white>Страница <gray>%page%<white>/<gray>%pages%
+    range:
+    - <gray>Показано <white>%from%<gray>-<white>%to%<gray> из <white>%total%
+  reading:
+    buffer:
+    - '<gray>Буфер: <white>%value%<dark_gray>/%max%'
+    falling:
+    - '<gray>Буфер падает: <green>-%value%'
+    flagged:
+    - <red>Prob выше порога сомнения <white>%value%
+    probability:
+    - '<gray>Prob: <white>%value%'
+    rising:
+    - '<gray>Буфер растёт: <red>+%value%'
+    steady:
+    - <dark_gray>Буфер не меняется
+    summary:
+    - <white>Prob %probability% <dark_gray>| <white>Буфер %buffer%
+    time:
+    - '<gray>Когда: <white>%value%'
+  sort:
+    click:
+    - <yellow>Нажми, чтобы поменять
+    current:
+    - '<gray>Сейчас: <white>%value%'
+    freshness-hint:
+    - <dark_gray>Новые снятия слева.
+    name:
+    - <aqua>Сортировка
+    suspicion-hint:
+    - <dark_gray>Самые подозрительные сверху.
+  status:
+    offline:
+    - '<gray>Статус: <dark_gray>оффлайн'
+    online:
+    - '<gray>Статус: <green>онлайн'
+  target:
+    alerts:
+    - '<gray>Алертов: <white>%value%'
+    first-seen:
+    - '<gray>Впервые замечен: <white>%value%'
+    last-seen:
+    - '<gray>Последний раз: <white>%value%'
+    peak:
+    - '<gray>Пик буфера в истории: <white>%value%'
+    peak-prob:
+    - '<gray>Пиковое показание: <white>%value%'
+    punishments:
+    - '<gray>Наказаний: <white>%value%'
+    readings:
+    - '<gray>Снятий в истории: <white>%value%'
+    windows:
+    - '<gray>Окон проанализировано: <white>%value%'
+  title:
+  - История <dark_gray>%player%
   unknown-player:
   - <red>Истории для <white>%player%<red> не сохранено.
 journal:
+  entry:
+    first-seen:
+    - '<gray>Первое попадание: <white>%value%'
+    history:
+    - '<gold>История Prob:'
+    history-line:
+    - <dark_gray>- <gray>%age% <dark_gray>| <white>%probability% <dark_gray>| <gray>буфер <white>%buffer%
+    last-buffer:
+    - '<gray>Последний буфер: <white>%value%'
+    last-prob:
+    - '<gray>Последний Prob: <white>%value%'
+    last-seen:
+    - '<gray>Последнее попадание: <white>%value%'
+    observe:
+    - <yellow>Нажми, чтобы войти в скрытый спект
+    observe-hint:
+    - <dark_gray>Переводит в spectator и включает Prob watch.
+    offline:
+    - <dark_gray>Игрок сейчас оффлайн.
+    peak-buffer:
+    - '<gray>Пик буфера: <white>%value%'
+    windows:
+    - '<gray>Окон проанализировано: <white>%value%'
   observe-started:
   - <gray>Теперь наблюдаешь за <white>%player%<gray> с включённым Prob.
   observe-unsupported:
   - '<red>Слежка не работает на Folia: она телепортирует тебя к игроку, которого тикает другой поток.'
   player-offline:
   - <red>Этот игрок уже не в сети.
+  refresh:
+    lore:
+    - <gray>Перерисовать журнал.
+  status:
+    offline:
+    - '<gray>Статус: <dark_gray>оффлайн'
+    online:
+    - '<gray>Статус: <green>онлайн'
 manual:
   banned:
   - '<gray>Забанен <white>%player%<gray>: <white>%reason%'
@@ -162,28 +616,174 @@ player-cmd:
   windows:
   - '<gray>Окон проанализировано: <white>%value%'
 players:
+  buffer:
+  - '<gray>Буфер: <white>%value%<dark_gray>/%max%'
+  click:
+  - <yellow>Нажми, чтобы смотреть
+  last-reading:
+  - '<gray>Последний reading: <white>%value%'
+  only-fighting:
+  - <dark_gray>Readings появляются только во время боя.
+  recording:
+  - <gold>Записывается <white>%value%<gold> окон
   watching:
   - <gray>Теперь смотришь за <white>%player%<gray>.
+  windows:
+  - '<gray>Окон проанализировано: <white>%value%'
 prob:
   no-data:
   - <dark_gray>Пока ничего не проанализировано - readings появляются только во время боя.
   watching:
   - <gray>Смотришь за <white>%player%<gray>. Буфер <white>%buffer%<gray>, последний reading <white>%probability%<gray>, окон проанализировано <white>%windows%
   - <gray>Буфер <white>%buffer%<gray>, последний reading <white>%probability%<gray>, окон проанализировано <white>%windows%
+punish-menu:
+  animation-chosen:
+  - <green>Выбрана.
+  animation-pick:
+  - <gray>Нажми, чтобы выбрать.
+  ascend-needs-strip:
+  - <yellow>Вещи вылетят только при включённом «Высыпать вещи».
+  ban:
+    after:
+    - <gray>Банить на <white>%value%<gray>-м наказании
+    command-name:
+    - <dark_red>Чем банить
+    left:
+    - <dark_gray>ЛКМ <gray>+1
+    name:
+    - <dark_red>Бан по счёту
+    none:
+    - <gray>Бан выключен
+    right:
+    - <dark_gray>ПКМ <gray>-1
+    shift:
+    - <dark_gray>Shift <gray>шаг 5
+    with:
+    - '<gray>Чем: <white>%value%'
+  command:
+  - '<gray>Команда: <white>%value%'
+  enabled:
+    name:
+    - <red>Наказывать
+  header:
+  - <red>Наказание
+  random-note:
+  - <dark_gray>Каждый раз другая, подряд не повторяется.
+  state-off:
+  - '<gray>Состояние: <red>выкл'
+  state-on:
+  - '<gray>Состояние: <green>вкл'
+  strip:
+    line1:
+    - <gray>Инвентарь вылетает из игрока,
+    name:
+    - <gold>Высыпать вещи
 reload:
   done:
   - <green>Перезагружено <gray>за <white>%value%мс<gray>.
 sessions:
+  click:
+    delete:
+    - <yellow>Shift-клик <gray>чтобы удалить файл
+    exclude:
+    - <yellow>Клик <gray>чтобы исключить
+    include:
+    - <yellow>Клик <gray>чтобы включить
   deleted:
   - <gray>Удалено <white>%value%
+  empty:
+    line1:
+    - <gray>Запиши одну через <white>/oai data train <player>
+    line2:
+    - <gray>потом закоммить через <white>/oai data add ...
+    name:
+    - <red>Сессий пока нет
+  excluded:
+  - <dark_gray>Исключено из обучения
   failed:
   - <red>Сервис не ответил или отклонил изменение.
+  file:
+  - '<gray>Файл: <dark_gray>%value%'
+  in-training:
+  - <green>Учитывается в обучении
+  next:
+  - <yellow>Следующая страница
+  previous:
+  - <yellow>Предыдущая страница
+  recorded:
+  - '<gray>Записано: <white>%value%'
+  source-line:
+  - '<gray>Источник: <white>%value%'
   updated:
   - <gray>Обновлено <white>%value%
+  windows:
+  - '<gray>Окон: <white>%value%'
 settings:
   aim:
+    disabled:
+    - '<gray>Состояние: <red>выключен'
+    enabled:
+    - '<gray>Состояние: <green>включён'
+    hint:
+    - <gray>Нейросетевая проверка прицела.
     name:
+    - <light_purple>Neuro
     - <light_purple>Neuro Aim
+  analysis:
+    disabled:
+    - '<gray>Состояние: <red>выключен'
+    enabled:
+    - '<gray>Состояние: <green>включён'
+    hint:
+    - <gray>Главный выключатель модели и проверок.
+    name:
+    - <aqua>Анализ
+  back:
+  - <yellow>Назад в Dashboard
+  checks:
+    click:
+    - <yellow>Нажми, чтобы открыть список проверок
+    count:
+    - '<gray>Зарегистрировано: <white>%value%'
+    disabled:
+    - '<gray>Состояние: <red>выключены'
+    enabled:
+    - '<gray>Состояние: <green>включены'
+    hint:
+    - <gray>Wall и другие проверки на пакет удара.
+    name:
+    - <aqua>Проверки ударов
+  hint:
+  - <dark_gray>ЛКМ по пункту - переключить. ПКМ по OculusAI - настройки.
+  punish:
+    disabled:
+    - '<gray>Состояние: <green>выключено'
+    enabled:
+    - '<gray>Состояние: <red>включено'
+    hint:
+    - <gray>Выполнять команду после подтверждённого детекта.
+    name:
+    - <red>Наказание
+  test:
+    disabled:
+    - '<gray>Состояние: <red>выключен'
+    enabled:
+    - '<gray>Состояние: <green>включён'
+    hint:
+    - <gray>Проверки с test-only не наказывают.
+    name:
+    - <yellow>Тестовый режим
+  title:
+  - Настройки OculusAI
+  wall:
+    disabled:
+    - '<gray>Состояние: <red>выключен'
+    enabled:
+    - '<gray>Состояние: <green>включён'
+    hint:
+    - <gray>Удары через стены и закрытые двери.
+    name:
+    - <gold>Wall
 setup:
   command:
   - '<gray>Или прямо здесь: <white>%value%'
@@ -195,6 +795,14 @@ setup:
   - <red><bold>Античит не подключён к API — анализ не работает.
   - <red>Античит не подключён к API — анализ не работает.
 shared:
+  back:
+  - <yellow>Назад
+  click-toggle:
+  - <yellow>Нажми, чтобы переключить
+  click-train:
+  - <yellow>Нажми, чтобы обучить
+  close:
+  - <red>Закрыть
   no-permission:
   - <red>Нет прав.
   player-offline:

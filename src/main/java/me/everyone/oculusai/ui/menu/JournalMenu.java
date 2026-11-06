@@ -39,14 +39,15 @@ public final class JournalMenu extends Menu {
         shown.clear();
         List<JournalStore.Entry> entries = plugin.journal().entries();
 
+        int[] grid = grid();
         int slot = 0;
         for (JournalStore.Entry entry : entries) {
-            if (slot >= 45) {
+            if (slot >= grid.length) {
                 break;
             }
             shown.add(entry);
             OfflinePlayer player = Bukkit.getOfflinePlayer(entry.uuid());
-            set(slot++, head(player, name(entry), lore(entry)));
+            set(grid[slot++], head(player, name(entry), lore(entry)));
         }
 
         set(SLOT_REFRESH, item(Material.CLOCK, plugin.lang().text("journal.refresh.name"),
@@ -114,11 +115,12 @@ public final class JournalMenu extends Menu {
             refresh();
             return;
         }
-        if (slot >= shown.size()) {
+        int index = gridIndex(slot);
+        if (index < 0 || index >= shown.size()) {
             return;
         }
 
-        JournalStore.Entry entry = shown.get(slot);
+        JournalStore.Entry entry = shown.get(index);
         Player target = Bukkit.getPlayer(entry.uuid());
         if (target == null || !target.isOnline()) {
             viewer.sendMessage(plugin.config().prefix() + plugin.lang().text("journal.player-offline"));

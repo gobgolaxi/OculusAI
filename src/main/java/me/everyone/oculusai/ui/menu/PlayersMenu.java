@@ -39,13 +39,14 @@ public final class PlayersMenu extends Menu {
         List<PlayerData> sorted = new ArrayList<>(plugin.data().all());
         sorted.sort(Comparator.comparingDouble(PlayerData::buffer).reversed());
 
+        int[] grid = grid();
         int slot = 0;
         for (PlayerData data : sorted) {
-            if (slot >= 45) {
+            if (slot >= grid.length) {
                 break;
             }
             shown.add(data);
-            set(slot++, head(data.player(), name(data), lore(data)));
+            set(grid[slot++], head(data.player(), name(data), lore(data)));
         }
 
         set(SLOT_BACK, item(Material.ARROW, plugin.lang().text("shared.back"), null));
@@ -85,8 +86,9 @@ public final class PlayersMenu extends Menu {
             new DashboardMenu(plugin, viewer).open();
             return;
         }
-        if (slot < shown.size()) {
-            PlayerData target = shown.get(slot);
+        int index = gridIndex(slot);
+        if (index >= 0 && index < shown.size()) {
+            PlayerData target = shown.get(index);
             plugin.displays().watch(viewer, target);
             viewer.closeInventory();
             viewer.sendMessage(plugin.config().prefix()

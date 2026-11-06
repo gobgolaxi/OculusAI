@@ -17,13 +17,8 @@ import org.bukkit.inventory.ItemStack;
  * entry. */
 public final class ChecksMenu extends Menu {
 
-    private static final int[] SLOTS = {
-            20, 21, 22, 23, 24,
-            29, 30, 31, 32, 33,
-            38, 39, 40, 41, 42
-    };
     private static final int SLOT_HEADER = 4;
-    private static final int SLOT_BACK = 44;
+    private static final int SLOT_BACK = 40;
 
     public ChecksMenu(OculusAI plugin, Player viewer) {
         super(plugin, viewer);
@@ -51,7 +46,9 @@ public final class ChecksMenu extends Menu {
                         "",
                         plugin.lang().text("checks-menu.hint"))));
 
-        for (int i = 0; i < checks.size() && i < SLOTS.length; i++) {
+        // В один ряд по центру, пока помещаются; больше - по сетке внутри рамки.
+        int[] slots = checks.size() <= 7 ? centred(2, checks.size()) : grid();
+        for (int i = 0; i < checks.size() && i < slots.length; i++) {
             Check check = checks.get(i);
             boolean enabled = enabled(check);
             ItemStack icon = item(icon(check), plugin.lang().textOr(
@@ -64,7 +61,7 @@ public final class ChecksMenu extends Menu {
                             "",
                             plugin.lang().text("checks-menu.left"),
                             plugin.lang().text("checks-menu.right")));
-            toggle(SLOTS[i], icon,
+            toggle(slots[i], icon,
                     () -> setEnabled(check, !enabled),
                     () -> new CheckSettingsMenu(plugin, viewer, check.id()).open());
         }

@@ -21,17 +21,19 @@ public final class DashboardMenu extends Menu {
     // was holding nothing apart.
     private static final int SLOT_POWER = 4;
 
+    // Ряды по центру: шесть иконок - по три с каждой стороны, четыре - по
+    // две. Раньше они были прижаты влево и рамка справа стояла пустой.
     private static final int SLOT_STATUS = 10;
     private static final int SLOT_PLAYERS = 11;
     private static final int SLOT_JOURNAL = 12;
-    private static final int SLOT_DUMMY = 13;
-    private static final int SLOT_CHECKS = 14;
-    private static final int SLOT_ALERT_SOUND = 15;
+    private static final int SLOT_DUMMY = 14;
+    private static final int SLOT_CHECKS = 15;
+    private static final int SLOT_ALERT_SOUND = 16;
 
     private static final int SLOT_PUNISHMENT = 20;
     private static final int SLOT_ALWAYS_PROB = 21;
-    private static final int SLOT_PROB_HEIGHT = 22;
-    private static final int SLOT_THEME = 23;
+    private static final int SLOT_PROB_HEIGHT = 23;
+    private static final int SLOT_THEME = 24;
 
     private static final int SLOT_REFRESH = 30;
     private static final int SLOT_CLOSE = 32;

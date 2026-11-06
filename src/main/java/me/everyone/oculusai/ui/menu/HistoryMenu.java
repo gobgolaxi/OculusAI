@@ -20,13 +20,13 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 public final class HistoryMenu extends Menu {
 
     private static final int SLOT_TARGET = 4;
-    private static final int SLOT_BACK = 0;
-    private static final int FIRST_READING = 9;
-    private static final int PER_PAGE = 36;
+    private static final int SLOT_BACK = 49;
+    /** Клеток внутри рамки 6-рядного меню: 4 ряда по 7. */
+    private static final int PER_PAGE = 28;
 
     private static final int SLOT_PREVIOUS = 45;
-    private static final int SLOT_SORT = 48;
-    private static final int SLOT_PAGES = 49;
+    private static final int SLOT_SORT = 47;
+    private static final int SLOT_PAGES = 51;
     private static final int SLOT_NEXT = 53;
 
     private final UUID targetId;
@@ -95,7 +95,7 @@ public final class HistoryMenu extends Menu {
         int from = from();
         for (int i = from; i < Math.min(ordered.size(), from + PER_PAGE); i++) {
             PlayerData.Reading reading = ordered.get(i);
-            set(FIRST_READING + i - from, item(paneOf(reading), name(reading), lore(reading)));
+            set(grid()[i - from], item(paneOf(reading), name(reading), lore(reading)));
         }
 
         controls(paginated);
@@ -154,7 +154,7 @@ public final class HistoryMenu extends Menu {
     }
 
     private void empty() {
-        set(FIRST_READING + PER_PAGE / 2, item(Material.BARRIER, plugin.lang().text("history.empty.name"),
+        set(22, item(Material.BARRIER, plugin.lang().text("history.empty.name"),
                 List.of(
                         plugin.lang().text("history.empty.line1"),
                         plugin.lang().text("history.empty.line2"))));

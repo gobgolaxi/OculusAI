@@ -16,7 +16,8 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 
 public final class SessionsMenu extends Menu {
 
-    private static final int PER_PAGE = 45;
+    /** Клеток внутри рамки 6-рядного меню: 4 ряда по 7. */
+    private static final int PER_PAGE = 28;
     private static final int SLOT_PREVIOUS = 45;
     private static final int SLOT_BACK = 49;
     private static final int SLOT_NEXT = 53;
@@ -52,7 +53,7 @@ public final class SessionsMenu extends Menu {
         for (int i = from; i < Math.min(sessions.size(), from + PER_PAGE); i++) {
             JsonObject session = sessions.get(i);
             shown.add(session);
-            set(i - from, item(icon(session), name(session), lore(session)));
+            set(grid()[i - from], item(icon(session), name(session), lore(session)));
         }
 
         if (sessions.isEmpty()) {
@@ -143,11 +144,12 @@ public final class SessionsMenu extends Menu {
             new SessionsMenu(plugin, viewer, page + 1).open();
             return;
         }
-        if (slot >= shown.size() || !viewer.hasPermission("oculusai.data")) {
+        int index = gridIndex(slot);
+        if (index < 0 || index >= shown.size() || !viewer.hasPermission("oculusai.data")) {
             return;
         }
 
-        JsonObject session = shown.get(slot);
+        JsonObject session = shown.get(index);
         String id = session.get("id").getAsString();
 
         if (event.getClick() == ClickType.SHIFT_LEFT || event.getClick() == ClickType.SHIFT_RIGHT) {
